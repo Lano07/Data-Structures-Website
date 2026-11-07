@@ -2,6 +2,8 @@
 import asyncio, json, sys
 from playwright.async_api import async_playwright
 
+import os as _os
+REPO = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))  # the repository root
 CHECK = r"""
 () => {
   const P = CL.lastPlayer, out = { frames: P.frames.length, asks: 0, bad: [] };
@@ -44,11 +46,11 @@ async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch()
         pg = await b.new_page(viewport={"width": 1280, "height": 900})
-        await pg.add_init_script(path="/home/claude/codelab/dev/fakeclaude.js")
+        await pg.add_init_script(path=REPO + "/dev/fakeclaude.js")
         errs = []
         pg.on("pageerror", lambda e: errs.append("PAGEERROR: " + str(e)))
         pg.on("console", lambda m: errs.append(m.type + ": " + m.text) if m.type == "error" else None)
-        await pg.goto("file:///home/claude/codelab/dist/COMP2611-Code-Lab.html#home")
+        await pg.goto("file://" + REPO + "/dist/COMP2611-Code-Lab.html#home")
         await pg.wait_for_timeout(500)
         total = {"runs": 0, "asks": 0, "bad": 0}
         async def run(name, setup):

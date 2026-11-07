@@ -1,19 +1,46 @@
 ---
-title: Binary search
-summary: In a sorted array, binary search compares the key with the middle value and throws away the half that cannot contain it. Each step halves what is left, so it needs about log₂ n comparisons instead of n.
-lectures: Supplementary (not in the lecture notes)
-supp: true
+title: Sequential and binary search
+summary: Sequential search checks the values one by one, O(n), and works on any array. In a sorted array, binary search compares the key with the middle value and throws away the half that cannot contain it. Each step halves what is left, so it needs about log₂ n comparisons instead of n.
+lectures: Course outline topic 2 (not yet in the notes)
+outline: true
 goals:
+  - Write sequential search and say what it costs in the best, average and worst cases
   - Write iterative and recursive binary search on a sorted array
   - State the loop invariant and use it to explain why binary search is correct
-  - Show that it takes O(log n) steps, and trace it on an example
-  - Avoid the classic off-by-one mistakes
+  - Show that binary search takes O(log n) steps, and avoid the classic off-by-one mistakes
 labs: [sort]
 ---
 
+## Sequential search
+
+The simplest search checks the values **one by one** until it finds the key or runs out of values. It works on **any** array, sorted or not, and on a linked list it is exactly `contains` from Lecture 3.
+
+```cpp example="Sequential search"
+#include <iostream>
+using namespace std;
+
+// returns the index of key in A[0..n-1], or -1 if it is not there
+int sequentialSearch (int A[], int n, int key) {
+	for (int i = 0; i < n; i++)
+		if (A[i] == key)
+			return i;
+	return -1;
+}
+
+int main () {
+	int A[] = {52, 33, 84, 43, 16, 59, 31};
+	cout << sequentialSearch (A, 7, 16) << " " << sequentialSearch (A, 7, 52) << " " << sequentialSearch (A, 7, 99) << endl;
+	return 0;
+}
+```
+
+**Cost.** Best case: the key is first, 1 comparison. Worst case: the key is last or missing, n comparisons. On average, when the key is there, about n/2 comparisons (the same analysis as searching a linked list in Lecture 11). All of that is **O(n)**.
+
+If the array is **sorted**, you can do much better.
+
 ## The idea
 
-Searching an unsorted array means checking values one by one: O(n). If the array is **sorted**, one comparison tells you much more. Compare the key with the middle value:
+Sequential search learns very little from each comparison: only whether that one value is the key. If the array is **sorted**, one comparison tells you much more. Compare the key with the middle value:
 
 - equal: found;
 - key smaller: it can only be in the left half;
@@ -148,7 +175,8 @@ Explain why binary search needs a sorted array, and why it takes about log₂ n 
 :::
 
 :::remember
-- Sorted array only. Compare with A[mid]; keep A[lo..hi] as the part that could hold the key.
+- Sequential search: any array, one by one, O(n) (about n/2 comparisons on average).
+- Binary search: sorted array only. Compare with A[mid]; keep A[lo..hi] as the part that could hold the key.
 - while (lo <= hi); hi = mid − 1 or lo = mid + 1; return −1 when the range is empty.
 - About log₂ n comparisons: 20 for a million values.
 :::

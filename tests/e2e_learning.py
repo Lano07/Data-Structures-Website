@@ -1,10 +1,12 @@
+import os as _os
+REPO = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))  # the repository root
 """End-to-end check of the adaptive learning features: the Today card, adaptive practice, the review queue,
 flashcards, the diagnostic, study plans and the Progress page. Run after `python3 build.py`."""
 import asyncio, json, sys
 from playwright.async_api import async_playwright
 
 import os
-URL = os.environ.get("CODELAB_URL", "file:///home/claude/codelab/dist/COMP2611-Code-Lab.html")
+URL = os.environ.get("CODELAB_URL", "file://" + REPO + "/dist/COMP2611-Code-Lab.html")
 FAILS = []
 def check(cond, msg):
     print(("ok   " if cond else "FAIL ") + msg)
@@ -14,7 +16,7 @@ async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch()
         pg = await b.new_page(viewport={"width": 1280, "height": 900})
-        await pg.add_init_script(path="/home/claude/codelab/dev/fakeclaude.js")
+        await pg.add_init_script(path=REPO + "/dev/fakeclaude.js")
         errs = []
         pg.on("console", lambda m: errs.append(m.type + ": " + m.text) if m.type == "error" and "Failed to load resource" not in m.text else None)
         pg.on("pageerror", lambda e: errs.append("PAGEERROR: " + str(e)))

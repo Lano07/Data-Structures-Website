@@ -1,9 +1,9 @@
 // every memory lab demo must run in the interpreter exactly as g++ runs it (except the deliberate crash)
 const fs = require("fs"), vm = require("vm"), cp = require("child_process");
-const CPP = require("/home/claude/codelab/tests/load.js");
+const CPP = require(require("path").join(__dirname, "load.js"));
 const ctx = { CL: { esc: (s) => s, Labs: {}, Diagrams: {} }, console, document: { createElement: () => ({}) }, window: {} };
 vm.createContext(ctx);
-let src = fs.readFileSync("/home/claude/codelab/src/lab_mem.js", "utf8").replace(/CL\.Labs\.(\w+) = function/g, "CL.Labs.$1 = function");
+let src = fs.readFileSync(require("path").join(__dirname, "..", "src", "lab_mem.js"), "utf8").replace(/CL\.Labs\.(\w+) = function/g, "CL.Labs.$1 = function");
 src = src.replace("var S = [];", "var S = CL.__S = [];");
 try { vm.runInContext(src, ctx); } catch (e) { /* the DOM parts are not needed */ }
 let bad = 0;

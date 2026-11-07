@@ -18,6 +18,7 @@
       function round() {
         if (S.over) return;
         var n = Math.min(6 + S.round, 15);
+        W = A.boardW(S);
         Ar = [0].concat(distinct(n, 1, 99));
         size = n; phase = "build"; i = Math.floor(size / 2); cur = i; extracts = S.round < 3 ? 2 : 3; out = [];
         S.say("<b>buildMaxHeap</b>: call maxHeapify(heap, i) for i = " + i + " down to 1.");
@@ -81,7 +82,7 @@
         for (var j = 1; j <= size; j++) arr += '<div class="hh-c' + (j === cur ? " hot" : (j === 2 * cur || j === 2 * cur + 1) ? " on" : "") + '"><b>' + Ar[j] + "</b><i>" + j + "</i></div>";
         arr += "</div>";
         S.stage.innerHTML = '<div class="tv-head"><span class="chip acc">' + (phase === "build" ? "buildMaxHeap · maxHeapify(heap, " + i + ")" : "deleteMaxHeap · maxHeapify(heap, 1)") + '</span><span class="muted small">size = ' + size + (out.length ? " · deleted: " + out.join(", ") : "") + "</span></div>" +
-          A.treeSvg(W, H, nodes, edges, { label: "max-heap", r: 18 }) + arr + '<div class="btns hh-btns"><button type="button" class="btn hh-no">No swap: A[' + cur + "] = " + Ar[cur] + " is the largest</button></div>";
+          A.treeSvg(W, H, nodes, edges, { label: "max-heap", r: W < 480 ? 15 : 18 }) + arr + '<div class="btns hh-btns"><button type="button" class="btn hh-no">No swap: A[' + cur + "] = " + Ar[cur] + " is the largest</button></div>";
         if (!flash) S.say("At index <b>" + cur + "</b> (value " + Ar[cur] + "): children " + [2 * cur, 2 * cur + 1].filter(function (x) { return x <= size; }).map(function (x) { return "A[" + x + "] = " + Ar[x]; }).join(" and ") + ". Which is the largest of the three?");
         void lg;
       }
@@ -109,6 +110,7 @@
           draw();
         }
       }
+      S.hint = function () { var lg = largestOf(cur); return lg === cur ? ".hh-no" : '[data-k="' + lg + '"]'; };
       S.stage.addEventListener("click", function (e) {
         if (S.over) return;
         if (e.target.closest(".hh-no")) { choose("none"); return; }
@@ -190,6 +192,7 @@
         for (var j = 1; j < pr.path.length; j++) s += " → " + (m === "quad" ? "(x = " + j + ", +" + (j + j * j) + ") " : "") + "<b>" + pr.path[j] + "</b>";
         return s + (pr.path.length > 1 ? " (" + (pr.path.length - 1) + " collision" + (pr.path.length > 2 ? "s" : "") + ")" : "");
       }
+      S.hint = function () { return keys && k < keys.length && !busy ? '[data-k="' + probe(T, N, m, keys[k]).loc + '"]' : null; };
       S.stage.addEventListener("click", function (e) {
         var t = e.target.closest("[data-k]");
         if (!t || S.over || busy || k >= keys.length) return;
@@ -256,15 +259,19 @@
   }
   function graphSvg(G, P, W, H, o) {
     var r = 19, s = '<svg class="arc-svg" viewBox="0 0 ' + W + " " + H + '" role="group" aria-label="' + esc(o.label || "graph") + '"><defs><marker id="arcArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>';
+    // three layers, so that a weight label is never covered by another edge's click area:
+    // the wide invisible click areas, then the visible lines, then the labels (which are clickable too)
+    var pads = "", lines = "", labels = "";
     G.edges.forEach(function (e, ix) {
       var a = P[e[0]], b = P[e[1]], dx = b.x - a.x, dy = b.y - a.y, L = Math.sqrt(dx * dx + dy * dy) || 1, ux = dx / L, uy = dy / L;
       var x1 = a.x + ux * r, y1 = a.y + uy * r, x2 = b.x - ux * (r + (o.directed ? 3 : 0)), y2 = b.y - uy * (r + (o.directed ? 3 : 0));
       var cls = (o.edgeCls && o.edgeCls(e, ix)) || "", mx = (a.x + b.x) / 2 - uy * 11, my = (a.y + b.y) / 2 + ux * 11;
-      s += '<g class="ge ' + cls + (o.edgeClick ? " arc-hit" : "") + '"' + (o.edgeClick ? ' data-k="e' + ix + '" tabindex="0" role="button" aria-label="edge ' + e[0] + " " + e[1] + ", weight " + e[2] + '"' : "") + ">" +
-        (o.edgeClick ? '<line class="ge-pad" x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '"/>' : "") +
-        '<line class="g-edge ' + cls + '" x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '"' + (o.directed ? ' marker-end="url(#arcArr)"' : "") + "/>" +
-        '<g class="ge-w"><rect x="' + (mx - 13) + '" y="' + (my - 10) + '" width="26" height="20" rx="6"/><text x="' + mx + '" y="' + my + '">' + e[2] + "</text></g></g>";
+      var click = o.edgeClick && !(o.edgeOff && o.edgeOff(e, ix)), k = ' data-k="e' + ix + '"';
+      if (click) pads += '<line class="ge-pad arc-hit"' + k + ' x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '"/>';
+      lines += '<g class="ge ' + cls + '"><line class="g-edge ' + cls + '" x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '"' + (o.directed ? ' marker-end="url(#arcArr)"' : "") + "/></g>";
+      labels += '<g class="ge-w ' + cls + (click ? " arc-hit" : "") + '"' + (click ? k + ' tabindex="0" role="button" aria-label="edge ' + e[0] + " " + e[1] + ", weight " + e[2] + '"' : "") + '><rect x="' + (mx - 13) + '" y="' + (my - 10) + '" width="26" height="20" rx="6"/><text x="' + mx + '" y="' + my + '">' + e[2] + "</text></g>";
     });
+    s += pads + lines + labels;
     Object.keys(P).sort().forEach(function (v) {
       var c = (o.nodeCls && o.nodeCls(v)) || "", click = o.nodeClick && (!o.canClick || o.canClick(v));
       s += '<g class="g-node ' + c + (click ? " arc-hit" : "") + '"' + (click ? ' data-k="' + v + '" tabindex="0" role="button" aria-label="vertex ' + v + '"' : "") + ">" + (click ? '<circle class="arc-pad" cx="' + P[v].x + '" cy="' + P[v].y + '" r="' + (r + 8) + '"/>' : "") +
@@ -281,10 +288,18 @@
     learn: "Dijkstra's algorithm from Lecture 17: the cost and parent table, the min-priority queue and edge relaxation.",
     lesson: "j4-dijkstra",
     start: function (S) {
-      var G, P, V, cost, par, done, last, busy, W = 640, H = 330, phase;
+      var G, P, V, cost, par, done, last, busy, W = 640, H = 330, phase, quizRight = null;
+      S.hint = function () {
+        if (busy) return null;
+        if (phase === "quiz") return '.dj-q .bo-opt[data-o="' + quizRight + '"]';
+        if (phase !== "pick") return null;
+        var m = minLeft(), v = V.filter(function (x) { return !done[x] && cost[x] === m; })[0];
+        return v ? '[data-k="' + v + '"]' : null;
+      };
       function round() {
         if (S.over) return;
         G = S.round === 1 ? LECT_DJ : randomGraph(Math.min(5 + S.round, 8), true, 3 + S.round);
+        W = A.boardW(S);
         P = place(G.pos, W, H);
         V = Object.keys(G.pos).sort();
         cost = {}; par = {}; done = {};
@@ -313,6 +328,7 @@
         var t = targets[rnd(0, targets.length - 1)], path = [t];
         while (par[path[0]] !== "nil") path.unshift(par[path[0]]);
         var right = path.join(" → "), opts = [right];
+        quizRight = right;
         // wrong options: other real paths in the graph that end at t
         var alts = [];
         (function dfs(v, p, seen) { if (alts.length > 20) return; if (v === t && p.length > 1) { alts.push(p.join(" → ")); return; } G.edges.forEach(function (e) { if (e[0] === v && !seen[e[1]]) { seen[e[1]] = 1; dfs(e[1], p.concat([e[1]]), seen); seen[e[1]] = 0; } }); })("A", ["A"], { A: 1 });
@@ -380,6 +396,7 @@
         if (S.over) return;
         mode = S.round % 2 === 1 ? "kruskal" : "prim";
         G = S.round === 1 ? LECT_K : S.round === 2 ? LECT_P : randomGraph(Math.min(4 + Math.ceil(S.round / 2), 8), false, 3 + Math.floor(S.round / 2));
+        W = A.boardW(S);
         P = place(G.pos, W, H);
         V = Object.keys(G.pos).sort();
         taken = {}; comp = {}; used = { A: 1 }; total = 0; busy = false;
@@ -401,7 +418,7 @@
       function draw(flash) {
         var n = Object.keys(taken).length;
         S.stage.innerHTML = '<div class="tv-head"><span class="chip acc">' + (mode === "kruskal" ? "Kruskal's algorithm" : "Prim's algorithm (from A)") + '</span><span class="muted small">' + n + " of " + (V.length - 1) + " edges · total cost " + total + "</span></div>" +
-          graphSvg(G, P, W, H, { directed: false, label: "weighted undirected graph", edgeClick: true,
+          graphSvg(G, P, W, H, { directed: false, label: "weighted undirected graph", edgeClick: true, edgeOff: function (e, ix) { return !!taken[ix]; },
             nodeCls: function (v) { return mode === "prim" ? (used[v] ? "done" : "") : ""; },
             edgeCls: function (e, ix) { return taken[ix] ? "on mst" : flash === ix ? "hot" : ""; } }) +
           '<div class="mst-list">' + (mode === "kruskal" ? "Edges by weight: " + G.edges.map(function (e, ix) { return { e: e, ix: ix }; }).sort(function (a, b) { return a.e[2] - b.e[2]; }).map(function (x) {
@@ -409,6 +426,7 @@
             return '<span class="' + st + '">(' + x.e[0] + ", " + x.e[1] + ", " + x.e[2] + ")</span>";
           }).join(" ") : "Used vertices: {" + V.filter(function (v) { return used[v]; }).join(", ") + "} · unused: {" + V.filter(function (v) { return !used[v]; }).join(", ") + "}") + "</div>";
       }
+      S.hint = function () { if (busy) return null; var c = candidates(); return c.best.length ? '[data-k="e' + c.best[0] + '"]' : null; };
       S.stage.addEventListener("click", function (e) {
         var t = e.target.closest("[data-k]");
         if (!t || S.over || busy) return;

@@ -2,6 +2,8 @@
 # and checks that the program's real output matches the question's answer.
 import asyncio, json, subprocess, sys, os, tempfile
 from playwright.async_api import async_playwright
+import os as _os
+REPO = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))  # the repository root
 N = int(sys.argv[1]) if len(sys.argv) > 1 else 120
 JS = r"""
 (N) => {
@@ -55,7 +57,7 @@ async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch()
         pg = await b.new_page()
-        await pg.goto("file:///home/claude/codelab/dist/COMP2611-Code-Lab.html#home")
+        await pg.goto("file://" + REPO + "/dist/COMP2611-Code-Lab.html#home")
         await pg.wait_for_timeout(500)
         progs = await pg.evaluate(JS, N)
         await b.close()

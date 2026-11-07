@@ -65,6 +65,12 @@
   L.addLesson("m1-doubly-circular", "list.more");
   L.addLesson("m2-circular-queue", "sq.stack");
   L.addLesson("m3-binary-search", "bigo.code");
+  // course-outline lessons count towards the concept they build on
+  L.addLesson("n1-special-matrices", "cpp.arrays");
+  L.addLesson("n2-floyd", "graph.dijkstra");
+  L.addLesson("n3-graph-isomorphism", "graph.basics");
+  L.addLesson("n4-integer-sorting", "sort.perf");
+  L.addLesson("n5-trees-proofs", "tree.shape");
   L.addLesson("m4-avl-trees", "bst.perf");
   L.forGen = function (g) { return byGen[g] || null; };
   L.forQuestion = function (q) {
@@ -275,7 +281,7 @@
     return false;
   };
   var PART_TOPIC = { b: "cpp", c: "lists", d: "recursion", e: "stacks", f: "trees", g: "bst", h: "heaps", i: "hashing", j: "graphs", k: "sorting", l: "bigo" };
-  var GYM_TOPIC = { a: "basics", b: "pointers", c: "linked-lists", d: "recursion", e: "stacks-queues", f: "binary-trees", g: "bst", h: "heaps", i: "hashing", j: "graphs", k: "sorting" };
+  var GYM_TOPIC = { a: "basics", b: "pointers", c: "linked-lists", d: "recursion", e: "stacks-queues", f: "binary-trees", g: "bst", h: "heaps", i: "hashing", j: "graphs", k: "sorting", n: "outline" };
   function partSteps(part) {
     var steps = lessonsOfPart(part).map(function (id) { return { k: "lesson", id: id }; });
     var topic = PART_TOPIC[part];

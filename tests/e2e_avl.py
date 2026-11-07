@@ -1,7 +1,9 @@
+import os as _os
+REPO = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))  # the repository root
 """End-to-end check of the AVL lab and the supplementary lessons."""
 import asyncio, os, sys
 from playwright.async_api import async_playwright
-URL = os.environ.get("CODELAB_URL", "file:///home/claude/codelab/dist/COMP2611-Code-Lab.html")
+URL = os.environ.get("CODELAB_URL", "file://" + REPO + "/dist/COMP2611-Code-Lab.html")
 FAILS = []
 def check(c, m):
     print(("ok   " if c else "FAIL ") + m)
@@ -10,7 +12,7 @@ async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch()
         pg = await b.new_page(viewport={"width": 1280, "height": 900})
-        await pg.add_init_script(path="/home/claude/codelab/dev/fakeclaude.js")
+        await pg.add_init_script(path=REPO + "/dev/fakeclaude.js")
         errs = []
         pg.on("pageerror", lambda e: errs.append(str(e)))
         await pg.goto(URL + "#lab-avl"); await pg.wait_for_timeout(700)

@@ -1,7 +1,9 @@
+import os as _os
+REPO = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))  # the repository root
 """The tutor outside Claude: the page talks to the tutor proxy (server/tutor-proxy), which talks to a stand-in API."""
 import asyncio, os, sys, subprocess, time
 from playwright.async_api import async_playwright
-ROOT = "/home/claude/codelab"
+ROOT = REPO
 URL = os.environ.get("CODELAB_URL", "file://" + ROOT + "/dist/COMP2611-Code-Lab.html")
 FAILS = []
 def check(c, m):

@@ -258,21 +258,21 @@
 
   // ---------------------------------------------------------------- home
   function pageHome() {
-    var p = page();
+    var p = page("home-page");
     setTutor("home", "Home page", progressText);
     var nl = nextLesson();
     var started = Object.keys(store.done).length > 0;
-    p.innerHTML = '<section class="hero"><div><div class="eyebrow">COMP 2611 · Data Structures · C++</div>' +
-      "<h1>See what your code <em>does to memory</em>.</h1>" +
-      "<p>Lessons that run real C++ right in the page, a visualizer that draws every pointer, labs where you predict each step, unlimited exam-style practice with worked solutions, timed mock exams, and coding exercises checked by tests. Everything follows the lecture notes, lecture by lecture, from pointers to sorting.</p>" +
-      '<div class="btns"><a class="btn primary" href="#l-' + nl.id + '">' + (started ? "Continue: " + esc(D.lessons[nl.id].title) : "Start with lesson A1") + '</a><a class="btn" href="#train">Practise</a><a class="btn" href="#lectures">Lecture by lecture</a></div></div>' +
-      '<div class="hero-demo"></div></section>';
-    var demo = new CL.Visualizer(p.querySelector(".hero-demo"), { compact: true });
-    demo.load(D.heroCode);
-    var firstCall = 0;
-    demo.snaps.forEach(function (s, i) { if (!firstCall && s.kind === "step" && s.heap.length >= 3) firstCall = i; });
-    if (firstCall) demo.go(firstCall);
-    current = { destroy: function () { demo.destroy(); } };
+    var nGames = CL.Arcade ? CL.Arcade.count : 0;
+    p.innerHTML = '<section class="nx-hero"><div class="nx-copy"><div class="eyebrow">COMP 2611 · Data Structures · C++</div>' +
+      '<h1 class="nx-h1"><span>Learn it.</span> <span>See it.</span> <span class="nx-g">Level up.</span></h1>' +
+      '<p class="nx-p">Every data structure in the course, alive on screen. Run real C++ in the page, watch every pointer move, predict each step in the labs, and race the clock in the Arcade. Everything follows the COMP 2611 lecture notes and course outline.</p>' +
+      '<div class="btns"><a class="btn primary glow nx-cta" href="#l-' + nl.id + '">' + (started ? "▶ Continue: " + esc(D.lessons[nl.id].title) : "▶ Start with lesson A1") + '</a><a class="btn arcade-btn" href="#arcade">🕹️ Play the Arcade</a><a class="btn" href="#lectures">Lecture by lecture</a></div>' +
+      '<div class="nx-stats">' + [[lessonList.length, "lessons"], [D.labs.length, "visual labs"], [nGames, "arcade games"], [D.exercises.length, "coding exercises"]].map(function (x) { return "<div><b>" + x[0] + "</b><span>" + x[1] + "</span></div>"; }).join("") + "</div></div>" +
+      '<div class="nx-morph" role="img" aria-label="Animation: fifteen values turning into a linked list, a binary search tree, a max-heap array, a graph, a hash table and a sorted array"></div></section>';
+    var morph = CL.HeroMorph ? CL.HeroMorph(p.querySelector(".nx-morph")) : null;
+    if (CL.Game) p.appendChild(CL.Game.homeCard("#l-" + nl.id, started ? "Continue: " + D.lessons[nl.id].title : "Start lesson A1"));
+    var demo = null;
+    current = { destroy: function () { if (demo) demo.destroy(); if (morph) morph.destroy(); } };
 
     // count calendar days in the viewer's own time zone; hide each card once its exam is over
     var now = new Date(), d0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -295,13 +295,7 @@
         '<div class="exam-topics"><a href="#path-final">Week-by-week revision plan</a><a href="#diag">Find your weak spots (diagnostic)</a><a href="#exam">Whole-course mock exam</a><a href="#written">Written answers</a><a href="#exam-review">Exam technique</a></div>';
       p.appendChild(fc);
     }
-    var tc = todayCard();
-    if (started || Object.keys(store.act || {}).length) {
-      // a returning student sees today's plan before the introduction
-      var fcard = p.querySelector(".exam-card.final");
-      p.insertBefore(tc, p.firstChild);
-      if (fcard) p.insertBefore(fcard, tc);
-    } else p.appendChild(tc);
+    p.appendChild(todayCard());
     var tm = TR.topics.map(function (t) { return { t: t, m: trainMastery(t.id) }; }).filter(function (x) { return x.m && x.m.recent >= 3; });
     if (tm.length || store.exams.length) {
       tm.sort(function (a, b2) { return a.m.pct - b2.m.pct; });
@@ -314,27 +308,41 @@
       if (wl) wl.addEventListener("click", function () { store.trainPref.mode = wl.getAttribute("data-weak"); save(); });
       p.appendChild(pc);
     }
-    var sh = h("div", "sec-h", "<h2>The course, part by part</h2><span class='muted small'>" + lessonList.length + " lessons · " + D.exercises.length + " exercise" + (D.exercises.length === 1 ? "" : "s") + " · " + D.labs.length + " labs</span>");
+    // the memory visualizer, stepping through a real program
+    var feat = h("section", "nx-feature");
+    feat.innerHTML = '<div class="nx-fcopy"><div class="eyebrow">Memory visualizer</div><h2>See what your code <em>does to memory</em>.</h2><p>Step through real C++ one line at a time. Local variables live on the stack, objects made with <code>new</code> live on the heap, and every pointer is an arrow you can follow.</p><div class="btns"><a class="btn" href="#lab-memory">Open the Memory Visualizer</a><a class="btn ghost" href="#play">Write your own in the Playground</a></div></div><div class="hero-demo"></div>';
+    p.appendChild(feat);
+    demo = new CL.Visualizer(feat.querySelector(".hero-demo"), { compact: true });
+    demo.load(D.heroCode);
+    var firstCall = 0;
+    demo.snaps.forEach(function (s, i) { if (!firstCall && s.kind === "step" && s.heap.length >= 3) firstCall = i; });
+    if (firstCall) demo.go(firstCall);
+
+    p.appendChild(h("div", "sec-h", "<h2>Ways to learn and practise</h2>"));
+    p.appendChild(h("div", "how nx-modes", '<a href="#learn" style="--gc:#22d3ee"><i aria-hidden="true">📘</i><b>Learn</b><span>Short lessons with code you can run, edit and step through, plus quick checks, puzzles and predictions.</span></a>' +
+      '<a href="#lab" style="--gc:#a78bfa"><i aria-hidden="true">🔬</i><b>Visual Labs</b><span>Type your own values and watch trees, heaps, hash tables, graphs, matrices and sorts change step by step. Switch to <em>Your turn</em> to predict each step.</span></a>' +
+      '<a href="#arcade" style="--gc:#f472b6"><i aria-hidden="true">🕹️</i><b>Arcade</b><span>' + nGames + ' timed games: big-O, traversals, BST insertion, heapify, hashing, Dijkstra and spanning trees. Beat your best.</span></a>' +
+      '<a href="#train" style="--gc:#fbbf24"><i aria-hidden="true">⚡</i><b>Practice</b><span>Unlimited exam-style questions with worked solutions, flashcards, written answers and timed mock exams marked by topic.</span></a>' +
+      '<a href="#gym" style="--gc:#34d399"><i aria-hidden="true">💻</i><b>Code Gym</b><span>Write the functions the exams ask for. Tests tell you exactly what is wrong.</span></a>' +
+      '<a href="#trophies" style="--gc:#60a5fa"><i aria-hidden="true">🏆</i><b>Trophy Room</b><span>Your level, rank, daily quests and achievements. Every answer on the site earns XP.</span></a>' +
+      '<a href="#home" class="tutor-only" data-tutor style="--gc:#a78bfa"><i aria-hidden="true">🤖</i><b>Your tutor</b><span>Ask Claude about any page, step or error. Get hints on exercises and feedback on your own explanations.</span></a>'));
+    var tl = p.querySelector("[data-tutor]");
+    if (tl) tl.addEventListener("click", function (e) { e.preventDefault(); if (Tu) Tu.open(); });
+
+    var sh = h("div", "sec-h", "<h2>Your quest map</h2><span class='muted small'>" + lessonList.length + " lessons · " + D.exercises.length + " exercise" + (D.exercises.length === 1 ? "" : "s") + " · " + D.labs.length + " labs</span>");
     p.appendChild(sh);
-    var map = h("div", "map");
-    D.parts.forEach(function (pt) {
+    var map = h("div", "map quest-map");
+    var nextPart = nl.part ? nl.part.id : "";
+    D.parts.forEach(function (pt, ix) {
       var pr = partProgress(pt);
       if (!pr.total) return;
-      var a = h("a", "part");
+      var pct = Math.round(100 * pr.done / pr.total), a = h("a", "part" + (pct === 100 ? " cleared" : "") + (pt.id === nextPart ? " now" : "") + (pt.supp ? " supp" : ""));
       a.href = "#l-" + pt.lessons[0];
-      a.innerHTML = '<div class="pl"><b>Part ' + pt.id.toUpperCase() + "</b><span>" + esc(pt.lectures) + "</span></div><h3>" + esc(pt.title) + "</h3><p>" + esc(pt.blurb) + '</p><div><div class="bar"><i style="width:' + Math.round(100 * pr.done / pr.total) + '%"></i></div><div class="small muted" style="margin-top:4px">' + pr.done + " of " + pr.total + " lessons done</div></div>";
+      a.style.setProperty("--p", pct);
+      a.innerHTML = '<div class="pq-ring" aria-hidden="true"><b>' + pt.id.toUpperCase() + '</b></div><div class="pq-body"><div class="pl"><b>Part ' + pt.id.toUpperCase() + "</b><span>" + esc(pt.lectures) + "</span>" + (pct === 100 ? '<span class="chip ok">cleared</span>' : pt.id === nextPart ? '<span class="chip acc">you are here</span>' : "") + "</div><h3>" + esc(pt.title) + "</h3><p>" + esc(pt.blurb) + '</p><div class="small muted">' + pr.done + " of " + pr.total + " lessons · " + pct + "%</div></div>";
       map.appendChild(a);
     });
     p.appendChild(map);
-    p.appendChild(h("div", "sec-h", "<h2>Ways to learn and practise</h2>"));
-    p.appendChild(h("div", "how", '<a href="#learn"><b>Learn</b><span>Short lessons with code you can run, edit and step through, plus quick checks.</span></a>' +
-      '<a href="#lab"><b>Visual Labs</b><span>Type your own values and watch trees, heaps, hash tables, graphs and sorts change step by step. Switch to <i>Your turn</i> to predict each step yourself.</span></a>' +
-      '<a href="#train"><b>Practice</b><span>Unlimited exam-style questions with worked solutions, and timed mock exams marked by topic. It tracks your weak spots.</span></a>' +
-      '<a href="#gym"><b>Code Gym</b><span>Write the functions the exam asks for. Tests tell you exactly what is wrong.</span></a>' +
-      '<a href="#play"><b>Playground</b><span>Run any program, give it input and files, and visualize its memory.</span></a>' +
-      '<a href="#home" class="tutor-only" data-tutor><b>Your tutor</b><span>Ask Claude about any page, step or error. Get hints on exercises and feedback on your own explanations.</span></a>'));
-    var tl = p.querySelector("[data-tutor]");
-    if (tl) tl.addEventListener("click", function (e) { e.preventDefault(); if (Tu) Tu.open(); });
   }
 
   // ---------------------------------------------------------------- learn index
@@ -895,6 +903,7 @@
     side.innerHTML = sh;
     var art = h("article", "lesson-main");
     art.innerHTML = '<div class="crumbs"><a href="#learn">Learn</a><span>/</span><span>Part ' + pt.id.toUpperCase() + " · " + esc(pt.title) + '</span></div><div class="eyebrow">Lesson ' + info.num + (L.lectures ? " · " + esc(L.lectures) : "") + '</div><h1 class="title">' + esc(L.title) + "</h1>" + (L.summary ? '<p class="lede">' + CL.inline(L.summary) + "</p>" : "") +
+      (L.outline ? '<div class="supp-note outline-note" role="note"><b>Course outline topic.</b> The COMP 2611 course outline lists this topic, but the lecture notes have not covered it yet. This lesson follows the outline and the course textbooks (Kalicharan; Cormen et al.); when the lectures reach it, follow the notes if they differ.</div>' : "") +
       (L.supp ? '<div class="supp-note" role="note"><b>Supplementary topic.</b> This is not in the COMP 2611 lecture notes. It is here to deepen your understanding of the course material; check with your lecturer before relying on it for coursework or exams.</div>' : "");
     if (L.goals && L.goals.length) art.appendChild(h("div", "goals", "<h4>After this lesson you can</h4><ul>" + L.goals.map(function (g) { return "<li>" + CL.inline(g) + "</li>"; }).join("") + "</ul>"));
     art.appendChild(CL.renderMd(L.md, mdHooks({ lessonId: id, where: "lesson " + info.num + " (" + L.title + ")" })));

@@ -12,6 +12,8 @@
   function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
   function distinct(n, lo, hi) { var pool = []; for (var v = lo; v <= hi; v++) pool.push(v); return shuffle(pool).slice(0, n); }
   A.util = { rnd: rnd, shuffle: shuffle, distinct: distinct };
+  // drawing width for a game board: the stage width on phones (so nodes stay big enough to tap), at most 640
+  A.boardW = function (S) { return Math.round(Math.max(320, Math.min(640, (S.stage.clientWidth || 640) - 28))); };
   // the game of the day earns double XP (the same game for everyone, all day)
   A.featured = function () {
     var d = CL.Progress.day(), h = 0;
@@ -227,6 +229,7 @@
     function run() {
       p.innerHTML = "";
       live = new Shell(p, g, function (what) { if (what === "again") { live.destroy(); run(); } });
+      A.live = live;
       ui.setCurrent({ destroy: function () { if (live) live.destroy(); live = null; } });
       live.start();
     }
@@ -326,6 +329,7 @@
           S.later(ask, 1700);
         }
       }
+      S.hint = function () { return cur ? '.bo-opt[data-o="' + cur[1] + '"]' : null; };
       S.stage.addEventListener("click", function (e) { var b = e.target.closest(".bo-opt"); if (b) choose(b); });
       keyH = function (e) { if (/^[1-4]$/.test(e.key)) { var b = S.stage.querySelectorAll(".bo-opt")[+e.key - 1]; if (b) { e.preventDefault(); choose(b); } } };
       document.addEventListener("keydown", keyH);
@@ -377,7 +381,7 @@
     learn: "the four traversals from Lectures 5, 6 and 10 (preorder, inorder, postorder and level order with a queue).",
     lesson: "f2-traversals",
     start: function (S) {
-      var root, list, order, seq, idx, kind, t0;
+      var root, list, order, seq, idx, kind, t0, W = 640;
       var kinds = ["pre", "in", "post", "level"];
       function round() {
         if (S.over) return;
@@ -386,7 +390,8 @@
         kind = S.round <= 4 ? kinds[S.round - 1] : kinds[rnd(0, 3)];
         order = ORDERS[kind];
         seq = order.f(root);
-        list = layout(root, 640, md >= 4 ? 330 : 280);
+        W = A.boardW(S);
+        list = layout(root, W, md >= 4 ? 330 : 280);
         idx = 0;
         t0 = Date.now();
         draw();
@@ -399,9 +404,10 @@
         });
         var edges = [];
         list.forEach(function (n) { [n.l, n.r].forEach(function (c) { if (c) edges.push([n.x, n.y, c.x, c.y, seq.indexOf(c) < idx && seq.indexOf(n) < idx ? "on" : ""]); }); });
-        S.stage.innerHTML = '<div class="tv-head"><span class="chip acc">' + order.name + '</span><span class="muted small">' + order.rule + "</span></div>" + A.treeSvg(640, list.length && list[0] ? (Math.max.apply(null, list.map(function (n) { return n.y; })) + 40) : 300, nodes, edges, { label: order.name + " traversal" }) +
+        S.stage.innerHTML = '<div class="tv-head"><span class="chip acc">' + order.name + '</span><span class="muted small">' + order.rule + "</span></div>" + A.treeSvg(W, list.length && list[0] ? (Math.max.apply(null, list.map(function (n) { return n.y; })) + 40) : 300, nodes, edges, { label: order.name + " traversal", r: W < 480 ? 16 : 19 }) +
           '<div class="tv-out"><span class="muted">Output:</span> ' + (idx ? seq.slice(0, idx).map(function (n) { return "<b>" + n.k + "</b>"; }).join(" ") : '<span class="muted">(tap the first node)</span>') + "</div>";
       }
+      S.hint = function () { return seq && idx < seq.length ? '[data-k="' + seq[idx].k + '"]' : null; };
       S.stage.addEventListener("click", function (e) {
         var t = e.target.closest("[data-k]");
         if (!t || S.over || !seq) return;
@@ -444,6 +450,7 @@
       function round() {
         if (S.over) return;
         var n = Math.min(5 + S.round, 11), tries = 0;
+        W = A.boardW(S);
         do { keys = distinct(n, 1, 99); tries++; } while (height(bstOf(keys)) > MAXH && tries < 4000);
         if (height(bstOf(keys)) > MAXH) keys = keys.slice(0, 6);
         root = null; k = 0;
@@ -478,9 +485,10 @@
         });
         var done = k >= keys.length;
         S.stage.innerHTML = '<div class="bb-head"><div class="bb-next">' + (done ? "Tree complete!" : 'Insert <b>' + keys[k] + "</b>") + '</div><div class="bb-queue">' + keys.slice(k + 1).map(function (x) { return "<span>" + x + "</span>"; }).join("") + "</div></div>" +
-          A.treeSvg(W, H, nodes, edges, { label: "binary search tree", r: 17 });
+          A.treeSvg(W, H, nodes, edges, { label: "binary search tree", r: W < 480 ? 15 : 17 });
         if (!done) S.say(root ? "Where does <b>" + keys[k] + "</b> go? Compare it with the root, " + root.k + ", and follow the branches." : "The tree is empty: the first key becomes the root.");
       }
+      S.hint = function () { if (!keys || k >= keys.length) return null; var tg = target(keys[k]); return '[data-k="' + tg.d + "-" + tg.p + '"]'; };
       S.stage.addEventListener("click", function (e) {
         var t = e.target.closest("[data-k]");
         if (!t || S.over || k >= keys.length) return;

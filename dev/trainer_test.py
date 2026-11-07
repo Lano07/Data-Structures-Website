@@ -1,6 +1,8 @@
 # Generates many questions from every Trace Trainer generator and checks their structure.
 import asyncio, json, sys
 from playwright.async_api import async_playwright
+import os as _os
+REPO = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))  # the repository root
 N = int(sys.argv[1]) if len(sys.argv) > 1 else 150
 CHECK = r"""
 (N) => {
@@ -40,7 +42,7 @@ async def main():
         pg = await b.new_page()
         errs = []
         pg.on("pageerror", lambda e: errs.append("PAGEERROR: " + str(e)))
-        await pg.goto("file:///home/claude/codelab/dist/COMP2611-Code-Lab.html#home")
+        await pg.goto("file://" + REPO + "/dist/COMP2611-Code-Lab.html#home")
         await pg.wait_for_timeout(500)
         res = await pg.evaluate(CHECK, N)
         tot = 0; bad = 0

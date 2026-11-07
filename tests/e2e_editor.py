@@ -1,7 +1,9 @@
+import os as _os
+REPO = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))  # the repository root
 """End-to-end check of the editor tools in the Playground: brackets, comments, moving lines, tidy, completion, matching."""
 import asyncio, os, sys
 from playwright.async_api import async_playwright
-URL = os.environ.get("CODELAB_URL", "file:///home/claude/codelab/dist/COMP2611-Code-Lab.html")
+URL = os.environ.get("CODELAB_URL", "file://" + REPO + "/dist/COMP2611-Code-Lab.html")
 FAILS = []
 def check(c, m):
     print(("ok   " if c else "FAIL ") + m)
@@ -10,7 +12,7 @@ async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch()
         pg = await b.new_page(viewport={"width": 1280, "height": 900})
-        await pg.add_init_script(path="/home/claude/codelab/dev/fakeclaude.js")
+        await pg.add_init_script(path=REPO + "/dev/fakeclaude.js")
         errs = []
         pg.on("pageerror", lambda e: errs.append(str(e)))
         await pg.goto(URL + "#play"); await pg.wait_for_timeout(600)
@@ -55,7 +57,7 @@ async def main():
         check(await pg.locator(".ed-bar [data-tidy]").count() == 1, "Tidy button and shortcut list under the Playground editor")
         # phone: symbol bar
         mp = await b.new_page(viewport={"width": 390, "height": 800}, has_touch=True, is_mobile=True)
-        await mp.add_init_script(path="/home/claude/codelab/dev/fakeclaude.js")
+        await mp.add_init_script(path=REPO + "/dev/fakeclaude.js")
         await mp.goto(URL + "#play"); await mp.wait_for_timeout(600)
         await mp.evaluate("(() => { const t = document.querySelector('.play .ed-ta'); t.value = 'p'; t.dispatchEvent(new Event('input')); t.focus(); t.selectionStart = t.selectionEnd = 1; })()")
         await mp.wait_for_timeout(100)

@@ -1,11 +1,13 @@
 import asyncio, json
 from playwright.async_api import async_playwright
-URL = "file:///home/claude/codelab/dist/COMP2611-Code-Lab.html"
+import os as _os
+REPO = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))  # the repository root
+URL = "file://" + REPO + "/dist/COMP2611-Code-Lab.html"
 async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch()
         ctx = await b.new_context(viewport={"width": 1200, "height": 900})
-        await ctx.add_init_script(path="/home/claude/codelab/dev/fakeclaude.js")
+        await ctx.add_init_script(path=REPO + "/dev/fakeclaude.js")
         pg = await ctx.new_page()
         errs = []
         pg.on("pageerror", lambda e: errs.append(str(e)))

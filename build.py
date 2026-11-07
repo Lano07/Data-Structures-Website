@@ -54,16 +54,19 @@ PARTS = [
     {"id": "l", "title": "Exam toolkit", "lectures": "All lectures", "topics": [],
      "blurb": "Big-O for every structure in one place, and a method for writing correct code on paper under time pressure.",
      "lessons": ["l1-performance", "l2-exam-technique"]},
+    {"id": "n", "title": "Course outline topics", "lectures": "Course outline (not yet in the notes)", "topics": ["outline"],
+     "blurb": "Topics the COMP 2611 course outline lists that the lecture notes have not reached yet: sequential and binary search, special matrices, Floyd's algorithm, graph isomorphism, integer sorting and trees in proofs.",
+     "lessons": ["m3-binary-search", "n1-special-matrices", "n2-floyd", "n3-graph-isomorphism", "n4-integer-sorting", "n5-trees-proofs"]},
     {"id": "m", "title": "Beyond the notes", "lectures": "Supplementary", "topics": [], "supp": True,
-     "blurb": "Topics that are not in the COMP 2611 lecture notes but deepen what they teach: doubly linked and circular lists, circular array queues, binary search and AVL trees.",
-     "lessons": ["m1-doubly-circular", "m2-circular-queue", "m3-binary-search", "m4-avl-trees"]},
+     "blurb": "Topics that are in neither the lecture notes nor the course outline, but deepen what they teach: doubly linked and circular lists, circular array queues and AVL trees.",
+     "lessons": ["m1-doubly-circular", "m2-circular-queue", "m4-avl-trees"]},
 ]
 TOPICS = [
     {"id": "basics", "title": "C++ basics"}, {"id": "functions", "title": "Functions and references"}, {"id": "arrays", "title": "Arrays and strings"},
     {"id": "structs", "title": "Structs and files"}, {"id": "pointers", "title": "Pointers"}, {"id": "linked-lists", "title": "Linked lists"},
     {"id": "recursion", "title": "Recursion"}, {"id": "stacks-queues", "title": "Stacks and queues"}, {"id": "binary-trees", "title": "Binary trees"},
     {"id": "bst", "title": "Binary search trees"}, {"id": "heaps", "title": "Heaps"}, {"id": "hashing", "title": "Hashing"},
-    {"id": "graphs", "title": "Graphs"}, {"id": "sorting", "title": "Sorting"},
+    {"id": "graphs", "title": "Graphs"}, {"id": "sorting", "title": "Sorting"}, {"id": "outline", "title": "Course outline extras"},
 ]
 LABS = [
     {"id": "memory", "title": "Memory Visualizer", "lectures": "Lectures 1–17", "blurb": "Step through real C++ and watch the stack, the heap and every pointer.",
@@ -86,6 +89,12 @@ LABS = [
      "intro": "The same graphs and answers as the lecture slides. Watch the WHITE/GREY/BLACK colours, the queue, Dijkstra's cost table and the growing spanning trees."},
     {"id": "avl", "title": "AVL Tree Lab", "lectures": "Supplementary (not in the notes)", "blurb": "Insert keys and watch heights, balance factors and rotations keep a BST balanced.",
      "intro": "An AVL tree is a BST that rebalances itself. Insert keys and follow each comparison, each height update on the way back up, and the rotation that fixes the first unbalanced node. In Your turn mode, predict the direction and the rotation case first."},
+    {"id": "matrix", "title": "Matrix Lab", "lectures": "Course outline topic 8", "blurb": "Triangular, symmetric, band and sparse matrices: click a cell and find it in the 1-D array.",
+     "intro": "Pick a kind of matrix. Only the cells that can be non-zero are stored, packed into a 1-D array. Click any cell to see the index formula find it, or switch to Your turn and work out the index yourself."},
+    {"id": "floyd", "title": "Floyd Lab", "lectures": "Course outline topic 7.3", "blurb": "All-pairs shortest paths: watch the distance matrix shrink one stopping point at a time.",
+     "intro": "Floyd's algorithm runs on the adjacency matrix. On pass k, every pair (i, j) checks whether stopping at vertex k is cheaper: dist[i][k] + dist[k][j] < dist[i][j]. The first graph is the weighted graph from Lectures 16 and 17."},
+    {"id": "isort", "title": "Integer Sort Lab", "lectures": "Course outline topic 1.3", "blurb": "Counting sort and radix sort: no comparisons, just counting.",
+     "intro": "Counting sort counts each key, adds the counts up, then places the keys from right to left. Radix sort runs a stable counting sort on each digit, ones first."},
     {"id": "sort", "title": "Sorting Lab", "lectures": "Lectures 19–21", "blurb": "Six sorts on the lecture arrays, with counts of comparisons and swaps.",
      "intro": "Compare how each algorithm moves the values. Merge sort shows its split-and-merge picture from the slides; quick sort shows partition's p, i, j and r."},
 ]
@@ -216,6 +225,8 @@ def load_lessons():
                 lessons[lid]["soon"] = True
             if str(meta.get("supp", "")).lower() == "true":
                 lessons[lid]["supp"] = True
+            if str(meta.get("outline", "")).lower() == "true":
+                lessons[lid]["outline"] = True
             # collect runnable programs
             for m in FENCE_RE.finditer(body):
                 lang, attr_s, code = m.group(1), m.group(2), m.group(3)
@@ -766,7 +777,7 @@ def main():
     # ---- bundle
     css = open(os.path.join(SRC, "style.css")).read() + "\n" + open(os.path.join(SRC, "neon.css")).read()
     js_files = ["cpp_lex.js", "cpp_parse.js", "cpp_check.js", "cpp_run.js", "editor.js", "editor_tools.js", "settings.js", "md.js", "tutor.js", "memviz.js", "visualizer.js", "debugger.js",
-                "lab_core.js", "lab_tree.js", "lab_avl.js", "lab_heap.js", "lab_hash.js", "lab_graph.js", "lab_sort.js", "lab_race.js", "lab_mem.js", "trainer.js", "trainer2.js", "progress.js", "fx.js", "game.js", "arcade.js", "arcade_games.js", "learn.js", "pages_learn.js", "pages_ref.js", "pages_exam.js"]
+                "lab_core.js", "lab_tree.js", "lab_avl.js", "lab_heap.js", "lab_hash.js", "lab_graph.js", "lab_sort.js", "lab_extra.js", "lab_race.js", "lab_mem.js", "trainer.js", "trainer2.js", "progress.js", "fx.js", "game.js", "arcade.js", "arcade_games.js", "hero.js", "learn.js", "pages_learn.js", "pages_ref.js", "pages_exam.js"]
     js = "\n".join(open(os.path.join(SRC, f)).read() for f in js_files)
     app = open(os.path.join(SRC, "app.js")).read()
     data_js = "window.CODELAB_DATA = " + json.dumps(data, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/") + ";"

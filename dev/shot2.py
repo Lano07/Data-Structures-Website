@@ -1,6 +1,8 @@
 import sys, asyncio, json
 from playwright.async_api import async_playwright
 # usage: shot2.py hash out.png width theme(light|dark) actions-json [viewport] [nofake]
+import os as _os
+REPO = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))  # the repository root
 async def main():
     h = sys.argv[1]; out = sys.argv[2]
     w = int(sys.argv[3]) if len(sys.argv) > 3 else 1280
@@ -12,11 +14,11 @@ async def main():
         b = await p.chromium.launch()
         pg = await b.new_page(viewport={"width": w, "height": 900}, color_scheme="dark" if dark else "light")
         if fake:
-            await pg.add_init_script(path="/home/claude/codelab/dev/fakeclaude.js")
+            await pg.add_init_script(path=REPO + "/dev/fakeclaude.js")
         errs = []
         pg.on("console", lambda m: errs.append(m.type + ": " + m.text) if m.type in ("error", "warning") and "Failed to load resource" not in m.text else None)
         pg.on("pageerror", lambda e: errs.append("PAGEERROR: " + str(e)))
-        await pg.goto("file:///home/claude/codelab/dist/COMP2611-Code-Lab.html" + h)
+        await pg.goto("file://" + REPO + "/dist/COMP2611-Code-Lab.html" + h)
         await pg.wait_for_timeout(800)
         for a in actions:
             if a[0] == "click": await pg.click(a[1])

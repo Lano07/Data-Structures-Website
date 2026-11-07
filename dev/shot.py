@@ -1,6 +1,8 @@
 import sys, asyncio, json
 from playwright.async_api import async_playwright
 # usage: shot.py hash out.png [width] [dark] [actions-json]
+import os as _os
+REPO = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))  # the repository root
 async def main():
     h = sys.argv[1]; out = sys.argv[2]
     w = int(sys.argv[3]) if len(sys.argv) > 3 else 1280
@@ -12,7 +14,7 @@ async def main():
         errs = []
         pg.on("console", lambda m: errs.append(m.type + ": " + m.text) if m.type in ("error", "warning") else None)
         pg.on("pageerror", lambda e: errs.append("PAGEERROR: " + str(e)))
-        await pg.goto("file:///home/claude/codelab/dist/COMP2611-Code-Lab.html" + h)
+        await pg.goto("file://" + REPO + "/dist/COMP2611-Code-Lab.html" + h)
         await pg.wait_for_timeout(700)
         for a in actions:
             if a[0] == "click": await pg.click(a[1])
