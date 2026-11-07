@@ -157,6 +157,10 @@
     var before = levelOf(g.xp);
     g.xp += Math.round(xp);
     g.day.xp = (g.day.xp || 0) + Math.round(xp);
+    var hist = g.hist = g.hist || {}, dkey = today();
+    hist[dkey] = (hist[dkey] || 0) + Math.round(xp);
+    var hk = Object.keys(hist).sort();
+    if (hk.length > 60) hk.slice(0, hk.length - 60).forEach(function (k) { delete hist[k]; });
     var after = levelOf(g.xp);
     if (!o.silent && label !== null) FX.float('<b>+' + Math.round(xp) + "</b> XP" + (label ? "<span>" + esc(label) + "</span>" : ""), "xp" + (o.big ? " big" : "") + (o.cls ? " " + o.cls : ""), o.x, o.y);
     refreshHud(true);
@@ -430,6 +434,69 @@
     return el;
   };
 
+  // ---------------------------------------------------------------- XP over the last 14 days (a column chart with hover, focus and a table)
+  function lastDays(n) {
+    var out = [], d = new Date();
+    d.setHours(12, 0, 0, 0);
+    for (var k = n - 1; k >= 0; k--) {
+      var t = new Date(d.getTime() - k * 86400000), key = CL.Progress.day(t);
+      out.push({ key: key, date: t, xp: (g.hist && g.hist[key]) || 0 });
+    }
+    return out;
+  }
+  function niceMax(v) { var steps = [50, 100, 200, 250, 500, 1000, 2000, 2500, 5000, 10000]; for (var i = 0; i < steps.length; i++) if (v <= steps[i]) return steps[i]; return Math.ceil(v / 5000) * 5000; }
+  function chartSvg(days, W) {
+    var H = 190, L = 44, R = 8, T = 22, B = 30, maxV = niceMax(Math.max(50, Math.max.apply(null, days.map(function (x) { return x.xp; })))), band = (W - L - R) / days.length, bw = Math.min(24, band - 6);
+    var y = function (v) { return T + (H - T - B) * (1 - v / maxV); };
+    var s = '<svg class="xp-chart" viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="XP earned on each of the last 14 days">';
+    [0, 0.5, 1].forEach(function (f) { var v = Math.round(maxV * f), yy = y(v); s += '<line class="xc-grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + yy + '" y2="' + yy + '"/><text class="xc-tick" x="' + (L - 8) + '" y="' + (yy + 4) + '">' + v.toLocaleString() + "</text>"; });
+    days.forEach(function (x, i) {
+      var cx = L + band * i + band / 2, top = y(x.xp), h = H - B - top, isToday = i === days.length - 1;
+      var label = x.date.toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" });
+      s += '<g class="xc-col" tabindex="0" data-v="' + x.xp + '" data-d="' + esc(label) + '" aria-label="' + esc(label) + ": " + x.xp + ' XP"><rect class="xc-hit" x="' + (cx - band / 2) + '" y="' + T + '" width="' + band + '" height="' + (H - T - B) + '"/>';
+      if (x.xp > 0) {
+        var r = Math.min(4, h, bw / 2);
+        s += '<path class="xc-bar" d="M' + (cx - bw / 2) + " " + (H - B) + " V" + (top + r) + " Q" + (cx - bw / 2) + " " + top + " " + (cx - bw / 2 + r) + " " + top + " H" + (cx + bw / 2 - r) + " Q" + (cx + bw / 2) + " " + top + " " + (cx + bw / 2) + " " + (top + r) + " V" + (H - B) + ' Z"/>';
+      }
+      if (isToday) s += '<text class="xc-val" x="' + cx + '" y="' + (top - 6) + '">' + x.xp.toLocaleString() + "</text>";
+      s += '<text class="xc-day' + (isToday ? " today" : "") + '" x="' + cx + '" y="' + (H - 10) + '">' + (isToday && band >= 40 ? "Today" : esc(x.date.toLocaleDateString([], { weekday: "narrow" }))) + "</text></g>";
+    });
+    return s + '<line class="xc-base" x1="' + L + '" x2="' + (W - R) + '" y1="' + (H - B) + '" y2="' + (H - B) + '"/></svg>';
+  }
+  function xpChart() {
+    var days = lastDays(14), s = chartSvg(days, 640);
+    var week = days.slice(7).reduce(function (a, x) { return a + x.xp; }, 0), prev = days.slice(0, 7).reduce(function (a, x) { return a + x.xp; }, 0);
+    var diff = week - prev;
+    return '<section class="tr-box xc-box"><div class="xc-head"><div><h2>XP over the last 14 days</h2><div class="muted small">Last 7 days: <b class="xc-ink">' + week.toLocaleString() + " XP</b> · the 7 days before: " + prev.toLocaleString() + " XP" +
+      (week || prev ? " · " + (diff >= 0 ? "▲ " + diff.toLocaleString() + " more" : "▼ " + (-diff).toLocaleString() + " fewer") + " than the week before" : "") + '</div></div></div><div class="xc-wrap">' + s + '<div class="xc-tip" hidden></div></div>' +
+      '<details class="xc-table"><summary>Show the numbers</summary><table><tr><th>Day</th><th>XP</th></tr>' + days.map(function (x) { return "<tr><td>" + esc(x.date.toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" })) + "</td><td>" + x.xp.toLocaleString() + "</td></tr>"; }).join("") + "</table></details></section>";
+  }
+  function wireChart(root) {
+    var wrap = root.querySelector(".xc-wrap");
+    if (!wrap) return;
+    // draw at the real width, so the text stays the size of the page's text
+    var w = Math.round(wrap.clientWidth);
+    if (w > 200) { var old = wrap.querySelector(".xp-chart"), tmp = document.createElement("div"); tmp.innerHTML = chartSvg(lastDays(14), w); old.parentNode.replaceChild(tmp.firstChild, old); }
+    var tip = wrap.querySelector(".xc-tip");
+    function show(col) {
+      var r = col.getBoundingClientRect(), wr = wrap.getBoundingClientRect();
+      tip.textContent = "";
+      var v = document.createElement("b"); v.textContent = (+col.getAttribute("data-v")).toLocaleString() + " XP";
+      var d = document.createElement("span"); d.textContent = col.getAttribute("data-d");
+      tip.appendChild(v); tip.appendChild(d);
+      tip.hidden = false;
+      tip.style.left = Math.max(0, Math.min(wr.width - 120, r.left - wr.left + r.width / 2 - 60)) + "px";
+      tip.style.top = Math.max(0, r.top - wr.top - 6) + "px";
+      wrap.querySelectorAll(".xc-col.on").forEach(function (c) { c.classList.remove("on"); });
+      col.classList.add("on");
+    }
+    function hide() { tip.hidden = true; wrap.querySelectorAll(".xc-col.on").forEach(function (c) { c.classList.remove("on"); }); }
+    wrap.addEventListener("pointerover", function (e) { var c = e.target.closest(".xc-col"); if (c) show(c); });
+    wrap.addEventListener("pointerleave", hide);
+    wrap.addEventListener("focusin", function (e) { var c = e.target.closest(".xc-col"); if (c) show(c); });
+    wrap.addEventListener("focusout", hide);
+  }
+
   // ---------------------------------------------------------------- the Trophy Room
   function trophies(ui) {
     ensureDay();
@@ -444,6 +511,7 @@
         ["📅", S.streak, "day streak"], ["🔬", S.lp, "lab predictions right"], ["🕹️", S.arcPlays, "arcade rounds"], ["🎁", S.sets, "quest sets done"]].map(function (x) {
         return '<div class="tr-stat"><span aria-hidden="true">' + x[0] + "</span><b>" + x[1] + "</b><i>" + x[2] + "</i></div>";
       }).join("") + "</div>" +
+      xpChart() +
       '<div class="tr-cols"><section class="tr-box"><h2>Today\'s quests</h2><div data-quests>' + questListHtml() + '</div><p class="muted small">Finish all three for a <b>+150 XP</b> chest. Quests change every day at midnight.</p></section>' +
       '<section class="tr-box"><h2>How to earn XP</h2><ul class="tr-how"><li><b>+10</b> each correct answer, anywhere on the site</li><li><b>×1.5 → ×4</b> combo multiplier for answers in a row (5, 10, 20, 30)</li><li><b>+50</b> each lesson completed · <b>+80</b> each exercise passed</li><li><b>+100 to +250</b> each mock exam · <b>+30</b> each written answer</li><li><b>+15</b> each code puzzle · <b>+3</b> each flashcard</li><li><b>Arcade</b> rounds pay XP for points scored</li><li><b>Achievements</b> and <b>daily quests</b> pay bonus XP</li></ul></section></div>' +
       '<div class="sec-h"><h2>Achievements</h2><span class="muted small">' + got + " of " + ACH.length + " unlocked</span></div>" +
@@ -460,6 +528,7 @@
         return '<a class="tr-arcg" href="#arcade-' + gm.id + '"><span aria-hidden="true">' + gm.icon + "</span><b>" + esc(gm.title) + "</b><i>" + (a.best ? a.best.toLocaleString() + " pts" : "not played") + "</i></a>";
       }).join("") + "</div>" : "");
     p.innerHTML = html;
+    wireChart(p);
     var xb = p.querySelector(".tr-xp");
     FX.countUp(xb, Math.max(0, g.xp - 200), g.xp, 900);
   }

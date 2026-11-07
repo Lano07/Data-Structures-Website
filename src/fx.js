@@ -58,9 +58,12 @@
     chest: function () { [523.25, 783.99, 1046.5, 1567.98, 2093].forEach(function (f, i) { tone(f, i * 0.06, 0.28, "triangle", 0.7); }); },
     go: function () { tone(440, 0, 0.12, "square", 0.25); tone(440, 0.25, 0.12, "square", 0.25); tone(880, 0.5, 0.3, "square", 0.3); }
   };
+  var BUZZ = { right: 12, wrong: [40, 30, 40], level: [30, 40, 30, 40, 80], ach: [20, 30, 20], chest: [20, 20, 20, 20, 60], over: [60] };
   FX.sfx = function (name, arg) {
     if (!FX.soundOn() || !SFX[name]) return;
     try { SFX[name](arg); } catch (e) { /* audio is optional */ }
+    // a short buzz on phones that support it (it follows the same sound switch)
+    if (BUZZ[name] && navigator.vibrate) { try { navigator.vibrate(BUZZ[name]); } catch (e) { /* not allowed yet */ } }
   };
 
   // ---------------------------------------------------------------- confetti: one shared canvas, created on demand

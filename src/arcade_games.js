@@ -13,14 +13,14 @@
     learn: "maxHeapify, buildMaxHeap (i from heap->size / 2 down to 1) and deleteMaxHeap from Lectures 12 and 13.",
     lesson: "h2-heapify-build",
     start: function (S) {
-      var Ar, size, phase, i, cur, extracts, out, W = 640, H = 250;
+      var Ar, size, phase, i, cur, extracts, out, W = 640, H = 250, busy = false;
       function pos(ix) { var d = Math.floor(Math.log2(ix)), p = ix - Math.pow(2, d); return { x: W * (p + 0.5) / Math.pow(2, d), y: 30 + d * 62 }; }
       function round() {
         if (S.over) return;
         var n = Math.min(6 + S.round, 15);
         W = A.boardW(S);
         Ar = [0].concat(distinct(n, 1, 99));
-        size = n; phase = "build"; i = Math.floor(size / 2); cur = i; extracts = S.round < 3 ? 2 : 3; out = [];
+        size = n; phase = "build"; i = Math.floor(size / 2); cur = i; extracts = S.round < 3 ? 2 : 3; out = []; busy = false;
         S.say("<b>buildMaxHeap</b>: call maxHeapify(heap, i) for i = " + i + " down to 1.");
         settle();
       }
@@ -50,11 +50,12 @@
         S.bonus(80 + 10 * S.round, "max-heap built");
         S.say("✓ Max-heap built. Now <b>deleteMaxHeap(heap, 1)</b>: the maximum leaves, A[size] moves to A[1], then maxHeapify(heap, 1).", "ok");
         phase = "extract";
-        S.later(extractStart, 1400);
+        busy = true;
+        S.later(function () { busy = false; extractStart(); }, 1400);
       }
       function extractStart() {
         if (S.over) return;
-        if (extracts <= 0 || size <= 1) { S.later(function () { S.nextRound(); round(); }, 300); return; }
+        if (extracts <= 0 || size <= 1) { busy = true; S.later(function () { S.nextRound(); round(); }, 300); return; }
         extracts--;
         var top = Ar[1];
         out.push(top);
@@ -66,7 +67,8 @@
       }
       function extractDone() {
         draw();
-        S.later(extractStart, 700);
+        busy = true;
+        S.later(function () { busy = false; extractStart(); }, 700);
       }
       function draw(flash) {
         var nodes = [], edges = [], lg = largestOf(cur);
@@ -87,14 +89,16 @@
         void lg;
       }
       function choose(ix) {
+        if (busy) return;
         var lg = largestOf(cur), want = lg === cur ? "none" : String(lg);
         if (String(ix) === want) {
           S.hit(40 + 5 * S.round);
           if (want === "none") {
             draw([cur]);
             S.say("✓ A[" + cur + "] = " + Ar[cur] + " is already the largest: maxHeapify stops.", "ok");
-            if (phase === "build") { i--; if (i < 1) { buildDone(); return; } cur = i; S.later(settle, 450); }
-            else { S.later(extractDone, 450); }
+            busy = true;
+            if (phase === "build") { i--; if (i < 1) { busy = false; buildDone(); return; } cur = i; S.later(function () { busy = false; settle(); }, 450); }
+            else { S.later(function () { busy = false; extractDone(); }, 450); }
             return;
           }
           var t = Ar[cur]; Ar[cur] = Ar[lg]; Ar[lg] = t;
@@ -103,14 +107,15 @@
           draw([was, lg]);
           S.say("✓ Swap A[" + was + "] and A[" + lg + "], then maxHeapify(heap, " + lg + ").", "ok");
           FX().sfx("pop", 2);
-          S.later(settle, 520);
+          busy = true;
+          S.later(function () { busy = false; settle(); }, 520);
         } else {
           var why = want === "none" ? "A[" + cur + "] = " + Ar[cur] + " is already larger than its children: no swap." : "the largest of the three is A[" + lg + "] = " + Ar[lg] + ".";
           S.miss("Not quite: " + why, "maxHeapify at index " + cur + " (value " + Ar[cur] + "): " + why);
           draw();
         }
       }
-      S.hint = function () { var lg = largestOf(cur); return lg === cur ? ".hh-no" : '[data-k="' + lg + '"]'; };
+      S.hint = function () { if (busy) return null; var lg = largestOf(cur); return lg === cur ? ".hh-no" : '[data-k="' + lg + '"]'; };
       S.stage.addEventListener("click", function (e) {
         if (S.over) return;
         if (e.target.closest(".hh-no")) { choose("none"); return; }
@@ -271,13 +276,14 @@
       lines += '<g class="ge ' + cls + '"><line class="g-edge ' + cls + '" x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '"' + (o.directed ? ' marker-end="url(#arcArr)"' : "") + "/></g>";
       labels += '<g class="ge-w ' + cls + (click ? " arc-hit" : "") + '"' + (click ? k + ' tabindex="0" role="button" aria-label="edge ' + e[0] + " " + e[1] + ", weight " + e[2] + '"' : "") + '><rect x="' + (mx - 13) + '" y="' + (my - 10) + '" width="26" height="20" rx="6"/><text x="' + mx + '" y="' + my + '">' + e[2] + "</text></g>";
     });
-    s += pads + lines + labels;
+    // labels go under the vertices when the vertices are the targets (Dijkstra), on top when the edges are (MST)
+    s += pads + lines + (o.labelsOnTop ? "" : labels);
     Object.keys(P).sort().forEach(function (v) {
       var c = (o.nodeCls && o.nodeCls(v)) || "", click = o.nodeClick && (!o.canClick || o.canClick(v));
       s += '<g class="g-node ' + c + (click ? " arc-hit" : "") + '"' + (click ? ' data-k="' + v + '" tabindex="0" role="button" aria-label="vertex ' + v + '"' : "") + ">" + (click ? '<circle class="arc-pad" cx="' + P[v].x + '" cy="' + P[v].y + '" r="' + (r + 8) + '"/>' : "") +
         '<circle cx="' + P[v].x + '" cy="' + P[v].y + '" r="' + r + '"/><text x="' + P[v].x + '" y="' + P[v].y + '">' + v + "</text></g>";
     });
-    return s + "</svg>";
+    return s + (o.labelsOnTop ? labels : "") + "</svg>";
   }
 
   // ================================================================ GAME 6: Dijkstra Dash
@@ -418,7 +424,7 @@
       function draw(flash) {
         var n = Object.keys(taken).length;
         S.stage.innerHTML = '<div class="tv-head"><span class="chip acc">' + (mode === "kruskal" ? "Kruskal's algorithm" : "Prim's algorithm (from A)") + '</span><span class="muted small">' + n + " of " + (V.length - 1) + " edges · total cost " + total + "</span></div>" +
-          graphSvg(G, P, W, H, { directed: false, label: "weighted undirected graph", edgeClick: true, edgeOff: function (e, ix) { return !!taken[ix]; },
+          graphSvg(G, P, W, H, { directed: false, label: "weighted undirected graph", edgeClick: true, labelsOnTop: true, edgeOff: function (e, ix) { return !!taken[ix]; },
             nodeCls: function (v) { return mode === "prim" ? (used[v] ? "done" : "") : ""; },
             edgeCls: function (e, ix) { return taken[ix] ? "on mst" : flash === ix ? "hot" : ""; } }) +
           '<div class="mst-list">' + (mode === "kruskal" ? "Edges by weight: " + G.edges.map(function (e, ix) { return { e: e, ix: ix }; }).sort(function (a, b) { return a.e[2] - b.e[2]; }).map(function (x) {
@@ -456,6 +462,115 @@
           draw(c.best[0]);
           S.later(function () { if (!S.over) draw(); }, 1100);
         }
+      });
+      round();
+    }
+  });
+
+  // ================================================================ GAME 8: Sort Showdown (partition and passes)
+  function passOf(alg, A0, k) {
+    var A = A0.slice(), n = A.length, t, j;
+    if (alg === "selection") { var i = k - 1, sm = i; for (j = i + 1; j < n; j++) if (A[j] < A[sm]) sm = j; t = A[i]; A[i] = A[sm]; A[sm] = t; }
+    else if (alg === "insertion") { var key = A[k]; j = k - 1; while (j >= 0 && A[j] > key) { A[j + 1] = A[j]; j--; } A[j + 1] = key; }
+    else { for (j = 0; j < n - k; j++) if (A[j] > A[j + 1]) { t = A[j]; A[j] = A[j + 1]; A[j + 1] = t; } }
+    return A;
+  }
+  var SORT_NAMES = { selection: "selection sort", insertion: "insertion sort", bubble: "bubble sort" };
+  A.add({
+    id: "sort", title: "Sort Showdown", icon: "📊", color: "#60a5fa", tag: "Lectures 19–21 · partition and passes", lives: 3,
+    desc: "Run quick sort's partition step by step, and predict the array after a pass of each simple sort.",
+    how: "<p><b>Partition</b> (Lecture 21): the pivot is x = A[r]. For each j from p to r − 1, decide: is A[j] ≤ x (then i goes up by one and A[i] swaps with A[j]) or not (move on)?</p><p><b>Passes</b>: pick the array after one pass of selection, insertion or bubble sort. Wrong answers cost a life.</p>",
+    learn: "partition from Lecture 21 (pivot A[r], i and j) and the passes of selection, insertion and bubble sort from Lectures 19 and 20.",
+    lesson: "k3-quick-sort",
+    start: function (S) {
+      var mode, Ar, p, r, x, i, j, busy = false, qs, qi, cur;
+      function round() {
+        if (S.over) return;
+        mode = S.round % 2 === 1 ? "part" : "pass";
+        if (mode === "part") {
+          Ar = S.round === 1 ? [25, 90, 30, 5, 60, 70, 45] : distinct(Math.min(6 + Math.floor(S.round / 2), 9), 1, 99);
+          p = 0; r = Ar.length - 1; x = Ar[r]; i = p - 1; j = p;
+          drawPart();
+          S.say("<b>partition (A, " + p + ", " + r + ")</b>: the pivot is x = A[" + r + "] = " + x + ", i = " + i + ". Is A[" + j + "] = " + Ar[j] + " ≤ " + x + "?");
+        } else {
+          qs = []; qi = 0;
+          var algs = shuffle(["selection", "insertion", "bubble"]);
+          algs.forEach(function (alg) {
+            var A0 = distinct(rnd(6, 7), 1, 60), k = rnd(1, 3), start = A0.slice();
+            for (var z = 1; z < k; z++) start = passOf(alg, start, z);
+            var right = passOf(alg, start, k), opts = [right.join(" ")];
+            ["selection", "insertion", "bubble"].forEach(function (o) { if (o !== alg) { var w = passOf(o, start, k).join(" "); if (opts.indexOf(w) < 0) opts.push(w); } });
+            [start.join(" "), right.slice().sort(function (a, b) { return a - b; }).join(" ")].forEach(function (w) { if (opts.length < 4 && opts.indexOf(w) < 0) opts.push(w); });
+            var sw = right.slice(); var tt = sw[0]; sw[0] = sw[1]; sw[1] = tt; if (opts.length < 4 && opts.indexOf(sw.join(" ")) < 0) opts.push(sw.join(" "));
+            qs.push({ alg: alg, k: k, start: start, right: right.join(" "), opts: shuffle(opts.slice(0, 4)) });
+          });
+          ask();
+        }
+      }
+      function cells(hot) {
+        return '<div class="ss-arr">' + Ar.map(function (v, ix) {
+          var tags = [];
+          if (ix === p) tags.push("p"); if (ix === r) tags.push("r"); if (ix === i) tags.push("i"); if (ix === j && j < r) tags.push("j");
+          var cls = (ix === r ? "piv " : "") + (ix <= i ? "small " : ix < j ? "big " : "") + (hot && hot.indexOf(ix) >= 0 ? "hot " : "");
+          return '<div class="' + cls + '"><b>' + v + "</b><i>" + ix + "</i><em>" + tags.join(" ") + "</em></div>";
+        }).join("") + "</div>";
+      }
+      function drawPart(hot) {
+        S.stage.innerHTML = '<div class="tv-head"><span class="chip acc">partition (A, ' + p + ", " + r + ") · pivot x = " + x + '</span><span class="muted small">i = ' + i + (j < r ? " · j = " + j : "") + ' · green: ≤ pivot · red: > pivot</span></div>' + cells(hot) +
+          (j < r ? '<div class="btns ss-btns"><button type="button" class="btn ss-yes" data-k="yes">A[' + j + "] = " + Ar[j] + " ≤ " + x + ": i++, swap A[i] and A[j]</button><button type=\"button\" class=\"btn ss-no\" data-k=\"no\">A[" + j + "] = " + Ar[j] + " &gt; " + x + ": move on</button></div>" : "");
+      }
+      function finishPart() {
+        var q = i + 1, t = Ar[q]; Ar[q] = Ar[r]; Ar[r] = t;
+        drawPart([q, r]);
+        S.say("✓ Exchange A[i + 1] = A[" + q + "] with A[r]: the pivot " + x + " lands at q = " + q + ". Everything left of it is ≤ " + x + ", everything right is bigger. partition returns " + q + ".", "ok");
+        S.bonus(80 + 10 * S.round, "partitioned");
+        busy = true;
+        S.later(function () { busy = false; S.nextRound(); round(); }, 1700);
+      }
+      function ask() {
+        if (S.over) return;
+        if (qi >= qs.length) { busy = true; S.bonus(70 + 10 * S.round, "all passes right"); S.later(function () { busy = false; S.nextRound(); round(); }, 900); return; }
+        cur = qs[qi];
+        S.stage.innerHTML = '<div class="tv-head"><span class="chip acc">' + esc(SORT_NAMES[cur.alg]) + " · pass " + cur.k + '</span><span class="muted small">ascending order</span></div>' +
+          '<div class="bo-q"><div class="bo-k">The array before pass ' + cur.k + '</div><div class="ss-start">' + cur.start.map(function (v) { return "<b>" + v + "</b>"; }).join("") + "</div><div class=\"bo-op\">What is the array after pass " + cur.k + " of " + esc(SORT_NAMES[cur.alg]) + "?</div></div>" +
+          '<div class="bo-opts ss-opts">' + cur.opts.map(function (o) { return '<button type="button" class="bo-opt" data-o="' + esc(o) + '">' + esc(o) + "</button>"; }).join("") + "</div>";
+        S.say(cur.alg === "selection" ? "Selection: swap the smallest of the unsorted part into the next place." : cur.alg === "insertion" ? "Insertion: slide the next value left into the sorted part." : "Bubble: swap neighbours that are out of order, left to right.");
+      }
+      S.hint = function () {
+        if (busy) return null;
+        if (mode === "part") return j < r ? '[data-k="' + (Ar[j] <= x ? "yes" : "no") + '"]' : null;
+        return cur ? '.bo-opt[data-o="' + cur.right + '"]' : null;
+      };
+      S.stage.addEventListener("click", function (e) {
+        if (S.over || busy) return;
+        if (mode === "part") {
+          var t = e.target.closest("[data-k]");
+          if (!t || j >= r) return;
+          var yes = t.getAttribute("data-k") === "yes", want = Ar[j] <= x;
+          if (yes === want) {
+            S.hit(40 + 5 * S.round);
+            var msg;
+            if (want) { i++; var tmp = Ar[i]; Ar[i] = Ar[j]; Ar[j] = tmp; msg = Ar[i] + " ≤ " + x + ": i becomes " + i + ", swap A[" + i + "] and A[" + j + "]."; }
+            else msg = Ar[j] + " > " + x + ": i stays " + i + ".";
+            var was = j;
+            j++;
+            if (j >= r) { drawPart([was]); S.say("✓ " + msg + " The loop is done.", "ok"); busy = true; S.later(function () { busy = false; finishPart(); }, 700); }
+            else { drawPart([was]); S.say("✓ " + msg + " Next: is A[" + j + "] = " + Ar[j] + " ≤ " + x + "?", "ok"); }
+          } else {
+            S.miss("Not quite: A[" + j + "] = " + Ar[j] + (want ? " ≤ " : " > ") + x + ", so " + (want ? "i goes up and A[i] swaps with A[j]." : "it stays where it is and j moves on."), "partition with pivot " + x + ": A[" + j + "] = " + Ar[j] + (want ? " ≤ pivot, so i++ and swap." : " > pivot, so move on."));
+            drawPart([j]);
+          }
+          return;
+        }
+        var b = e.target.closest(".bo-opt");
+        if (!b || !cur) return;
+        var q = cur;
+        cur = null;
+        busy = true;
+        S.stage.querySelectorAll(".bo-opt").forEach(function (o) { if (o.getAttribute("data-o") === q.right) o.classList.add("right"); });
+        if (b.getAttribute("data-o") === q.right) { b.classList.add("right"); S.hit(60 + 5 * S.round); }
+        else { b.classList.add("wrong"); S.miss("After pass " + q.k + " of " + SORT_NAMES[q.alg] + ": " + q.right + ".", SORT_NAMES[q.alg] + ", pass " + q.k + " on " + q.start.join(" ") + " gives " + q.right + "."); }
+        S.later(function () { busy = false; qi++; ask(); }, 1100);
       });
       round();
     }

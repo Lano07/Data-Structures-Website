@@ -38,6 +38,7 @@
     M.sets = Math.max(a.sets || 0, b.sets || 0);
     M.tot = byKey(a.tot, b.tot, maxNum);
     M.best = byKey(a.best, b.best, maxNum);
+    M.hist = byKey(a.hist, b.hist, maxNum);
     M.ach = byKey(a.ach, b.ach, function (x, y) { return Math.min(x || Infinity, y || Infinity); });
     ["labs", "seenL", "seenW"].forEach(function (k) { M[k] = byKey(a[k], b[k], function () { return 1; }); });
     M.arc = byKey(a.arc, b.arc, function (x, y) { return { best: Math.max(x.best || 0, y.best || 0), plays: Math.max(x.plays || 0, y.plays || 0), last: (y.t || 0) > (x.t || 0) ? y.last : x.last, t: Math.max(x.t || 0, y.t || 0) }; });
