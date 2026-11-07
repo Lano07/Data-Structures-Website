@@ -1,0 +1,198 @@
+=== ptr-swap
+title: Swap through pointers
+topic: pointers
+level: 1
+lecture: Lecture 1
+lessons: b1-addresses
+blurb: Use * to reach the caller's variables through their addresses.
+--- prompt
+Write `swapPtr`, which swaps the two ints that `a` and `b` point to. It is called with addresses: `swapPtr (&x, &y);`.
+
+```cpp
+void swapPtr (int * a, int * b);
+```
+--- given
+#include <iostream>
+using namespace std;
+--- starter
+void swapPtr (int * a, int * b) {
+	int * temp = a;
+	a = b;
+	b = temp;
+}
+--- solution
+void swapPtr (int * a, int * b) {
+	int temp = *a;
+	*a = *b;
+	*b = temp;
+}
+--- test: two variables
+int x = 1, y = 2;
+swapPtr (&x, &y);
+cout << x << " " << y << endl;
+--- test: array elements
+int A[] = {5, 6, 7};
+swapPtr (&A[0], &A[2]);
+cout << A[0] << " " << A[1] << " " << A[2] << endl;
+--- hint
+The starter swaps the two pointers, which are local copies. The ints they point to are not touched.
+--- hint
+Use `*a` and `*b`, the values being pointed to: `int temp = *a; *a = *b; *b = temp;`.
+--- explain
+`a` holds x's address, so `*a` is x itself. Changing `*a` changes the caller's variable, which is how C-style functions change arguments without references.
+
+=== ptr-filled-array
+title: A dynamic array
+topic: pointers
+level: 1
+lecture: Lecture 1
+lessons: b3-new-delete, b5-pointers-arrays
+blurb: Make an array on the heap with new and return it.
+--- prompt
+Write `makeFilled`, which creates an array of `n` ints on the heap, sets every element to `value`, and returns a pointer to it. The caller will `delete []` it.
+
+```cpp
+int * makeFilled (int n, int value);
+```
+--- given
+#include <iostream>
+using namespace std;
+--- starter
+int * makeFilled (int n, int value) {
+	int A[100];
+	for (int i = 0; i < n; i++)
+		A[i] = value;
+	return A;
+}
+--- solution
+int * makeFilled (int n, int value) {
+	int * A = new int[n];
+	for (int i = 0; i < n; i++)
+		A[i] = value;
+	return A;
+}
+--- test: five sevens
+int * A = makeFilled (5, 7);
+for (int i = 0; i < 5; i++)
+	cout << A[i] << " ";
+cout << endl;
+delete [] A;
+--- test: two arrays at once
+int * A = makeFilled (3, 1);
+int * B = makeFilled (2, 9);
+cout << A[0] << A[1] << A[2] << " " << B[0] << B[1] << endl;
+delete [] A;
+delete [] B;
+--- hint
+The starter's array is a local variable: it disappears when the function returns, so the caller receives a dangling pointer.
+--- hint
+Memory that must outlive the call has to come from the heap: `int * A = new int[n];`.
+--- explain
+`new int[n]` makes n ints on the heap that stay until `delete []`. Returning the pointer gives the caller access to them. Returning the address of a local array is one of the classic mistakes from lesson B4.
+
+=== ptr-make-pair
+title: Link two nodes
+topic: pointers
+level: 1
+lecture: Lecture 1
+lessons: b2-pointers-structs, c1-building
+blurb: Create two nodes with new and link them.
+--- prompt
+Write `makePair`, which creates two nodes holding `a` and `b`, links them into the list a → b, and returns a pointer to the first node. The second node's `next` must be NULL.
+
+```cpp
+Node * makePair (int a, int b);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct Node {
+	int data;
+	Node * next;
+};
+--- starter
+Node * makePair (int a, int b) {
+	Node * first = new Node;
+	first->data = a;
+	Node * second = new Node;
+	second->data = b;
+	first->next = second;
+	return first;
+}
+--- solution
+Node * makePair (int a, int b) {
+	Node * first = new Node;
+	Node * second = new Node;
+	first->data = a;
+	second->data = b;
+	first->next = second;
+	second->next = NULL;
+	return first;
+}
+--- harness list
+--- test: 10 then 20
+Node * top = makePair (10, 20);
+__show (top);
+--- test: the second node ends the list
+Node * top = makePair (3, 4);
+cout << (top->next->next == NULL ? "ends" : "does not end") << endl;
+--- hint
+A new node's fields start with no value. Which field of the second node is never set in the starter?
+--- hint
+Set `second->next = NULL;` so the list ends after two nodes.
+--- explain
+Every node needs both fields set. Forgetting to set the last next pointer is a common cause of crashes, because a traversal follows it into memory that is not a node.
+
+=== ptr-largest
+title: Point to the largest element
+topic: pointers
+level: 2
+lecture: Lecture 1
+lessons: b5-pointers-arrays
+blurb: Return a pointer into an array, so the caller can change that element.
+--- prompt
+Write `largestPtr`, which returns a **pointer** to the largest element of `A[0..n-1]` (n is at least 1; the first one if there are ties). The caller may change the element through the pointer.
+
+```cpp
+int * largestPtr (int A[], int n);
+```
+--- given
+#include <iostream>
+using namespace std;
+--- starter
+int * largestPtr (int A[], int n) {
+	int best = A[0];
+	for (int i = 1; i < n; i++)
+		if (A[i] > best)
+			best = A[i];
+	return &best;
+}
+--- solution
+int * largestPtr (int A[], int n) {
+	int * best = &A[0];
+	for (int i = 1; i < n; i++)
+		if (A[i] > *best)
+			best = &A[i];
+	return best;
+}
+--- harness array
+--- test: change the largest
+int A[] = {4, 9, 2, 7};
+int * p = largestPtr (A, 4);
+*p = 0;
+__showArr (A, 4);
+--- test: largest first
+int A[] = {8, 1, 3};
+cout << *largestPtr (A, 3) << endl;
+--- test: ties keep the first
+int A[] = {5, 6, 6};
+int * p = largestPtr (A, 3);
+*p = -1;
+__showArr (A, 3);
+--- hint
+The starter returns the address of its local variable `best`, a copy that disappears when the function returns. It is not inside the array at all.
+--- hint
+Keep a pointer into the array instead: start with `&A[0]`, compare using `*best`, and move it with `best = &A[i];`.
+--- explain
+A pointer to an array element lets the caller read or change that element later. `&A[i]` is the address of element i, which stays valid as long as the array does.

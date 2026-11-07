@@ -1,0 +1,180 @@
+=== struct-best
+title: The best student
+topic: structs
+level: 1
+lecture: Review
+lessons: a9-structs
+blurb: Search an array of structs by one of its fields.
+--- prompt
+Write `bestStudent`, which returns the **index** of the student with the highest GPA in `list[0..n-1]` (n is at least 1). If several students share the highest GPA, return the first of them.
+
+```cpp
+int bestStudent (Student list[], int n);
+```
+--- given
+#include <iostream>
+#include <string>
+using namespace std;
+
+struct Student {
+	string name;
+	int id;
+	double gpa;
+};
+--- starter
+int bestStudent (Student list[], int n) {
+	int best = 0;
+	for (int i = 1; i < n; i++)
+		if (list[i].gpa > best)
+			best = i;
+	return best;
+}
+--- solution
+int bestStudent (Student list[], int n) {
+	int best = 0;
+	for (int i = 1; i < n; i++)
+		if (list[i].gpa > list[best].gpa)
+			best = i;
+	return best;
+}
+--- test: best in the middle
+Student list[] = {{"Kezia", 1, 3.6}, {"Ravi", 2, 3.9}, {"Mei", 3, 3.2}};
+cout << list[bestStudent (list, 3)].name << endl;
+--- test: best first
+Student list[] = {{"Andre", 4, 3.95}, {"Ravi", 2, 3.9}, {"Mei", 3, 3.2}};
+cout << list[bestStudent (list, 3)].name << endl;
+--- test: a tie
+Student list[] = {{"Ann", 5, 2.5}, {"Ben", 6, 3.7}, {"Cal", 7, 3.7}};
+cout << list[bestStudent (list, 3)].name << endl;
+--- test: one student
+Student list[] = {{"Solo", 8, 1.0}};
+cout << list[bestStudent (list, 1)].name << endl;
+--- hint
+`best` is an index, but the starter compares a GPA with it: `list[i].gpa > best`. Those are different kinds of values.
+--- hint
+Compare with the best student's GPA: `list[i].gpa > list[best].gpa`. Using `>` (not `>=`) keeps the first of several equal GPAs.
+--- explain
+Keeping the index of the best so far (rather than the GPA) lets you return where it is, and through it get every field of that student.
+
+=== struct-count-passing
+title: Count the passing students
+topic: structs
+level: 1
+lecture: Review
+lessons: a9-structs
+blurb: Count the structs that meet a condition.
+--- prompt
+Write `countPassing`, which returns how many students in `list[0..n-1]` have a GPA of at least `minGpa`.
+
+```cpp
+int countPassing (Student list[], int n, double minGpa);
+```
+--- given
+#include <iostream>
+#include <string>
+using namespace std;
+
+struct Student {
+	string name;
+	int id;
+	double gpa;
+};
+--- starter
+int countPassing (Student list[], int n, double minGpa) {
+	return 0;
+}
+--- solution
+int countPassing (Student list[], int n, double minGpa) {
+	int count = 0;
+	for (int i = 0; i < n; i++)
+		if (list[i].gpa >= minGpa)
+			count++;
+	return count;
+}
+--- test: some pass
+Student list[] = {{"Kezia", 1, 3.6}, {"Ravi", 2, 1.9}, {"Mei", 3, 2.0}, {"Andre", 4, 2.4}};
+cout << countPassing (list, 4, 2.0) << endl;
+--- test: none pass
+Student list[] = {{"Ann", 5, 1.5}, {"Ben", 6, 1.7}};
+cout << countPassing (list, 2, 2.0) << endl;
+--- test: different limit
+Student list[] = {{"Kezia", 1, 3.6}, {"Ravi", 2, 1.9}, {"Mei", 3, 3.5}};
+cout << countPassing (list, 3, 3.5) << endl;
+--- hint
+This is the counting pattern from lesson A4: start a count at 0 and add 1 for each student that qualifies.
+--- hint
+"At least" means `>=`, so a GPA exactly equal to minGpa counts.
+--- explain
+One pass over the array, one comparison per student: O(n).
+
+=== struct-sort-by-id
+title: Sort students by ID
+topic: structs
+level: 3
+lecture: Review, Lecture 19
+lessons: a9-structs, k1-simple-sorts
+blurb: Insertion sort where each element is a whole struct.
+--- prompt
+Write `sortById`, which sorts `list[0..n-1]` into ascending order of `id`, moving whole Student structs (so each name stays with its own ID). Use insertion sort.
+
+```cpp
+void sortById (Student list[], int n);
+```
+--- given
+#include <iostream>
+#include <string>
+using namespace std;
+
+struct Student {
+	string name;
+	int id;
+	double gpa;
+};
+--- starter
+void sortById (Student list[], int n) {
+	for (int i = 1; i < n; i++) {
+		int key = list[i].id;
+		int j = i - 1;
+		while (j >= 0 && list[j].id > key) {
+			list[j + 1].id = list[j].id;
+			j--;
+		}
+		list[j + 1].id = key;
+	}
+}
+--- solution
+void sortById (Student list[], int n) {
+	for (int i = 1; i < n; i++) {
+		Student key = list[i];
+		int j = i - 1;
+		while (j >= 0 && list[j].id > key.id) {
+			list[j + 1] = list[j];
+			j--;
+		}
+		list[j + 1] = key;
+	}
+}
+--- harness
+void __showStudents (Student list[], int n) {
+	for (int i = 0; i < n; i++)
+		cout << list[i].id << ":" << list[i].name << " ";
+	cout << endl;
+}
+--- test: four students
+Student list[] = {{"Mei", 30, 3.2}, {"Kezia", 10, 3.6}, {"Andre", 40, 2.8}, {"Ravi", 20, 3.9}};
+sortById (list, 4);
+__showStudents (list, 4);
+--- test: already sorted
+Student list[] = {{"A", 1, 1.0}, {"B", 2, 2.0}, {"C", 3, 3.0}};
+sortById (list, 3);
+__showStudents (list, 3);
+--- test: reversed
+Student list[] = {{"C", 3, 3.0}, {"B", 2, 2.0}, {"A", 1, 1.0}};
+sortById (list, 3);
+__showStudents (list, 3);
+--- hint
+The starter sorts the IDs but leaves the names where they were, so every ID ends up with the wrong name.
+--- hint
+Copy and move whole structs: `Student key = list[i];`, `list[j + 1] = list[j];` and `list[j + 1] = key;`. Compare using `.id`.
+--- explain
+Struct assignment copies every field at once, so moving a whole Student keeps its name, ID and GPA together. The sorting logic itself is exactly insertion sort from lesson K1.

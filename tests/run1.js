@@ -1,0 +1,10 @@
+const CPP = require("./load.js");
+const fs = require("fs");
+const src = fs.readFileSync(process.argv[2], "utf8");
+const stdin = process.argv[3] ? fs.readFileSync(process.argv[3], "utf8") : "";
+CPP.debug = true;
+const r = CPP.run(src, { stdin, trace: process.argv.includes("--trace") });
+process.stdout.write(r.out);
+if (r.err) console.log("\n[ERR " + r.err.kind + " line " + r.err.line + "] " + r.err.msg + (r.err.hint ? "\n  hint: " + r.err.hint : ""));
+if (r.warnings && r.warnings.length) console.log("[warnings] " + JSON.stringify(r.warnings));
+if (process.argv.includes("--trace")) console.log("[snaps] " + r.snaps.length + " calls " + r.calls.length);

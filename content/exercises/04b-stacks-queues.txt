@@ -1,0 +1,332 @@
+=== stack-push-pop
+title: push and pop
+topic: stacks-queues
+level: 1
+lecture: COMP 1603 review
+lessons: e1-stacks
+blurb: A stack is a list where you only touch the top.
+--- prompt
+Write `push`, which puts `data` on the top of the stack, and `pop`, which removes the top value and returns it. `pop` on an empty stack returns −999 and changes nothing. Free the removed node.
+
+```cpp
+void push (Stack * stack, int data);
+int pop (Stack * stack);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct Node {
+	int data;
+	Node * next;
+};
+
+struct Stack {
+	Node * top;
+};
+
+Node * createNode (int n) {
+	Node * newNode = new Node;
+	newNode->data = n;
+	newNode->next = NULL;
+	return newNode;
+}
+--- starter
+void push (Stack * stack, int data) {
+	Node * newNode = createNode (data);
+	stack->top = newNode;
+}
+
+int pop (Stack * stack) {
+	int save = stack->top->data;
+	stack->top = stack->top->next;
+	return save;
+}
+--- solution
+void push (Stack * stack, int data) {
+	Node * newNode = createNode (data);
+	newNode->next = stack->top;
+	stack->top = newNode;
+}
+
+int pop (Stack * stack) {
+	int save = -999;
+	if (stack->top != NULL) {
+		Node * toDelete = stack->top;
+		stack->top = stack->top->next;
+		save = toDelete->data;
+		delete toDelete;
+	}
+	return save;
+}
+--- test: last in, first out
+Stack s;
+s.top = NULL;
+push (&s, 10);
+push (&s, 20);
+push (&s, 30);
+cout << pop (&s) << " " << pop (&s) << " " << pop (&s) << endl;
+--- test (hidden): pop from an empty stack
+Stack s;
+s.top = NULL;
+push (&s, 5);
+cout << pop (&s) << " " << pop (&s) << " " << pop (&s) << endl;
+--- test: pop frees the node
+Stack s;
+s.top = NULL;
+int before = __liveNodes ();
+push (&s, 1);
+push (&s, 2);
+pop (&s);
+pop (&s);
+cout << "nodes left: " << __liveNodes () - before << endl;
+--- hint
+push in the starter loses everything that was already on the stack: the new node's next is never linked to the old top.
+--- hint
+pop must check for an empty stack first, save the data, unlink the node, and `delete` it, in that order.
+--- explain
+push is insertAtHead and pop is deleteAtHead, so both are O(1). Saving the data before deleting the node avoids reading freed memory.
+
+=== queue-enqueue-dequeue
+title: enqueue and dequeue
+topic: stacks-queues
+level: 2
+lecture: COMP 1603 review
+lessons: e2-queues
+blurb: Keep head and tail correct, especially when the queue is empty.
+--- prompt
+Write `enqueue`, which adds `data` at the tail of the queue, and `dequeue`, which removes the value at the head and returns it (−999 if the queue is empty). Keep both `head` and `tail` correct at all times, and free removed nodes.
+
+```cpp
+void enqueue (Queue * queue, int data);
+int dequeue (Queue * queue);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct Node {
+	int data;
+	Node * next;
+};
+
+struct Queue {
+	Node * head;
+	Node * tail;
+};
+
+Node * createNode (int n) {
+	Node * newNode = new Node;
+	newNode->data = n;
+	newNode->next = NULL;
+	return newNode;
+}
+--- starter
+void enqueue (Queue * queue, int data) {
+	Node * newNode = createNode (data);
+	queue->tail->next = newNode;
+	queue->tail = newNode;
+}
+
+int dequeue (Queue * queue) {
+	if (queue->head == NULL)
+		return -999;
+	Node * toDelete = queue->head;
+	int save = toDelete->data;
+	queue->head = queue->head->next;
+	delete toDelete;
+	return save;
+}
+--- solution
+void enqueue (Queue * queue, int data) {
+	Node * newNode = createNode (data);
+	if (queue->tail == NULL) {
+		queue->head = newNode;
+		queue->tail = newNode;
+	}
+	else {
+		queue->tail->next = newNode;
+		queue->tail = newNode;
+	}
+}
+
+int dequeue (Queue * queue) {
+	if (queue->head == NULL)
+		return -999;
+	Node * toDelete = queue->head;
+	int save = toDelete->data;
+	queue->head = queue->head->next;
+	if (queue->head == NULL)
+		queue->tail = NULL;
+	delete toDelete;
+	return save;
+}
+--- test: first in, first out
+Queue q;
+q.head = NULL;
+q.tail = NULL;
+enqueue (&q, 10);
+enqueue (&q, 20);
+enqueue (&q, 30);
+cout << dequeue (&q) << " " << dequeue (&q) << " " << dequeue (&q) << " " << dequeue (&q) << endl;
+--- test: empty it, then use it again
+Queue q;
+q.head = NULL;
+q.tail = NULL;
+enqueue (&q, 1);
+cout << dequeue (&q) << " ";
+enqueue (&q, 2);
+enqueue (&q, 3);
+cout << dequeue (&q) << " " << dequeue (&q) << endl;
+--- hint
+enqueue into an empty queue: tail is NULL, so `queue->tail->next` follows NULL. The first node must become both the head and the tail.
+--- hint
+dequeue of the last node: after it, head is NULL but tail still points at the deleted node. Set tail to NULL too.
+--- explain
+The two edge cases are an empty queue (enqueue sets both pointers) and removing the last node (dequeue clears both). With them handled, both operations are O(1).
+
+=== balanced-brackets
+title: Balanced brackets
+topic: stacks-queues
+level: 2
+lecture: COMP 1603 review
+lessons: e3-applications
+blurb: The most recent opening bracket must be closed first.
+--- prompt
+Write `balanced`, which returns `true` if every bracket in `s` is closed by the matching kind, in the right order. Round `( )`, square `[ ]` and curly `{ }` brackets count; other characters are ignored. `"{[()]}"` and `"a[i] = (b + c);"` are balanced; `"([)]"`, `"(()"` and `")("` are not.
+
+```cpp
+bool balanced (string s);
+```
+--- given
+#include <iostream>
+#include <string>
+using namespace std;
+--- starter
+bool balanced (string s) {
+	int open = 0, close = 0;
+	for (int i = 0; i < (int) s.length (); i++) {
+		if (s[i] == '(' || s[i] == '[' || s[i] == '{')
+			open++;
+		if (s[i] == ')' || s[i] == ']' || s[i] == '}')
+			close++;
+	}
+	return open == close;
+}
+--- solution
+bool balanced (string s) {
+	char stack[100];
+	int count = 0;
+	for (int i = 0; i < (int) s.length (); i++) {
+		char c = s[i];
+		if (c == '(' || c == '[' || c == '{') {
+			stack[count] = c;
+			count++;
+		}
+		else if (c == ')' || c == ']' || c == '}') {
+			if (count == 0)
+				return false;
+			count--;
+			char open = stack[count];
+			if ((c == ')' && open != '(') || (c == ']' && open != '[') || (c == '}' && open != '{'))
+				return false;
+		}
+	}
+	return count == 0;
+}
+--- test: balanced
+cout << balanced ("{[()]}") << balanced ("a[i] = (b + c);") << balanced ("") << endl;
+--- test: wrong order
+cout << balanced ("([)]") << endl;
+--- test: unclosed or unopened
+cout << balanced ("(()") << balanced ("())") << balanced (")(") << endl;
+--- hint
+Counting is not enough: "([)]" and ")(" have equal counts. The kind and the order matter.
+--- hint
+Push each opening bracket. At a closing bracket, the stack must not be empty and the popped bracket must be the matching kind. At the end the stack must be empty.
+--- explain
+A stack always gives back the most recent unmatched opening bracket, which is exactly the one the next closing bracket must match. One pass, O(n).
+
+=== stack-print-reverse
+title: printListReverse with a stack
+topic: stacks-queues
+level: 2
+lecture: COMP 1603 review
+lessons: e3-applications
+blurb: COMP 1603 classic - print a list backwards without recursion.
+--- prompt
+Using the given stack functions (and no recursion), write `printListReverse`, which prints the list's values from last to first, each followed by a space, then ends the line. Do not change the list.
+
+```cpp
+void printListReverse (Node * top);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct Node {
+	int data;
+	Node * next;
+};
+
+struct Stack {
+	Node * top;
+};
+
+Node * createNode (int n) {
+	Node * newNode = new Node;
+	newNode->data = n;
+	newNode->next = NULL;
+	return newNode;
+}
+
+void push (Stack * stack, int data) {
+	Node * newNode = createNode (data);
+	newNode->next = stack->top;
+	stack->top = newNode;
+}
+
+int pop (Stack * stack) {
+	int save = -999;
+	if (stack->top != NULL) {
+		Node * toDelete = stack->top;
+		stack->top = stack->top->next;
+		save = toDelete->data;
+		delete toDelete;
+	}
+	return save;
+}
+--- starter
+void printListReverse (Node * top) {
+	for (Node * curr = top; curr != NULL; curr = curr->next)
+		cout << curr->data << " ";
+	cout << endl;
+}
+--- solution
+void printListReverse (Node * top) {
+	Stack stack;
+	stack.top = NULL;
+	for (Node * curr = top; curr != NULL; curr = curr->next)
+		push (&stack, curr->data);
+	while (stack.top != NULL)
+		cout << pop (&stack) << " ";
+	cout << endl;
+}
+--- harness list
+--- test: the example list
+int a[] = {250, 23, 17, 4};
+printListReverse (__make (a, 4));
+--- test (hidden): one node
+int a[] = {8};
+printListReverse (__make (a, 1));
+--- test: the list is unchanged
+int a[] = {1, 2, 3};
+Node * top = __make (a, 3);
+printListReverse (top);
+__show (top);
+--- hint
+Traverse the list from the top, pushing every value. A stack gives values back in the reverse order they went in.
+--- hint
+Then pop and print until the stack is empty.
+--- explain
+Each value is pushed once and popped once, so this is O(n), like the recursive version, but it uses an explicit stack instead of the call stack.

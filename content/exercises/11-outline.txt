@@ -1,0 +1,326 @@
+=== outline-lower-index
+title: Where is (i, j) in a packed triangle?
+topic: outline
+level: 1
+lecture: Course outline topic 8
+lessons: n1-special-matrices
+blurb: The index formula for a lower-triangular matrix stored row by row.
+--- prompt
+A lower-triangular matrix is stored **row by row** in a 1-D array: row 0 holds entry (0, 0), row 1 holds (1, 0) and (1, 1), and so on. Rows and columns start at 0.
+
+Write `lowerIndex`, which returns the index in the 1-D array where entry (i, j) is stored. You may assume `j <= i`.
+
+```cpp
+int lowerIndex (int i, int j);
+```
+--- given
+#include <iostream>
+using namespace std;
+--- starter
+int lowerIndex (int i, int j) {
+	return i * j;
+}
+--- solution
+int lowerIndex (int i, int j) {
+	return i * (i + 1) / 2 + j;
+}
+--- test: the first entries in order
+for (int i = 0; i < 4; i++)
+    for (int j = 0; j <= i; j++)
+        cout << lowerIndex (i, j) << " ";
+cout << endl;
+--- test: (3, 1), (4, 2) and (9, 9)
+cout << lowerIndex (3, 1) << " " << lowerIndex (4, 2) << " " << lowerIndex (9, 9) << endl;
+--- hint
+Rows 0 to i − 1 come before row i. How many values do they hold altogether?
+--- hint
+They hold 1 + 2 + … + i = i(i + 1)/2 values, so row i starts there. Add j.
+--- explain
+Row k holds k + 1 values, so the rows before row i hold i(i + 1)/2 values. Entry (i, j) is j places into its row: index i(i + 1)/2 + j. It is O(1), and the whole n × n triangle needs only n(n + 1)/2 cells.
+
+=== outline-sym-get
+title: Read a symmetric matrix from half of it
+topic: outline
+level: 1
+lecture: Course outline topic 8
+lessons: n1-special-matrices
+blurb: Store the lower triangle; read any (i, j) by swapping when needed.
+--- prompt
+A **symmetric** matrix (M[i][j] == M[j][i]) is stored as its lower triangle only, row by row, in the array `S`, so entry (i, j) with `j <= i` is at index `i * (i + 1) / 2 + j`.
+
+Write `getSym`, which returns entry (i, j) for **any** i and j, including entries above the diagonal.
+
+```cpp
+int getSym (int S[], int i, int j);
+```
+--- given
+#include <iostream>
+using namespace std;
+--- starter
+int getSym (int S[], int i, int j) {
+	return S[i * (i + 1) / 2 + j];
+}
+--- solution
+int getSym (int S[], int i, int j) {
+	if (j > i) {
+		int t = i;
+		i = j;
+		j = t;
+	}
+	return S[i * (i + 1) / 2 + j];
+}
+--- test: a 3 x 3 matrix, printed in full
+// lower triangle of   1 2 4 / 2 3 5 / 4 5 6
+int S[] = {1, 2, 3, 4, 5, 6};
+for (int i = 0; i < 3; i++) {
+    for (int j = 0; j < 3; j++)
+        cout << getSym (S, i, j) << " ";
+    cout << endl;
+}
+--- test (hidden): a 4 x 4 matrix, entries above the diagonal
+int S[] = {10, 20, 30, 40, 50, 60, 70, 80, 90, 99};
+cout << getSym (S, 0, 3) << " " << getSym (S, 1, 2) << " " << getSym (S, 2, 3) << " " << getSym (S, 3, 0) << endl;
+--- hint
+Above the diagonal (j > i), the value you want is the mirror entry (j, i), which is stored.
+--- hint
+Swap i and j when j > i, then use the formula.
+--- explain
+Only n(n + 1)/2 values are stored. An entry above the diagonal equals its mirror image below it, so swapping i and j turns every request into one for the stored half. Reading stays O(1).
+
+=== outline-counting-sort
+title: Counting sort
+topic: outline
+level: 2
+lecture: Course outline topic 1.3
+lessons: n4-integer-sorting
+blurb: Sort keys from 0 to k in O(n + k) without comparing them.
+--- prompt
+Write `countingSort`, which sorts `A[0..n-1]` into ascending order. Every key is a whole number from 0 to `k` (at most 100). Do not compare keys with each other: count how many times each value appears, then write the values back into A in order.
+
+```cpp
+void countingSort (int A[], int n, int k);
+```
+--- given
+#include <iostream>
+using namespace std;
+--- starter
+void countingSort (int A[], int n, int k) {
+	int C[101];
+	for (int v = 0; v <= k; v++)
+		C[v] = 0;
+	for (int i = 0; i < n; i++)
+		C[A[i]]++;
+}
+--- solution
+void countingSort (int A[], int n, int k) {
+	int C[101];
+	for (int v = 0; v <= k; v++)
+		C[v] = 0;
+	for (int i = 0; i < n; i++)
+		C[A[i]]++;
+	int pos = 0;
+	for (int v = 0; v <= k; v++)
+		for (int c = 0; c < C[v]; c++) {
+			A[pos] = v;
+			pos++;
+		}
+}
+--- harness array
+--- test: the lesson's example (keys 0 to 5)
+int A[] = {2, 5, 3, 0, 2, 3, 0, 3};
+countingSort (A, 8, 5);
+__showArr (A, 8);
+--- test: exam marks out of 10
+int A[] = {7, 10, 3, 7, 9, 0, 7};
+countingSort (A, 7, 10);
+__showArr (A, 7);
+--- test: already sorted
+int A[] = {1, 2, 3, 4};
+countingSort (A, 4, 4);
+__showArr (A, 4);
+--- hint
+The starter counts the keys but never writes them back.
+--- hint
+Walk v from 0 to k, and write v into A C[v] times, using a position that moves along A.
+--- explain
+Counting takes one pass over the n keys, and writing back takes one pass over the k + 1 counts plus the n writes: O(n + k). No two keys are ever compared, which is how it beats the n log n limit of comparison sorts.
+--- random: random keys from 0 to 20
+int A[] = {$VALS(1-14,0,20)};
+countingSort (A, $N(), 20);
+__showArr (A, $N());
+
+=== outline-floyd
+title: Floyd's algorithm
+topic: outline
+level: 2
+lecture: Course outline topic 7.3
+lessons: n2-floyd
+blurb: Turn an adjacency matrix into a table of all shortest distances.
+--- prompt
+`dist` is the weighted adjacency matrix of a directed graph with `V` vertices: `dist[i][j]` is the weight of edge (i, j), 0 on the diagonal, and `INF` where there is no edge.
+
+Write `floyd`, which replaces every entry with the length of the **shortest path** from i to j (or leaves `INF` if there is none), using Floyd's algorithm.
+
+```cpp
+void floyd (int dist[V][V]);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+const int V = 4;
+const int INF = 9999;
+
+void showMatrix (int dist[V][V]) {
+	for (int i = 0; i < V; i++) {
+		for (int j = 0; j < V; j++) {
+			if (dist[i][j] == INF)
+				cout << "inf ";
+			else
+				cout << dist[i][j] << " ";
+		}
+		cout << endl;
+	}
+}
+--- starter
+void floyd (int dist[V][V]) {
+	for (int i = 0; i < V; i++)
+		for (int j = 0; j < V; j++)
+			for (int k = 0; k < V; k++)
+				if (dist[i][k] + dist[k][j] < dist[i][j])
+					dist[i][j] = dist[i][k] + dist[k][j];
+}
+--- solution
+void floyd (int dist[V][V]) {
+	for (int k = 0; k < V; k++)
+		for (int i = 0; i < V; i++)
+			for (int j = 0; j < V; j++)
+				if (dist[i][k] != INF && dist[k][j] != INF && dist[i][k] + dist[k][j] < dist[i][j])
+					dist[i][j] = dist[i][k] + dist[k][j];
+}
+--- test: the lesson's four-vertex graph
+int d[V][V] = {
+    {0, 3, INF, 7},
+    {8, 0, 2, INF},
+    {5, INF, 0, 1},
+    {2, INF, INF, 0}
+};
+floyd (d);
+showMatrix (d);
+--- test: a path that needs two stops (0 -> 3 -> 2 -> 1)
+int d[V][V] = {
+    {0, INF, INF, 1},
+    {INF, 0, INF, INF},
+    {INF, 1, 0, INF},
+    {INF, INF, 1, 0}
+};
+floyd (d);
+showMatrix (d);
+--- hint
+The starter's loops are in the wrong order. Which loop must be the outermost?
+--- hint
+k, the vertex allowed as a stop, must be the outer loop: pass k needs every pair to be correct already for stops 0 to k − 1. Also skip pairs where dist[i][k] or dist[k][j] is INF.
+--- explain
+After pass k, dist[i][j] is the shortest path that only stops at vertices 0 to k, so k must be the outermost loop. Three loops of V make Floyd O(V³). With k innermost, a pair can be finished before the shorter pieces it depends on are known, so some shortest paths are missed: in the second test, the starter never finds 0 → 3 → 2 → 1.
+
+=== outline-check-mapping
+title: Is this mapping an isomorphism?
+topic: outline
+level: 2
+lecture: Course outline topic 7.5
+lessons: n3-graph-isomorphism
+blurb: Check every pair of vertices with two adjacency matrices.
+--- prompt
+Two graphs with `V` vertices are given as adjacency matrices `M1` and `M2`. The array `f` renames the vertices: vertex u of the first graph becomes vertex `f[u]` of the second.
+
+Write `checkMapping`, which returns true when f is an isomorphism: for **every** pair u, v, (u, v) is an edge of the first graph exactly when (f[u], f[v]) is an edge of the second.
+
+```cpp
+bool checkMapping (int M1[V][V], int M2[V][V], int f[]);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+const int V = 4;
+--- starter
+bool checkMapping (int M1[V][V], int M2[V][V], int f[]) {
+	for (int u = 0; u < V; u++)
+		for (int v = 0; v < V; v++)
+			if (M1[u][v] == 1 && M2[f[u]][f[v]] == 0)
+				return false;
+	return true;
+}
+--- solution
+bool checkMapping (int M1[V][V], int M2[V][V], int f[]) {
+	for (int u = 0; u < V; u++)
+		for (int v = 0; v < V; v++)
+			if (M1[u][v] != M2[f[u]][f[v]])
+				return false;
+	return true;
+}
+--- test: the square and the bowtie from the lesson
+int M1[V][V] = {{0, 1, 0, 1}, {1, 0, 1, 0}, {0, 1, 0, 1}, {1, 0, 1, 0}};
+int M2[V][V] = {{0, 0, 1, 1}, {0, 0, 1, 1}, {1, 1, 0, 0}, {1, 1, 0, 0}};
+int good[] = {0, 2, 1, 3};
+int bad[] = {0, 1, 2, 3};
+cout << checkMapping (M1, M2, good) << " " << checkMapping (M1, M2, bad) << endl;
+--- test: edges must not appear from nowhere
+// first graph: the path 0-1-2-3; second graph: a 4-cycle
+int P[V][V] = {{0, 1, 0, 0}, {1, 0, 1, 0}, {0, 1, 0, 1}, {0, 0, 1, 0}};
+int Q[V][V] = {{0, 1, 0, 1}, {1, 0, 1, 0}, {0, 1, 0, 1}, {1, 0, 1, 0}};
+int same[] = {0, 1, 2, 3};
+cout << checkMapping (P, Q, same) << endl;
+--- hint
+The starter only checks that edges map to edges. What about pairs that are not joined?
+--- hint
+Non-edges must map to non-edges too, so compare the two entries for equality.
+--- explain
+An isomorphism must preserve both edges and non-edges. Comparing M1[u][v] with M2[f[u]][f[v]] for all V² pairs checks both at once, in O(V²) time. The second test fails the starter: the 4-cycle has an extra edge (3, 0) that the path does not have.
+
+=== outline-count-nulls
+title: Count the NULL pointers
+topic: outline
+level: 1
+lecture: Course outline learning outcome 6
+lessons: n5-trees-proofs
+blurb: A tree with n nodes always has n + 1 of them. Check it.
+--- prompt
+Write `countNulls`, which returns how many NULL pointers a binary tree contains, counting `root` itself when the tree is empty. (By structural induction, the answer is always n + 1 for n nodes.)
+
+```cpp
+int countNulls (BTNode * root);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct BTNode {
+	int data;
+	BTNode * left;
+	BTNode * right;
+};
+--- starter
+int countNulls (BTNode * root) {
+	if (root == NULL)
+		return 0;
+	return countNulls (root->left) + countNulls (root->right);
+}
+--- solution
+int countNulls (BTNode * root) {
+	if (root == NULL)
+		return 1;
+	return countNulls (root->left) + countNulls (root->right);
+}
+--- harness btree
+--- test: the tree from Lecture 6 (5 nodes)
+BTNode * root = __n (10, __n (40, __n (30, __n (50, NULL, NULL), NULL), __n (25, NULL, NULL)), NULL);
+cout << countNulls (root) << endl;
+--- test: an empty tree and a single node
+cout << countNulls (NULL) << " " << countNulls (__n (7, NULL, NULL)) << endl;
+--- hint
+What should an empty tree return? It is one NULL pointer.
+--- hint
+Base case: return 1 for NULL. Otherwise add the counts of the two subtrees.
+--- explain
+The base case counts the NULL pointer itself, and the recursive case adds the two subtrees' counts. This is the proof of the n + 1 claim turned into code: one call per node plus one per NULL pointer, 2n + 1 calls in all.

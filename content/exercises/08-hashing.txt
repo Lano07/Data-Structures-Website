@@ -1,0 +1,413 @@
+=== hash-linear-insert
+title: Insert with linear probing
+topic: hashing
+level: 2
+lecture: Lecture 14
+lessons: i1-hash-tables
+blurb: h = key % 12 + 1, then try the next location, wrapping from 12 to 1.
+--- prompt
+The table has locations 1 to N (N = 12); EMPTY (0) marks an empty location and DELETED (−1) a deleted one. Write `insertKey`, which inserts `key` with **linear probing**: start at `hashKey (key)`, and while the location is taken, try the next one. After N comes 1. A key may go into an EMPTY or a DELETED location. Return the location used, or −1 if the table is full.
+
+```cpp
+int insertKey (int table[], int key);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+const int N = 12;
+const int EMPTY = 0;
+const int DELETED = -1;
+
+int hashKey (int key) {
+	return key % N + 1;
+}
+--- starter
+int insertKey (int table[], int key) {
+	int loc = hashKey (key);
+	while (table[loc] != EMPTY)
+		loc = loc + 1;
+	table[loc] = key;
+	return loc;
+}
+--- solution
+int insertKey (int table[], int key) {
+	int loc = hashKey (key);
+	int tries = 1;
+	while (table[loc] != EMPTY && table[loc] != DELETED) {
+		if (tries == N)
+			return -1;
+		loc = loc + 1;
+		if (loc > N)
+			loc = 1;
+		tries++;
+	}
+	table[loc] = key;
+	return loc;
+}
+--- harness table
+--- test: Lecture 14 keys
+int table[N + 1] = {0};
+int keys[] = {52, 33, 84, 43, 16, 59, 31, 23, 61};
+for (int i = 0; i < 9; i++)
+	insertKey (table, keys[i]);
+__showTable (table);
+--- test: reuse a deleted location
+int table[N + 1] = {0};
+int keys[] = {52, 33, 84, 43, 16, 59, 31, 23, 61};
+for (int i = 0; i < 9; i++)
+	insertKey (table, keys[i]);
+table[1] = DELETED;
+cout << "71 goes to " << insertKey (table, 71) << endl;
+--- test: a full table
+int table[N + 1] = {0};
+for (int k = 1; k <= N; k++)
+	insertKey (table, k);
+cout << insertKey (table, 100) << endl;
+--- hint
+Trace 23 with the starter: it hashes to 12, which is taken, so it tries 13. There is no location 13. After 12 the table wraps round to 1.
+--- hint
+Stop at a DELETED location as well as an EMPTY one, and count your tries so a full table returns −1 instead of looping forever.
+--- explain
+The wrap makes the table circular, the DELETED test lets inserts reuse space, and the try counter guarantees the loop ends. Each insert is O(1) when there are few collisions and O(N) in the worst case.
+--- random: random keys
+int table[N + 1] = {0};
+int keys[] = {$KEYS(1-9,10,99)};
+for (int i = 0; i < $N(); i++)
+	insertKey (table, keys[i]);
+__showTable (table);
+
+=== hash-search
+title: Search a probing table
+topic: hashing
+level: 2
+lecture: Lecture 14
+lessons: i1-hash-tables
+blurb: Follow the insert's path; stop at EMPTY, but not at DELETED.
+--- prompt
+Write `searchKey` for a linear-probing table (locations 1 to N). It returns the location of `key`, or −1 if the key is not in the table. A search must **stop** at an EMPTY location, but must **go past** a DELETED (−1) one. After N comes 1, and it must give up after N tries.
+
+```cpp
+int searchKey (int table[], int key);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+const int N = 12;
+const int EMPTY = 0;
+const int DELETED = -1;
+
+int hashKey (int key) {
+	return key % N + 1;
+}
+
+int insertKey (int table[], int key) {
+	int loc = hashKey (key);
+	int tries = 1;
+	while (table[loc] != EMPTY && table[loc] != DELETED) {
+		if (tries == N)
+			return -1;
+		loc = loc + 1;
+		if (loc > N)
+			loc = 1;
+		tries++;
+	}
+	table[loc] = key;
+	return loc;
+}
+--- starter
+int searchKey (int table[], int key) {
+	int loc = hashKey (key);
+	while (table[loc] != EMPTY && table[loc] != DELETED) {
+		if (table[loc] == key)
+			return loc;
+		loc = loc + 1;
+		if (loc > N)
+			loc = 1;
+	}
+	return -1;
+}
+--- solution
+int searchKey (int table[], int key) {
+	int loc = hashKey (key);
+	int tries = 1;
+	while (table[loc] != EMPTY) {
+		if (table[loc] == key)
+			return loc;
+		if (tries == N)
+			return -1;
+		loc = loc + 1;
+		if (loc > N)
+			loc = 1;
+		tries++;
+	}
+	return -1;
+}
+--- harness table
+--- test: found after wrapping
+int table[N + 1] = {0};
+int keys[] = {52, 33, 84, 43, 16, 59, 31, 23, 61};
+for (int i = 0; i < 9; i++)
+	insertKey (table, keys[i]);
+cout << searchKey (table, 23) << " " << searchKey (table, 61) << " " << searchKey (table, 52) << endl;
+--- test (hidden): not in the table
+int table[N + 1] = {0};
+int keys[] = {52, 33, 84, 43, 16, 59, 31, 23, 61};
+for (int i = 0; i < 9; i++)
+	insertKey (table, keys[i]);
+cout << searchKey (table, 35) << " " << searchKey (table, 13) << endl;
+--- test: past a deleted location
+int table[N + 1] = {0};
+int keys[] = {52, 33, 84, 43, 16, 59, 31, 23, 61};
+for (int i = 0; i < 9; i++)
+	insertKey (table, keys[i]);
+table[1] = DELETED;
+cout << searchKey (table, 23) << endl;
+--- test: a full table
+int table[N + 1] = {0};
+for (int k = 1; k <= N; k++)
+	insertKey (table, k);
+cout << searchKey (table, 100) << " " << searchKey (table, 12) << endl;
+--- hint
+After 84 is deleted (location 1 becomes −1), a search for 23 starts at 12 and must pass location 1 to reach 2. The starter stops there.
+--- hint
+Only an EMPTY location proves the key is missing. Also count your tries: in a full table there is no EMPTY location to stop at.
+--- explain
+A deleted location once held a key, and other keys may have probed past it when they were inserted, so a search has to continue through it. That is why deletion uses −1 instead of 0.
+
+=== hash-quadratic
+title: Quadratic probing
+topic: hashing
+level: 3
+lecture: Lecture 15
+lessons: i2-probing
+blurb: After the x-th collision, jump forward x + x² from where you are.
+--- prompt
+Write `insertKey` with **quadratic probing** (Lecture 15, a = b = 1): after the x-th collision (x = 1, 2, 3, …) move forward x + x² locations **from the location just tried**, wrapping past N back to the start (subtract N as many times as needed). Return the location used, or −1 if no location is found within 3 × N collisions. Only EMPTY locations are used here.
+
+```cpp
+int insertKey (int table[], int key);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+const int N = 12;
+const int EMPTY = 0;
+
+int hashKey (int key) {
+	return key % N + 1;
+}
+--- starter
+int insertKey (int table[], int key) {
+	int loc = hashKey (key);
+	int x = 0;
+	while (table[loc] != EMPTY) {
+		x++;
+		loc = hashKey (key) + x * x;
+		while (loc > N)
+			loc = loc - N;
+	}
+	table[loc] = key;
+	return loc;
+}
+--- solution
+int insertKey (int table[], int key) {
+	int loc = hashKey (key);
+	int x = 0;
+	while (table[loc] != EMPTY) {
+		x++;
+		if (x > 3 * N)
+			return -1;
+		loc = loc + x + x * x;
+		while (loc > N)
+			loc = loc - N;
+	}
+	table[loc] = key;
+	return loc;
+}
+--- harness table
+--- test: Lecture 15 keys
+int table[N + 1] = {0};
+int keys[] = {52, 33, 84, 43, 16, 59, 31};
+for (int i = 0; i < 7; i++)
+	cout << keys[i] << "->" << insertKey (table, keys[i]) << " ";
+cout << endl;
+__showTable (table);
+--- test: 23 and 61 as well
+int table[N + 1] = {0};
+int keys[] = {52, 33, 84, 43, 16, 59, 31, 23, 61};
+for (int i = 0; i < 9; i++)
+	insertKey (table, keys[i]);
+__showTable (table);
+--- test: unreachable free locations
+int table[N + 1] = {0};
+int keys[] = {52, 33, 84, 43, 16, 59, 31, 23, 61};
+for (int i = 0; i < 9; i++)
+	insertKey (table, keys[i]);
+cout << insertKey (table, 13) << endl;
+--- hint
+Lecture 15's jumps are x + x² (2, then 6, then 12, …), and each one starts from the location where the last collision happened, not from the home location. Check 31: 8 → 10 → 16 − 12 = 4.
+--- hint
+Every jump x + x² is even, so a key that starts on an even location never reaches an odd one. Count the collisions and give up after 3 × N of them.
+--- explain
+With the lecture keys the table becomes 84 23 _ 31 52 61 16 43 _ 33 _ 59. Inserting 13 shows quadratic probing's weakness: it hashes to 2, every even location is full, and the odd free locations can never be reached.
+
+=== hash-chain
+title: Chaining
+topic: hashing
+level: 2
+lecture: Lectures 14–15
+lessons: i3-chaining-strings
+blurb: An array of list tops; new keys go at the top of their list.
+--- prompt
+The table is an array of `N + 1` list tops (locations 1 to N), all NULL at the start. Write `insertKey`, which adds `key` at the **top** of the list at `hashKey (key)`, and `searchKey`, which returns `true` if the key is in the table.
+
+```cpp
+void insertKey (Node * table[], int key);
+bool searchKey (Node * table[], int key);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+const int N = 12;
+
+struct Node {
+	int data;
+	Node * next;
+};
+
+int hashKey (int key) {
+	return key % N + 1;
+}
+--- starter
+void insertKey (Node * table[], int key) {
+	int loc = hashKey (key);
+	Node * newNode = new Node;
+	newNode->data = key;
+	newNode->next = NULL;
+	table[loc] = newNode;
+}
+
+bool searchKey (Node * table[], int key) {
+	int loc = hashKey (key);
+	return table[loc] != NULL && table[loc]->data == key;
+}
+--- solution
+void insertKey (Node * table[], int key) {
+	int loc = hashKey (key);
+	Node * newNode = new Node;
+	newNode->data = key;
+	newNode->next = table[loc];
+	table[loc] = newNode;
+}
+
+bool searchKey (Node * table[], int key) {
+	Node * curr = table[hashKey (key)];
+	while (curr != NULL) {
+		if (curr->data == key)
+			return true;
+		curr = curr->next;
+	}
+	return false;
+}
+--- harness
+void __showChains (Node * table[]) {
+	for (int i = 1; i <= N; i++) {
+		if (table[i] == NULL)
+			continue;
+		cout << i << ":";
+		for (Node * p = table[i]; p != NULL; p = p->next)
+			cout << " " << p->data;
+		cout << endl;
+	}
+}
+--- test: Lecture 14 keys
+Node * table[N + 1];
+for (int i = 0; i <= N; i++)
+	table[i] = NULL;
+int keys[] = {39, 25, 26, 60, 37, 75, 13, 73};
+for (int i = 0; i < 8; i++)
+	insertKey (table, keys[i]);
+__showChains (table);
+--- test: search
+Node * table[N + 1];
+for (int i = 0; i <= N; i++)
+	table[i] = NULL;
+int keys[] = {39, 25, 26, 60, 37, 75, 13, 73};
+for (int i = 0; i < 8; i++)
+	insertKey (table, keys[i]);
+cout << searchKey (table, 25) << searchKey (table, 39) << searchKey (table, 73) << searchKey (table, 49) << searchKey (table, 5) << endl;
+--- hint
+The starter's insert replaces the list at that location with the new node, losing the keys already there. Link the new node in front of the old top.
+--- hint
+searchKey must walk the whole list at that location, not just look at its first node.
+--- explain
+Insert at the top is O(1). A search only walks the one list where the key could be, so with keys spread evenly it is O(1) on average.
+
+=== hash-string
+title: Hashing a string
+topic: hashing
+level: 1
+lecture: Lecture 15
+lessons: i3-chaining-strings, a8-strings
+blurb: Turn the characters into a number, then use % n + 1.
+--- prompt
+Write the two string hash functions from Lecture 15. Both return a location from 1 to n.
+
+- `hashSum` adds up the character codes: `intValue = intValue + str[i]`.
+- `hashWeighted` weights each character by its position: `intValue = intValue + str[i] * i`.
+
+```cpp
+int hashSum (string str, int n);
+int hashWeighted (string str, int n);
+```
+--- given
+#include <iostream>
+#include <string>
+using namespace std;
+--- starter
+int hashSum (string str, int n) {
+	int intValue = 0;
+	for (int i = 0; i < (int) str.length (); i++)
+		intValue = intValue + str[i];
+	return intValue % n;
+}
+
+int hashWeighted (string str, int n) {
+	return hashSum (str, n);
+}
+--- solution
+int hashSum (string str, int n) {
+	int i, intValue;
+	i = intValue = 0;
+	while (str[i] != '\0') {
+		intValue = intValue + str[i];
+		i++;
+	}
+	return intValue % n + 1;
+}
+
+int hashWeighted (string str, int n) {
+	int i, intValue;
+	i = intValue = 0;
+	while (str[i] != '\0') {
+		intValue = intValue + str[i] * i;
+		i++;
+	}
+	return intValue % n + 1;
+}
+--- test: anagrams with the sum
+cout << hashSum ("mate", 12) << " " << hashSum ("meat", 12) << " " << hashSum ("team", 12) << endl;
+--- test: anagrams with weights
+cout << hashWeighted ("mate", 12) << " " << hashWeighted ("meat", 12) << " " << hashWeighted ("team", 12) << endl;
+--- test: other table sizes
+cout << hashSum ("dog", 13) << " " << hashWeighted ("dog", 13) << " " << hashWeighted ("god", 13) << endl;
+--- hint
+Locations run from 1 to n, so the result is `intValue % n + 1`, not `intValue % n`.
+--- hint
+For the weighted version, multiply each character code by its index i before adding it. The first character (i = 0) adds nothing.
+--- explain
+The sum makes "mate", "meat" and "team" collide (they total 423, location 4), while the weights separate them (9, 8 and 11).

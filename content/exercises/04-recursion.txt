@@ -1,0 +1,436 @@
+=== rec-power
+title: Power, recursively
+topic: recursion
+level: 1
+lecture: Lectures 2–4
+lessons: d1-how-recursion-works
+blurb: The three questions - smallest case, smaller problem, build the answer.
+--- prompt
+Write a **recursive** function `power` that returns x to the power n, for n ≥ 0. Do not use a loop.
+
+```cpp
+int power (int x, int n);
+```
+--- given
+#include <iostream>
+using namespace std;
+--- starter
+int power (int x, int n) {
+	return x * power (x, n - 1);
+}
+--- solution
+int power (int x, int n) {
+	if (n == 0)
+		return 1;
+	return x * power (x, n - 1);
+}
+--- test: 2 to the 10
+cout << power (2, 10) << endl;
+--- test: 3 to the 4
+cout << power (3, 4) << endl;
+--- test: anything to the 0
+cout << power (7, 0) << " " << power (0, 0) << endl;
+--- test: to the 1
+cout << power (9, 1) << endl;
+--- hint
+The starter has a recursive case but no base case, so the calls never stop.
+--- hint
+The smallest case is n = 0, and x⁰ = 1. Return 1 before making any recursive call.
+--- explain
+Each call lowers n by 1, so the calls reach n = 0 after n steps. This makes n + 1 calls in total: O(n).
+
+=== rec-size
+title: sizeRec
+topic: recursion
+level: 1
+lecture: Lecture 3
+lessons: d2-recursion-lists
+blurb: The number of nodes in a list, without a loop.
+--- prompt
+Write the **recursive** `sizeRec` from Lecture 3: it returns the number of nodes in the list. Do not use a loop.
+
+```cpp
+int sizeRec (Node * top);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct Node {
+	int data;
+	Node * next;
+};
+--- starter
+int sizeRec (Node * top) {
+	return 1 + sizeRec (top->next);
+}
+--- solution
+int sizeRec (Node * top) {
+	if (top == NULL)
+		return 0;
+	return 1 + sizeRec (top->next);
+}
+--- harness list
+--- test: four nodes
+int a[] = {250, 23, 17, 4};
+cout << sizeRec (__make (a, 4)) << endl;
+--- test (hidden): one node
+int a[] = {9};
+cout << sizeRec (__make (a, 1)) << endl;
+--- test: empty list
+cout << sizeRec (NULL) << endl;
+--- hint
+What should happen when top is NULL? The starter follows `top->next` anyway.
+--- hint
+Case (1): the list is empty, return 0. Case (2): 1 for the head, plus the size of the tail.
+--- explain
+Each call handles one node and passes the tail on, so there is one call per node plus one for the final NULL.
+
+=== rec-print-reverse
+title: Print a list backwards
+topic: recursion
+level: 2
+lecture: Lecture 3
+lessons: d2-recursion-lists, d1-how-recursion-works
+blurb: Move one line so the printing happens on the way back up.
+--- prompt
+Write the **recursive** `printReverse`, which prints the values of the list from the **last** node to the first, each followed by a space. Do not use a loop or an extra array or stack.
+
+```cpp
+void printReverse (Node * top);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct Node {
+	int data;
+	Node * next;
+};
+--- starter
+void printReverse (Node * top) {
+	if (top == NULL)
+		return;
+	cout << top->data << " ";
+	printReverse (top->next);
+}
+--- solution
+void printReverse (Node * top) {
+	if (top == NULL)
+		return;
+	printReverse (top->next);
+	cout << top->data << " ";
+}
+--- harness list
+--- test: Lecture 3 list
+int a[] = {250, 23, 17, 4};
+printReverse (__make (a, 4));
+cout << endl;
+--- test (hidden): one node
+int a[] = {5};
+printReverse (__make (a, 1));
+cout << endl;
+--- test: empty list
+printReverse (NULL);
+cout << "(nothing)" << endl;
+--- hint
+The starter prints in the normal order. Work done before the recursive call happens on the way down.
+--- hint
+Print the tail first (the recursive call), then the head.
+--- explain
+Each call waits for the rest of the list to be printed before printing its own value, so the last node's value comes out first. The computer's call stack does the reversing.
+
+=== rec-occurs
+title: occursRec
+topic: recursion
+level: 1
+lecture: Lecture 3
+lessons: d2-recursion-lists
+blurb: Count how many nodes hold a key, recursively.
+--- prompt
+Write the **recursive** `occursRec`, which returns how many nodes in the list hold `key`.
+
+```cpp
+int occursRec (Node * top, int key);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct Node {
+	int data;
+	Node * next;
+};
+--- starter
+int occursRec (Node * top, int key) {
+	if (top == NULL)
+		return 0;
+	if (top->data == key)
+		return 1;
+	return occursRec (top->next, key);
+}
+--- solution
+int occursRec (Node * top, int key) {
+	if (top == NULL)
+		return 0;
+	if (top->data == key)
+		return 1 + occursRec (top->next, key);
+	return occursRec (top->next, key);
+}
+--- harness list
+--- test: three times
+int a[] = {7, 3, 7, 7, 1};
+cout << occursRec (__make (a, 5), 7) << endl;
+--- test: once
+int a[] = {7, 3, 5};
+cout << occursRec (__make (a, 3), 5) << endl;
+--- test: not at all
+int a[] = {1, 2, 3};
+cout << occursRec (__make (a, 3), 9) << endl;
+--- test (hidden): empty list
+cout << occursRec (NULL, 4) << endl;
+--- hint
+The starter stops at the first match. Later nodes might hold the key again.
+--- hint
+If the head holds the key, add 1 to the number of occurrences in the tail: `return 1 + occursRec (top->next, key);`.
+--- explain
+Unlike containsRec, occursRec can never stop early, because the answer depends on every node. It makes one call per node.
+
+=== rec-is-equal
+title: isEqualRec
+topic: recursion
+level: 2
+lecture: Lecture 4
+lessons: d2-recursion-lists
+blurb: Compare two lists node by node, with the five cases from Lecture 4.
+--- prompt
+Write the **recursive** `isEqualRec`, which returns `true` if the two lists hold the same values in the same order (and have the same length).
+
+```cpp
+bool isEqualRec (Node * top1, Node * top2);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct Node {
+	int data;
+	Node * next;
+};
+--- starter
+bool isEqualRec (Node * top1, Node * top2) {
+	if (top1 == NULL || top2 == NULL)
+		return false;
+	if (top1->data != top2->data)
+		return false;
+	return isEqualRec (top1->next, top2->next);
+}
+--- solution
+bool isEqualRec (Node * top1, Node * top2) {
+	if (top1 == NULL && top2 == NULL)
+		return true;
+	if (top1 == NULL || top2 == NULL)
+		return false;
+	if (top1->data != top2->data)
+		return false;
+	return isEqualRec (top1->next, top2->next);
+}
+--- harness list
+--- test: equal lists
+int a[] = {1, 2, 3};
+int b[] = {1, 2, 3};
+cout << isEqualRec (__make (a, 3), __make (b, 3)) << endl;
+--- test: different value
+int a[] = {1, 2, 3};
+int b[] = {1, 5, 3};
+cout << isEqualRec (__make (a, 3), __make (b, 3)) << endl;
+--- test: different lengths
+int a[] = {1, 2};
+int b[] = {1, 2, 3};
+cout << isEqualRec (__make (a, 2), __make (b, 3)) << " " << isEqualRec (__make (b, 3), __make (a, 2)) << endl;
+--- test (hidden): both empty
+cout << isEqualRec (NULL, NULL) << endl;
+--- hint
+With the starter, every pair of equal lists eventually reaches two NULLs, and returns false. What is the right answer for two empty lists?
+--- hint
+Test "both NULL" first and return true. Only then does "either NULL" mean that exactly one list ran out.
+--- explain
+The order of the cases is the whole trick: both empty → true; one empty → false; heads differ → false; otherwise compare the tails.
+
+=== rec-insert-sorted
+title: insertSortedRec
+topic: recursion
+level: 3
+lecture: Lecture 4
+lessons: d2-recursion-lists
+blurb: Change a list recursively with top->next = f (top->next).
+--- prompt
+Write the **recursive** `insertSortedRec` from Lecture 4. It inserts `n` into a list sorted in ascending order and returns the top of the list. Do not use a loop.
+
+```cpp
+Node * insertSortedRec (Node * top, int n);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct Node {
+	int data;
+	Node * next;
+};
+
+Node * createNode (int n) {
+	Node * newNode = new Node;
+	newNode->data = n;
+	newNode->next = NULL;
+	return newNode;
+}
+--- starter
+Node * insertSortedRec (Node * top, int n) {
+	if (top == NULL || n < top->data) {
+		Node * newNode = createNode (n);
+		newNode->next = top;
+		return newNode;
+	}
+	insertSortedRec (top->next, n);
+	return top;
+}
+--- solution
+Node * insertSortedRec (Node * top, int n) {
+	if (top == NULL || n < top->data) {
+		Node * newNode = createNode (n);
+		newNode->next = top;
+		return newNode;
+	}
+	top->next = insertSortedRec (top->next, n);
+	return top;
+}
+--- harness list
+--- test: in the middle
+int a[] = {10, 20, 30};
+Node * top = insertSortedRec (__make (a, 3), 25);
+__show (top);
+--- test: at the front
+int a[] = {10, 20, 30};
+Node * top = insertSortedRec (__make (a, 3), 5);
+__show (top);
+--- test: at the end
+int a[] = {10, 20, 30};
+Node * top = insertSortedRec (__make (a, 3), 40);
+__show (top);
+--- test (hidden): build from empty
+Node * top = NULL;
+int keys[] = {20, 5, 30, 10};
+for (int i = 0; i < 4; i++)
+	top = insertSortedRec (top, keys[i]);
+__show (top);
+--- hint
+The starter makes the new node in the right place, but the call that should link it in throws the answer away.
+--- hint
+Store the result in the current node's next field: `top->next = insertSortedRec (top->next, n);`.
+--- explain
+Each call returns the top of its (possibly changed) tail, and the caller reconnects it. Only the call where the new node is created returns something different, so only one link really changes.
+
+=== rec-sum-array
+title: Sum of an array range
+topic: recursion
+level: 1
+lecture: Lecture 4
+lessons: d3-recursion-arrays
+blurb: A smaller array means a larger start index.
+--- prompt
+Write the **recursive** `sumRec`, which returns `a[m] + a[m+1] + ... + a[n-1]` (0 if the range is empty). Do not use a loop.
+
+```cpp
+int sumRec (int a[], int m, int n);
+```
+--- given
+#include <iostream>
+using namespace std;
+--- starter
+int sumRec (int a[], int m, int n) {
+	if (m == n - 1)
+		return a[m];
+	return a[m] + sumRec (a, m + 1, n);
+}
+--- solution
+int sumRec (int a[], int m, int n) {
+	if (m >= n)
+		return 0;
+	return a[m] + sumRec (a, m + 1, n);
+}
+--- test: whole array
+int a[] = {250, 23, 17, 4};
+cout << sumRec (a, 0, 4) << endl;
+--- test: part of the array
+int a[] = {250, 23, 17, 4};
+cout << sumRec (a, 1, 3) << endl;
+--- test (hidden): empty range
+int a[] = {1, 2, 3};
+cout << sumRec (a, 2, 2) << " " << sumRec (a, 3, 3) << endl;
+--- hint
+The starter's base case is one element, so an empty range (m == n) never reaches it and runs off the end.
+--- hint
+Use the empty range as the base case: `if (m >= n) return 0;`.
+--- explain
+An empty range has sum 0, which is the natural smallest case. Every other range is its first element plus the sum of the rest.
+--- random: random arrays
+int a[] = {$VALS(1-9,-20,50)};
+cout << sumRec (a, 0, $N()) << endl;
+
+=== rec-binary-search
+title: Recursive binary search
+topic: recursion
+level: 3
+lecture: Lecture 4
+lessons: d3-recursion-arrays, g5-performance
+blurb: Throw away half of the range with each call.
+--- prompt
+Write the **recursive** `binarySearchRec`, which searches the **sorted** array `a[lo..hi]` (both ends included) for `key` and returns its index, or −1 if it is not there. Each call must look at the middle element and continue in only one half.
+
+```cpp
+int binarySearchRec (int a[], int key, int lo, int hi);
+```
+--- given
+#include <iostream>
+using namespace std;
+--- starter
+int binarySearchRec (int a[], int key, int lo, int hi) {
+	if (lo > hi)
+		return -1;
+	int mid = (lo + hi) / 2;
+	if (a[mid] == key)
+		return mid;
+	if (key < a[mid])
+		return binarySearchRec (a, key, lo, mid);
+	return binarySearchRec (a, key, mid, hi);
+}
+--- solution
+int binarySearchRec (int a[], int key, int lo, int hi) {
+	if (lo > hi)
+		return -1;
+	int mid = (lo + hi) / 2;
+	if (a[mid] == key)
+		return mid;
+	if (key < a[mid])
+		return binarySearchRec (a, key, lo, mid - 1);
+	return binarySearchRec (a, key, mid + 1, hi);
+}
+--- test: found
+int a[] = {3, 8, 15, 21, 30, 42, 57, 61};
+cout << binarySearchRec (a, 21, 0, 7) << " " << binarySearchRec (a, 3, 0, 7) << " " << binarySearchRec (a, 61, 0, 7) << endl;
+--- test (hidden): missing, smaller and larger than all
+int a[] = {3, 8, 15, 21, 30, 42, 57, 61};
+cout << binarySearchRec (a, 1, 0, 7) << " " << binarySearchRec (a, 99, 0, 7) << endl;
+--- test: missing in the middle
+int a[] = {3, 8, 15, 21, 30, 42, 57, 61};
+cout << binarySearchRec (a, 40, 0, 7) << endl;
+--- hint
+a[mid] has already been checked, so it should not be part of either half. With `mid` instead of `mid - 1` or `mid + 1`, a range of one or two elements can stop getting smaller.
+--- hint
+Search `lo .. mid - 1` on the left and `mid + 1 .. hi` on the right.
+--- explain
+Excluding mid guarantees that every call works on a strictly smaller range, so the recursion always reaches lo > hi when the key is missing. Each call halves the range: O(log n) calls.
+--- random: random sorted arrays, a key that is there and one that is not
+int a[] = {$SORTED(1-10,1,90)};
+cout << binarySearchRec (a, $PICK(), 0, $N() - 1) << " " << binarySearchRec (a, $INT(91,99), 0, $N() - 1) << endl;
