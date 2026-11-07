@@ -1115,7 +1115,7 @@
       '<p class="lede">Every lecture in the course notes, with what it covers and where to learn it here. Missed a lecture? Read its lessons, watch its lab, then practise it.</p>';
     var jump = h("nav", "lec-jump");
     jump.setAttribute("aria-label", "Lectures");
-    jump.innerHTML = D.lectures.map(function (L) { return '<a href="#lectures" data-j="' + L.n + '">' + L.n + "</a>"; }).join("");
+    jump.innerHTML = D.lectures.map(function (L) { return '<a href="#lectures" data-j="' + L.n + '">' + L.n + "</a>"; }).join("") + '<a href="#lectures" data-j="outline">Outline</a>';
     p.appendChild(jump);
     var list = h("div", "lec-list");
     D.lectures.forEach(function (L) {
@@ -1132,6 +1132,21 @@
       list.appendChild(card);
       if (L.n === "17") list.appendChild(h("p", "lec-gap small muted", "Lecture 18 is not in the notes this site was built from, so it is not mapped here."));
     });
+    // the course outline goes further than the notes: those topics have their own part
+    var outPart = D.parts.filter(function (pp) { return pp.id === "n"; })[0];
+    if (outPart) {
+      var oc = h("section", "lec lec-outline");
+      oc.id = "lec-outline";
+      var odone = outPart.lessons.filter(function (x) { return store.done[x]; }).length;
+      oc.innerHTML = '<div class="lec-n"><span>Course</span><b>⋯</b></div><div class="lec-b"><h2>In the course outline, not in the notes yet</h2><ul class="lec-topics"><li>Sequential and binary search (outline topic 2)</li><li>Matrices with special properties: symmetric, triangular, band and sparse (topic 8; Lecture 1 lists it)</li><li>Floyd\'s all-pairs shortest paths (topic 7.3) and graph isomorphism (topic 7.5)</li><li>Integer sorting in O(n): counting sort and radix sort (topic 1.3)</li><li>Trees in proofs and counting: structural induction (learning outcome 6)</li></ul>' +
+        '<div class="lec-row"><span class="lec-k">Learn it</span><div class="lec-links">' + outPart.lessons.map(function (x) { return lessonLink(x); }).join("") + "</div></div>" +
+        '<div class="lec-row"><span class="lec-k">See it</span><div class="lec-links">' + ["matrix", "floyd", "isort"].filter(function (id) { return labById[id]; }).map(function (id) { return '<a href="#lab-' + id + '">' + esc(labById[id].title) + "</a>"; }).join("") + "</div></div>" +
+        '<div class="lec-row"><span class="lec-k">Practise it</span><div class="lec-links"><a href="#gym" data-gym-outline>Code Gym (' + D.exercises.filter(function (e) { return e.topic === "outline"; }).length + " exercises)</a><a href=\"#arcade-bigo\">Arcade: Big-O Blitz</a></div></div>" +
+        '<div class="lec-prog small muted">' + odone + " of " + outPart.lessons.length + " lessons done</div></div>";
+      list.appendChild(oc);
+      var gl = oc.querySelector("[data-gym-outline]");
+      if (gl) gl.addEventListener("click", function () { gymFilter.topic = "outline"; });
+    }
     p.appendChild(list);
     wireSectionLinks(list);
     list.addEventListener("click", function (e) { var a = e.target.closest("[data-train]"); if (a) { store.trainPref.mode = a.getAttribute("data-train"); save(); } });

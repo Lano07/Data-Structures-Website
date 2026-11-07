@@ -781,8 +781,8 @@ def main():
     js = "\n".join(open(os.path.join(SRC, f)).read() for f in js_files)
     app = open(os.path.join(SRC, "app.js")).read()
     data_js = "window.CODELAB_DATA = " + json.dumps(data, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/") + ";"
-    head = ('<title>COMP 2611 Code Lab 2</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n'
-            '<meta name="description" content="Learn COMP 2611 data structures in C++: lessons, a step-by-step memory visualizer, algorithm labs and auto-tested coding exercises.">\n'
+    head = ('<title>COMP 2611 Code Lab</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n'
+            '<meta name="description" content="Learn COMP 2611 data structures in C++: lessons, a memory visualizer, algorithm labs, an arcade of exam-skill games, XP and achievements, and auto-tested coding exercises.">\n'
             '<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
             '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600;700&family=Martian+Mono:wght@500;600&family=Space+Grotesk:wght@500;600;700&display=swap">\n')
     body = ("<style>\n" + css + "\n</style>\n"
@@ -795,6 +795,9 @@ def main():
     standalone = ('<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
                   + head + "<style>[hidden]{display:none!important}</style>\n</head>\n<body>\n" + body + "</body>\n</html>\n")
     open(os.path.join(DIST, "COMP2611-Code-Lab.html"), "w").write(standalone)
+    # the same standalone page in docs/, so GitHub Pages can serve the site straight from the repository
+    os.makedirs(os.path.join(ROOT, "docs"), exist_ok=True)
+    open(os.path.join(ROOT, "docs", "index.html"), "w").write(standalone)
     print("lessons: %d, exercises: %d (%d tests), examples: %d, size: %.0f KB" % (len(lessons), len(exs), sum(len(e["tests"]) for e in exs), len(examples), len(page) / 1024))
     if ERRORS:
         print("\n%d PROBLEMS" % len(ERRORS))
