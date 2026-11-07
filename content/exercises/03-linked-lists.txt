@@ -1,0 +1,995 @@
+=== list-size
+title: size
+topic: linked-lists
+level: 1
+lecture: Lecture 3
+lessons: c2-traversal
+blurb: Count the nodes in a list.
+--- prompt
+Write `size`, which returns the number of nodes in the list that starts at `top`. An empty list has size 0.
+
+```cpp
+int size (Node * top);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct Node {
+	int data;
+	Node * next;
+};
+--- starter
+int size (Node * top) {
+	// Write your code here.
+	return 0;
+}
+--- solution
+int size (Node * top) {
+	int count = 0;
+	Node * curr = top;
+	while (curr != NULL) {
+		count++;
+		curr = curr->next;
+	}
+	return count;
+}
+--- harness list
+--- test: three nodes
+int a[] = {10, 20, 30};
+Node * top = __make (a, 3);
+cout << size (top) << endl;
+--- test (hidden): one node
+int a[] = {7};
+cout << size (__make (a, 1)) << endl;
+--- test: empty list
+cout << size (NULL) << endl;
+--- test: eight nodes
+int a[] = {5, 5, 5, 1, 2, 3, 4, 9};
+cout << size (__make (a, 8)) << endl;
+--- hint
+Use the traversal pattern: start a pointer at `top`, and move it with `curr = curr->next` until it is `NULL`.
+--- hint
+Add 1 to a counter each time the loop body runs. For an empty list the body never runs, so the counter stays 0.
+--- explain
+The loop body runs once per node, so the function is O(n). Starting `curr` at `top` (instead of moving `top`) is a good habit, even though here `top` is only a copy.
+
+=== list-sum
+title: Sum of a list
+topic: linked-lists
+level: 1
+lecture: Lecture 3
+lessons: c2-traversal
+blurb: Add up every value in a list.
+--- prompt
+Write `sum`, which returns the total of all the `data` values in the list. The sum of an empty list is 0.
+
+```cpp
+int sum (Node * top);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct Node {
+	int data;
+	Node * next;
+};
+--- starter
+int sum (Node * top) {
+	return 0;
+}
+--- solution
+int sum (Node * top) {
+	int total = 0;
+	for (Node * curr = top; curr != NULL; curr = curr->next)
+		total = total + curr->data;
+	return total;
+}
+--- harness list
+--- test: 10 20 30
+int a[] = {10, 20, 30};
+cout << sum (__make (a, 3)) << endl;
+--- test: negative values
+int a[] = {-5, 8, -3};
+cout << sum (__make (a, 3)) << endl;
+--- test (hidden): empty list
+cout << sum (NULL) << endl;
+--- hint
+Keep a running total that starts at 0, and add `curr->data` for each node.
+--- explain
+Any "add up / count / find something in every node" function is the traversal loop plus one line inside it.
+--- random: random values
+int a[] = {$VALS(1-9,-50,50)};
+cout << sum (__make (a, $N())) << endl;
+
+=== list-contains
+title: contains
+topic: linked-lists
+level: 1
+lecture: Lecture 3
+lessons: c2-traversal
+blurb: Is a key somewhere in the list?
+--- prompt
+Write `contains`, which returns `true` if some node holds `key`, and `false` otherwise.
+
+```cpp
+bool contains (Node * top, int key);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct Node {
+	int data;
+	Node * next;
+};
+--- starter
+bool contains (Node * top, int key) {
+	return false;
+}
+--- solution
+bool contains (Node * top, int key) {
+	Node * curr = top;
+	while (curr != NULL) {
+		if (curr->data == key)
+			return true;
+		curr = curr->next;
+	}
+	return false;
+}
+--- harness list
+--- test: key in the middle
+int a[] = {4, 8, 15, 16};
+cout << contains (__make (a, 4), 15) << endl;
+--- test: key at the end
+int a[] = {4, 8, 15, 16};
+cout << contains (__make (a, 4), 16) << endl;
+--- test (hidden): key missing
+int a[] = {4, 8, 15, 16};
+cout << contains (__make (a, 4), 23) << endl;
+--- test: empty list
+cout << contains (NULL, 4) << endl;
+--- hint
+Return `true` as soon as you find the key. Only return `false` after the loop has checked every node.
+--- hint
+A common mistake is `else return false;` inside the loop, which gives up after the first node.
+--- explain
+In the worst case (key missing or in the last node) every node is checked: O(n). On average about n/2 nodes are checked when the key is present.
+--- random: a key that is there, and one that is not
+int a[] = {$KEYS(1-8,1,40)};
+cout << contains (__make (a, $N()), $PICK()) << " " << contains (__make (a, $N()), $INT(41,60)) << endl;
+
+=== list-occurs
+title: occurs
+topic: linked-lists
+level: 1
+lecture: Lecture 3
+lessons: c5-more-ops
+blurb: Count how many times a key appears.
+--- prompt
+Write `occurs`, which returns how many nodes hold `key`.
+
+```cpp
+int occurs (Node * top, int key);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct Node {
+	int data;
+	Node * next;
+};
+--- starter
+int occurs (Node * top, int key) {
+	return 0;
+}
+--- solution
+int occurs (Node * top, int key) {
+	int count = 0;
+	for (Node * curr = top; curr != NULL; curr = curr->next)
+		if (curr->data == key)
+			count++;
+	return count;
+}
+--- harness list
+--- test: appears three times
+int a[] = {5, 3, 5, 5, 1};
+cout << occurs (__make (a, 5), 5) << endl;
+--- test: appears once
+int a[] = {5, 3, 5, 5, 1};
+cout << occurs (__make (a, 5), 1) << endl;
+--- test: not there
+int a[] = {5, 3};
+cout << occurs (__make (a, 2), 9) << endl;
+--- test (hidden): empty list
+cout << occurs (NULL, 9) << endl;
+--- hint
+Unlike `contains`, you cannot stop early: keep counting until the end of the list.
+--- explain
+Always O(n): every node must be checked.
+--- random: random small values
+int a[] = {$VALS(1-10,1,4)};
+cout << occurs (__make (a, $N()), $INT(1,4)) << endl;
+
+=== list-max
+title: Largest value
+topic: linked-lists
+level: 1
+lecture: Lecture 3
+lessons: c2-traversal
+blurb: Find the biggest value in a non-empty list.
+--- prompt
+Write `maxValue`, which returns the largest `data` value in the list. The list is never empty.
+
+```cpp
+int maxValue (Node * top);
+```
+
+Watch out: values can be negative.
+--- given
+#include <iostream>
+using namespace std;
+
+struct Node {
+	int data;
+	Node * next;
+};
+--- starter
+int maxValue (Node * top) {
+	int biggest = 0;
+	return biggest;
+}
+--- solution
+int maxValue (Node * top) {
+	int biggest = top->data;
+	for (Node * curr = top->next; curr != NULL; curr = curr->next)
+		if (curr->data > biggest)
+			biggest = curr->data;
+	return biggest;
+}
+--- harness list
+--- test: max in the middle
+int a[] = {3, 17, 8};
+cout << maxValue (__make (a, 3)) << endl;
+--- test: max at the end
+int a[] = {3, 8, 17};
+cout << maxValue (__make (a, 3)) << endl;
+--- test: all negative
+int a[] = {-9, -4, -12};
+cout << maxValue (__make (a, 3)) << endl;
+--- test (hidden): one node
+int a[] = {42};
+cout << maxValue (__make (a, 1)) << endl;
+--- hint
+Starting `biggest` at 0 fails when every value is negative. Start it at the first node's value instead.
+--- hint
+Then compare every remaining node with `biggest`.
+--- explain
+Starting from the first real value (not a made-up number like 0) is the safe way to find a maximum or minimum.
+--- random: random values, some negative
+int a[] = {$VALS(1-9,-60,60)};
+cout << maxValue (__make (a, $N())) << endl;
+
+=== list-insert-head
+title: insertAtHead
+topic: linked-lists
+level: 1
+lecture: Lecture 2
+lessons: c1-building
+blurb: Put a new node at the front of a list.
+--- prompt
+Write `insertAtHead`, which makes a new node holding `n`, puts it at the front of the list, and returns the new `top`.
+
+```cpp
+Node * insertAtHead (Node * top, int n);
+```
+
+It must also work when the list is empty (`top == NULL`).
+--- given
+#include <iostream>
+using namespace std;
+
+struct Node {
+	int data;
+	Node * next;
+};
+--- starter
+Node * insertAtHead (Node * top, int n) {
+	return top;
+}
+--- solution
+Node * insertAtHead (Node * top, int n) {
+	Node * newNode = new Node;
+	newNode->data = n;
+	newNode->next = top;
+	return newNode;
+}
+--- harness list
+--- test: into 20 -> 30
+int a[] = {20, 30};
+Node * top = __make (a, 2);
+top = insertAtHead (top, 10);
+__show (top);
+--- test (hidden): into an empty list
+Node * top = NULL;
+top = insertAtHead (top, 5);
+__show (top);
+--- test: three inserts
+Node * top = NULL;
+top = insertAtHead (top, 1);
+top = insertAtHead (top, 2);
+top = insertAtHead (top, 3);
+__show (top);
+--- hint
+Make the node with `new Node`, then set both of its fields.
+--- hint
+The new node's `next` must point to the old first node, which is `top`. Then return the new node: it is the new top.
+--- explain
+Three steps, the same for any length of list: O(1). Inserting several values at the head reverses their order.
+
+=== list-insert-tail
+title: insertAtTail
+topic: linked-lists
+level: 2
+lecture: Lecture 2
+lessons: c3-insertion
+blurb: Add a new node after the last node.
+--- prompt
+Write `insertAtTail`, which adds a new node holding `n` at the end of the list and returns the `top` of the list.
+
+```cpp
+Node * insertAtTail (Node * top, int n);
+```
+
+Remember the empty list.
+--- given
+#include <iostream>
+using namespace std;
+
+struct Node {
+	int data;
+	Node * next;
+};
+--- starter
+Node * insertAtTail (Node * top, int n) {
+	Node * newNode = new Node;
+	newNode->data = n;
+	newNode->next = NULL;
+	// Find the last node and link the new node after it.
+	return top;
+}
+--- solution
+Node * insertAtTail (Node * top, int n) {
+	Node * newNode = new Node;
+	newNode->data = n;
+	newNode->next = NULL;
+	if (top == NULL)
+		return newNode;
+	Node * last = top;
+	while (last->next != NULL)
+		last = last->next;
+	last->next = newNode;
+	return top;
+}
+--- harness list
+--- test: into 10 -> 20
+int a[] = {10, 20};
+Node * top = __make (a, 2);
+top = insertAtTail (top, 30);
+__show (top);
+--- test (hidden): into an empty list
+Node * top = insertAtTail (NULL, 5);
+__show (top);
+--- test: three inserts keep their order
+Node * top = NULL;
+top = insertAtTail (top, 1);
+top = insertAtTail (top, 2);
+top = insertAtTail (top, 3);
+__show (top);
+--- hint
+If `top` is `NULL`, the new node is the whole list: return it.
+--- hint
+Otherwise walk a pointer with `while (last->next != NULL)` so that it stops **on** the last node, then set `last->next = newNode;`.
+--- explain
+Walking to the end makes this O(n). The empty-list case is needed because an empty list has no last node whose `next` could be changed.
+
+=== list-insert-sorted
+title: insertSorted
+topic: linked-lists
+level: 2
+lecture: Lectures 2 and 4
+lessons: c3-insertion
+blurb: Insert into a list kept in ascending order.
+--- prompt
+The list is in ascending order. Write `insertSorted`, which inserts a new node holding `n` so that the list stays in ascending order, and returns the `top`.
+
+```cpp
+Node * insertSorted (Node * top, int n);
+```
+
+The new value may belong at the front, in the middle or at the end, and the list may be empty.
+--- given
+#include <iostream>
+using namespace std;
+
+struct Node {
+	int data;
+	Node * next;
+};
+--- starter
+Node * insertSorted (Node * top, int n) {
+	Node * newNode = new Node;
+	newNode->data = n;
+	newNode->next = NULL;
+	return top;
+}
+--- solution
+Node * insertSorted (Node * top, int n) {
+	Node * newNode = new Node;
+	newNode->data = n;
+	newNode->next = NULL;
+	if (top == NULL || n < top->data) {
+		newNode->next = top;
+		return newNode;
+	}
+	Node * curr = top;
+	while (curr->next != NULL && curr->next->data < n)
+		curr = curr->next;
+	newNode->next = curr->next;
+	curr->next = newNode;
+	return top;
+}
+--- harness list
+--- test: in the middle
+int a[] = {10, 20, 40};
+__show (insertSorted (__make (a, 3), 30));
+--- test: at the front
+int a[] = {10, 20, 40};
+__show (insertSorted (__make (a, 3), 5));
+--- test: at the end
+int a[] = {10, 20, 40};
+__show (insertSorted (__make (a, 3), 50));
+--- test (hidden): empty list
+__show (insertSorted (NULL, 7));
+--- test: equal values
+int a[] = {10, 20};
+__show (insertSorted (__make (a, 2), 20));
+--- hint
+Case 1: if the list is empty or `n` is smaller than the first value, the new node becomes the new top.
+--- hint
+Case 2: move `curr` along while `curr->next` exists and holds a value smaller than `n`. Then link the new node in after `curr`.
+--- hint
+Link in this order: `newNode->next = curr->next;` and then `curr->next = newNode;`.
+--- explain
+Checking `curr->next != NULL` before `curr->next->data` protects you from following NULL at the end of the list. The search makes this O(n).
+--- random: a random key into a random sorted list
+int a[] = {$SORTED(1-7,1,60)};
+__show (insertSorted (__make (a, $N()), $INT(0,61)));
+
+=== list-delete-head
+title: deleteAtHead
+topic: linked-lists
+level: 1
+lecture: Lecture 2
+lessons: c4-deletion
+blurb: Remove the first node and free it.
+--- prompt
+Write `deleteAtHead`, which removes the first node, frees it with `delete`, and returns the new `top`. If the list is empty, return `NULL`.
+
+```cpp
+Node * deleteAtHead (Node * top);
+```
+
+The tests also check that the node really was deleted.
+--- given
+#include <iostream>
+using namespace std;
+
+struct Node {
+	int data;
+	Node * next;
+};
+--- starter
+Node * deleteAtHead (Node * top) {
+	return top->next;
+}
+--- solution
+Node * deleteAtHead (Node * top) {
+	if (top == NULL)
+		return NULL;
+	Node * temp = top;
+	top = top->next;
+	delete temp;
+	return top;
+}
+--- harness list
+--- test: from 10 -> 20 -> 30
+int a[] = {10, 20, 30};
+Node * top = __make (a, 3);
+top = deleteAtHead (top);
+__show (top);
+cout << "nodes still on the heap: " << __liveNodes () << endl;
+--- test: the only node
+int a[] = {10};
+Node * top = __make (a, 1);
+top = deleteAtHead (top);
+__show (top);
+cout << "nodes still on the heap: " << __liveNodes () << endl;
+--- test (hidden): empty list
+Node * top = deleteAtHead (NULL);
+__show (top);
+--- hint
+Keep a pointer to the old first node (`temp`) before moving `top`.
+--- hint
+Move `top` to `top->next` first, and only then `delete temp;`. Reading `top->next` after deleting `top` uses freed memory.
+--- explain
+O(1). Save, move, free: the order matters because a deleted node must never be read again.
+
+=== list-delete-key
+title: deleteKey
+topic: linked-lists
+level: 2
+lecture: Lectures 2–4
+lessons: c4-deletion
+blurb: Remove the first node holding a key.
+--- prompt
+Write `deleteKey`, which removes the **first** node holding `key` (if there is one), deletes it, and returns the `top` of the list.
+
+```cpp
+Node * deleteKey (Node * top, int key);
+```
+
+The key may be in the first node, in a later node, or missing.
+--- given
+#include <iostream>
+using namespace std;
+
+struct Node {
+	int data;
+	Node * next;
+};
+--- starter
+Node * deleteKey (Node * top, int key) {
+	return top;
+}
+--- solution
+Node * deleteKey (Node * top, int key) {
+	if (top == NULL)
+		return NULL;
+	if (top->data == key) {
+		Node * temp = top;
+		top = top->next;
+		delete temp;
+		return top;
+	}
+	Node * prev = top;
+	Node * curr = top->next;
+	while (curr != NULL && curr->data != key) {
+		prev = curr;
+		curr = curr->next;
+	}
+	if (curr != NULL) {
+		prev->next = curr->next;
+		delete curr;
+	}
+	return top;
+}
+--- harness list
+--- test: in the middle
+int a[] = {10, 20, 30, 40};
+Node * top = deleteKey (__make (a, 4), 30);
+__show (top);
+cout << "nodes on the heap: " << __liveNodes () << endl;
+--- test: the first node
+int a[] = {10, 20, 30};
+__show (deleteKey (__make (a, 3), 10));
+--- test: the last node
+int a[] = {10, 20, 30};
+__show (deleteKey (__make (a, 3), 30));
+--- test (hidden): missing key
+int a[] = {10, 20, 30};
+__show (deleteKey (__make (a, 3), 99));
+--- test: only the first match
+int a[] = {5, 7, 5};
+__show (deleteKey (__make (a, 3), 5));
+--- test: empty list
+__show (deleteKey (NULL, 1));
+--- hint
+If the first node holds the key, `top` itself must move (like deleteAtHead).
+--- hint
+Otherwise walk two pointers together: `prev` one step behind `curr`. Stop when `curr` is NULL or holds the key.
+--- hint
+If `curr` found the key: `prev->next = curr->next;` then `delete curr;`.
+--- explain
+The node before the deleted one must change its `next`, which is why `prev` is needed in a singly linked list. Search O(n) plus O(1) to unlink.
+--- random: delete a key that is in the list
+int a[] = {$KEYS(1-8,1,30)};
+__show (deleteKey (__make (a, $N()), $PICK()));
+
+=== list-get-last
+title: getLast
+topic: linked-lists
+level: 1
+lecture: Lecture 3
+lessons: c2-traversal
+blurb: Return a pointer to the last node.
+--- prompt
+Write `getLast`, which returns a pointer to the last node of the list, or `NULL` if the list is empty.
+
+```cpp
+Node * getLast (Node * top);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct Node {
+	int data;
+	Node * next;
+};
+--- starter
+Node * getLast (Node * top) {
+	Node * last = top;
+	while (last != NULL)
+		last = last->next;
+	return last;
+}
+--- solution
+Node * getLast (Node * top) {
+	Node * last;
+	Node * previous;
+	last = previous = top;
+	while (last != NULL) {
+		previous = last;
+		last = last->next;
+	}
+	return previous;
+}
+--- harness list
+--- test: three nodes
+int a[] = {10, 20, 30};
+cout << getLast (__make (a, 3))->data << endl;
+--- test (hidden): one node
+int a[] = {8};
+cout << getLast (__make (a, 1))->data << endl;
+--- test: empty list
+cout << (getLast (NULL) == NULL ? "NULL" : "not NULL") << endl;
+--- hint
+The starter is the lecture's first attempt: it always returns NULL. Why?
+--- hint
+Keep a second pointer, `previous`, that is always one node behind `last`. When `last` falls off the end, `previous` is on the last node.
+--- explain
+Either keep a trailing pointer (the lecture's fix) or stop one node early with `while (last->next != NULL)` after checking for an empty list.
+
+=== list-is-equal
+title: isEqual
+topic: linked-lists
+level: 2
+lecture: Lecture 4
+lessons: c5-more-ops
+blurb: Do two lists hold the same values in the same order?
+--- prompt
+Write `isEqual`, which returns `true` if the two lists have the same length and the same values in the same order.
+
+```cpp
+bool isEqual (Node * top1, Node * top2);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct Node {
+	int data;
+	Node * next;
+};
+--- starter
+bool isEqual (Node * top1, Node * top2) {
+	return true;
+}
+--- solution
+bool isEqual (Node * top1, Node * top2) {
+	Node * p = top1;
+	Node * q = top2;
+	while (p != NULL && q != NULL) {
+		if (p->data != q->data)
+			return false;
+		p = p->next;
+		q = q->next;
+	}
+	return p == NULL && q == NULL;
+}
+--- harness list
+--- test: equal lists
+int a[] = {1, 2, 3}, b[] = {1, 2, 3};
+cout << isEqual (__make (a, 3), __make (b, 3)) << endl;
+--- test: different value
+int a[] = {1, 2, 3}, b[] = {1, 9, 3};
+cout << isEqual (__make (a, 3), __make (b, 3)) << endl;
+--- test: first list shorter
+int a[] = {1, 2}, b[] = {1, 2, 3};
+cout << isEqual (__make (a, 2), __make (b, 3)) << endl;
+--- test: second list shorter
+int a[] = {1, 2, 3}, b[] = {1, 2};
+cout << isEqual (__make (a, 3), __make (b, 2)) << endl;
+--- test (hidden): both empty
+cout << isEqual (NULL, NULL) << endl;
+--- hint
+Walk one pointer through each list at the same time, comparing the values.
+--- hint
+When the loop ends, the lists are equal only if **both** pointers are NULL; otherwise one list is longer.
+--- explain
+Lecture 4 writes this recursively (isEqualRec): two empty lists are equal; otherwise compare the first values and the rest of both lists. The loop version does the same work, O(n).
+
+=== list-copy
+title: copyList
+topic: linked-lists
+level: 2
+lecture: Lectures 2–4
+lessons: c5-more-ops
+blurb: Make an independent copy with new nodes.
+--- prompt
+Write `copyList`, which returns a **new** list with the same values in the same order. It must make new nodes: changing the copy must not change the original.
+
+```cpp
+Node * copyList (Node * top);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct Node {
+	int data;
+	Node * next;
+};
+--- starter
+Node * copyList (Node * top) {
+	return top;
+}
+--- solution
+Node * copyList (Node * top) {
+	Node * newTop = NULL;
+	Node * tail = NULL;
+	for (Node * curr = top; curr != NULL; curr = curr->next) {
+		Node * newNode = new Node;
+		newNode->data = curr->data;
+		newNode->next = NULL;
+		if (newTop == NULL)
+			newTop = newNode;
+		else
+			tail->next = newNode;
+		tail = newNode;
+	}
+	return newTop;
+}
+--- harness list
+--- test: copy, then change the copy
+int a[] = {1, 2, 3};
+Node * original = __make (a, 3);
+Node * copy = copyList (original);
+copy->data = 100;
+__show (original);
+__show (copy);
+--- test: new nodes were made
+int a[] = {4, 5};
+Node * original = __make (a, 2);
+Node * copy = copyList (original);
+cout << (copy != original) << " " << __liveNodes () << endl;
+--- test (hidden): empty list
+__show (copyList (NULL));
+--- hint
+Returning `top` only copies the address: both pointers would share the same nodes.
+--- hint
+Make one new node per old node, and add each at the end of the new list. A `tail` pointer to the last new node saves walking the new list every time.
+--- explain
+Keeping a tail pointer makes the copy O(n). Without it, each insert at the end would be O(n) and the copy O(n²).
+
+=== list-reverse
+title: reverse
+topic: linked-lists
+level: 3
+lecture: Lectures 2–4
+lessons: c5-more-ops
+blurb: Reverse a list in place by turning every arrow around.
+--- prompt
+Write `reverse`, which reverses the list **in place** (no new nodes) and returns the new `top`.
+
+```cpp
+Node * reverse (Node * top);
+```
+
+For example, 1 → 2 → 3 becomes 3 → 2 → 1.
+--- given
+#include <iostream>
+using namespace std;
+
+struct Node {
+	int data;
+	Node * next;
+};
+--- starter
+Node * reverse (Node * top) {
+	Node * prev = NULL;
+	Node * curr = top;
+	// Turn each curr->next around to point to prev.
+	return top;
+}
+--- solution
+Node * reverse (Node * top) {
+	Node * prev = NULL;
+	Node * curr = top;
+	while (curr != NULL) {
+		Node * nextNode = curr->next;
+		curr->next = prev;
+		prev = curr;
+		curr = nextNode;
+	}
+	return prev;
+}
+--- harness list
+--- test: four nodes
+int a[] = {1, 2, 3, 4};
+__show (reverse (__make (a, 4)));
+--- test (hidden): one node
+int a[] = {9};
+__show (reverse (__make (a, 1)));
+--- test: empty list
+__show (reverse (NULL));
+--- test: no new nodes
+int a[] = {1, 2, 3};
+Node * top = reverse (__make (a, 3));
+cout << __liveNodes () << endl;
+--- hint
+Before you change `curr->next`, save it in another pointer, or you lose the rest of the list.
+--- hint
+Each pass: save `curr->next`, point `curr->next` at `prev`, move `prev` to `curr`, move `curr` to the saved node.
+--- hint
+When the loop ends, `prev` is on the old last node, which is the new top.
+--- explain
+Three pointers, one pass, no new nodes: O(n) time and O(1) extra memory.
+--- random: random lists
+int a[] = {$VALS(1-9,1,99)};
+__show (reverse (__make (a, $N())));
+
+=== list-delete-all
+title: Delete every occurrence
+topic: linked-lists
+level: 3
+lecture: Lectures 2–4
+lessons: c4-deletion
+blurb: Remove all nodes holding a key, including at the front.
+--- prompt
+Write `deleteAll`, which removes and deletes **every** node holding `key`, and returns the `top`.
+
+```cpp
+Node * deleteAll (Node * top, int key);
+```
+
+The key may appear several times in a row, including at the very start.
+--- given
+#include <iostream>
+using namespace std;
+
+struct Node {
+	int data;
+	Node * next;
+};
+--- starter
+Node * deleteAll (Node * top, int key) {
+	return top;
+}
+--- solution
+Node * deleteAll (Node * top, int key) {
+	while (top != NULL && top->data == key) {
+		Node * temp = top;
+		top = top->next;
+		delete temp;
+	}
+	if (top == NULL)
+		return NULL;
+	Node * prev = top;
+	while (prev->next != NULL) {
+		if (prev->next->data == key) {
+			Node * temp = prev->next;
+			prev->next = temp->next;
+			delete temp;
+		}
+		else
+			prev = prev->next;
+	}
+	return top;
+}
+--- harness list
+--- test: scattered
+int a[] = {1, 5, 2, 5, 3};
+Node * top = deleteAll (__make (a, 5), 5);
+__show (top);
+cout << __liveNodes () << endl;
+--- test: at the start, twice
+int a[] = {5, 5, 1, 2};
+__show (deleteAll (__make (a, 4), 5));
+--- test: next to each other at the end
+int a[] = {1, 5, 5};
+__show (deleteAll (__make (a, 3), 5));
+--- test: every node
+int a[] = {5, 5, 5};
+Node * top = deleteAll (__make (a, 3), 5);
+__show (top);
+cout << __liveNodes () << endl;
+--- test: not there
+int a[] = {1, 2};
+__show (deleteAll (__make (a, 2), 5));
+--- hint
+First deal with the front: while the first node holds the key, delete it and move `top`.
+--- hint
+Then look one node ahead: while `prev->next` exists, either delete `prev->next` (and stay where you are) or move `prev` forward.
+--- hint
+Do not move `prev` after a deletion: the new `prev->next` might hold the key too.
+--- explain
+Looking ahead with `prev->next` means you always have the node before the one being deleted. Each node is checked once: O(n).
+
+=== list-merge-sorted
+title: Merge two sorted lists
+topic: linked-lists
+level: 3
+lecture: Lectures 2–4
+lessons: c5-more-ops
+blurb: Join two ascending lists into one ascending list, relinking the nodes.
+--- prompt
+Both lists are in ascending order. Write `mergeSorted`, which joins them into one ascending list **using the existing nodes** (no `new`), and returns its top.
+
+```cpp
+Node * mergeSorted (Node * a, Node * b);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct Node {
+	int data;
+	Node * next;
+};
+--- starter
+Node * mergeSorted (Node * a, Node * b) {
+	return a;
+}
+--- solution
+Node * mergeSorted (Node * a, Node * b) {
+	if (a == NULL)
+		return b;
+	if (b == NULL)
+		return a;
+	if (a->data <= b->data) {
+		a->next = mergeSorted (a->next, b);
+		return a;
+	}
+	b->next = mergeSorted (a, b->next);
+	return b;
+}
+--- harness list
+--- test: interleaved
+int a[] = {1, 4, 9}, b[] = {2, 3, 10};
+__show (mergeSorted (__make (a, 3), __make (b, 3)));
+--- test (hidden): one empty
+int b[] = {2, 3};
+__show (mergeSorted (NULL, __make (b, 2)));
+--- test: all of a first
+int a[] = {1, 2}, b[] = {5, 6, 7};
+__show (mergeSorted (__make (a, 2), __make (b, 3)));
+--- test: no new nodes
+int a[] = {1, 5}, b[] = {2, 6};
+Node * m = mergeSorted (__make (a, 2), __make (b, 2));
+cout << __liveNodes () << endl;
+--- hint
+If one list is empty, the answer is the other list.
+--- hint
+Otherwise the smaller first node becomes the first node of the result. Its `next` is the merge of the rest.
+--- explain
+The recursive version is short; each call places one node, so it is O(n + m). This is the same merging idea merge sort uses on arrays (Part K).
+--- random: two random sorted lists
+int a[] = {$SORTED(1-6,1,50)};
+int na = $N();
+int b[] = {$SORTED(1-6,1,50)};
+int nb = $N();
+__show (mergeSorted (__make (a, na), __make (b, nb)));

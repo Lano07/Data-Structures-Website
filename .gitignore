@@ -1,0 +1,7 @@
+# build caches and generated bundles (python3 build.py recreates them)
+build/
+dist/
+__pycache__/
+node_modules/
+*.pyc
+.DS_Store

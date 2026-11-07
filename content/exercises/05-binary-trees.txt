@@ -1,0 +1,530 @@
+=== tree-moment
+title: moment
+topic: binary-trees
+level: 1
+lecture: Lecture 6
+lessons: f3-tree-code
+blurb: Count the nodes in a binary tree.
+--- prompt
+The **moment** of a tree is its number of nodes. Write `moment` recursively.
+
+```cpp
+int moment (BTNode * root);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct BTNode {
+	int data;
+	BTNode * left;
+	BTNode * right;
+};
+--- starter
+int moment (BTNode * root) {
+	return 0;
+}
+--- solution
+int moment (BTNode * root) {
+	if (root == NULL)
+		return 0;
+	return 1 + moment (root->left) + moment (root->right);
+}
+--- harness btree
+--- test: Lecture 6 tree
+BTNode * root = __n (10, __n (40, __n (30, NULL, NULL), NULL), __n (25, __n (50, NULL, NULL), __n (20, NULL, NULL)));
+cout << moment (root) << endl;
+--- test (hidden): one node
+cout << moment (__n (7, NULL, NULL)) << endl;
+--- test: empty tree
+cout << moment (NULL) << endl;
+--- test: a chain
+cout << moment (__n (1, NULL, __n (2, NULL, __n (3, NULL, NULL)))) << endl;
+--- hint
+Empty tree: 0 nodes. Otherwise: the root, plus the nodes in each subtree.
+--- explain
+One call per node plus one per empty subtree: O(n). The recipe "base case, then combine the two subtree answers" works for every tree count.
+
+=== tree-terminal
+title: numTerminal (the weight)
+topic: binary-trees
+level: 1
+lecture: Lecture 6
+lessons: f3-tree-code
+blurb: Count the leaves.
+--- prompt
+Write `numTerminal`, which returns the number of **terminal nodes** (leaves) in the tree.
+
+```cpp
+int numTerminal (BTNode * root);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct BTNode {
+	int data;
+	BTNode * left;
+	BTNode * right;
+};
+--- starter
+int numTerminal (BTNode * root) {
+	if (root == NULL)
+		return 0;
+	return numTerminal (root->left) + numTerminal (root->right);
+}
+--- solution
+int numTerminal (BTNode * root) {
+	if (root == NULL)
+		return 0;
+	if (root->left == NULL && root->right == NULL)
+		return 1;
+	return numTerminal (root->left) + numTerminal (root->right);
+}
+--- harness btree
+--- test: Lecture 6 tree
+BTNode * root = __n (10, __n (40, __n (30, NULL, NULL), NULL), __n (25, __n (50, NULL, NULL), __n (20, NULL, NULL)));
+cout << numTerminal (root) << endl;
+--- test (hidden): one node
+cout << numTerminal (__n (7, NULL, NULL)) << endl;
+--- test: empty tree
+cout << numTerminal (NULL) << endl;
+--- hint
+The starter never counts anything: every call returns 0 + 0. Which node should count 1?
+--- hint
+A node with no left child and no right child is a leaf: return 1 for it.
+--- explain
+The leaf case is a second base case. Without it, nothing is ever counted.
+
+=== tree-nonterminal
+title: numNonTerminal (the branch nodes)
+topic: binary-trees
+level: 1
+lecture: Lecture 6
+lessons: f3-tree-code
+blurb: Count the nodes that are not leaves.
+--- prompt
+Write `numNonTerminal`, which returns the number of **non-terminal** nodes in the tree: every node that is not a leaf. (This is the exercise from Lecture 6.)
+
+```cpp
+int numNonTerminal (BTNode * root);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct BTNode {
+	int data;
+	BTNode * left;
+	BTNode * right;
+};
+--- starter
+int numNonTerminal (BTNode * root) {
+	if (root == NULL)
+		return 0;
+	return 1 + numNonTerminal (root->left) + numNonTerminal (root->right);
+}
+--- solution
+int numNonTerminal (BTNode * root) {
+	if (root == NULL)
+		return 0;
+	if (root->left == NULL && root->right == NULL)
+		return 0;
+	return 1 + numNonTerminal (root->left) + numNonTerminal (root->right);
+}
+--- harness btree
+--- test: Lecture 6 tree
+BTNode * root = __n (10, __n (40, __n (30, NULL, NULL), NULL), __n (25, __n (50, NULL, NULL), __n (20, NULL, NULL)));
+cout << numNonTerminal (root) << endl;
+--- test (hidden): one node
+cout << numNonTerminal (__n (7, NULL, NULL)) << endl;
+--- test: empty tree
+cout << numNonTerminal (NULL) << endl;
+--- test: a chain
+cout << numNonTerminal (__n (1, NULL, __n (2, __n (3, NULL, NULL), NULL))) << endl;
+--- hint
+The starter counts every node, leaves included: it is computing the moment. Which nodes must give 0?
+--- hint
+Add a second base case: if the node has no left child and no right child, it is a leaf, so return 0.
+--- explain
+Two base cases (empty tree, leaf) and one recursive case that adds 1 for the current branch node. Together with numTerminal: numTerminal + numNonTerminal = moment.
+
+=== tree-height
+title: height
+topic: binary-trees
+level: 2
+lecture: Lecture 6
+lessons: f3-tree-code
+blurb: Number of edges on the longest root-to-leaf path.
+--- prompt
+Write `height`. An empty tree has height −1 and a single node has height 0.
+
+```cpp
+int height (BTNode * root);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct BTNode {
+	int data;
+	BTNode * left;
+	BTNode * right;
+};
+--- starter
+int height (BTNode * root) {
+	if (root == NULL)
+		return 0;
+	return 1 + height (root->left);
+}
+--- solution
+int height (BTNode * root) {
+	if (root == NULL)
+		return -1;
+	int leftHeight = height (root->left);
+	int rightHeight = height (root->right);
+	if (leftHeight > rightHeight)
+		return 1 + leftHeight;
+	return 1 + rightHeight;
+}
+--- harness btree
+--- test: Lecture 6 tree
+BTNode * root = __n (10, __n (40, __n (30, NULL, NULL), NULL), __n (25, __n (50, NULL, NULL), __n (20, NULL, NULL)));
+cout << height (root) << endl;
+--- test: deep on the right
+cout << height (__n (1, __n (2, NULL, NULL), __n (3, NULL, __n (4, NULL, __n (5, NULL, NULL))))) << endl;
+--- test (hidden): one node
+cout << height (__n (7, NULL, NULL)) << endl;
+--- test: empty tree
+cout << height (NULL) << endl;
+--- hint
+The empty tree must return −1 so that a single node gets 1 + (−1) = 0.
+--- hint
+Look at both subtrees and add 1 to the bigger height.
+--- explain
+O(n): every node is visited once. Height counts edges, so it is one less than the number of nodes on the longest path.
+
+=== tree-one-child
+title: numOneChild
+topic: binary-trees
+level: 2
+lecture: Lecture 6
+lessons: f3-tree-code
+blurb: Count nodes that have exactly one child.
+--- prompt
+Write `numOneChild`, which returns how many nodes have **exactly one** child.
+
+```cpp
+int numOneChild (BTNode * root);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct BTNode {
+	int data;
+	BTNode * left;
+	BTNode * right;
+};
+--- starter
+int numOneChild (BTNode * root) {
+	return 0;
+}
+--- solution
+int numOneChild (BTNode * root) {
+	if (root == NULL)
+		return 0;
+	int below = numOneChild (root->left) + numOneChild (root->right);
+	if ((root->left == NULL) != (root->right == NULL))
+		return 1 + below;
+	return below;
+}
+--- harness btree
+--- test: Lecture 6 tree
+BTNode * root = __n (10, __n (40, __n (30, NULL, NULL), NULL), __n (25, __n (50, NULL, NULL), __n (20, NULL, NULL)));
+cout << numOneChild (root) << endl;
+--- test: a chain of 4
+cout << numOneChild (__n (1, __n (2, __n (3, __n (4, NULL, NULL), NULL), NULL), NULL)) << endl;
+--- test: full tree
+cout << numOneChild (__n (1, __n (2, NULL, NULL), __n (3, NULL, NULL))) << endl;
+--- test (hidden): empty
+cout << numOneChild (NULL) << endl;
+--- hint
+A node has exactly one child when one of its child pointers is NULL and the other is not.
+--- hint
+Count this node (1 or 0) and add the counts from both subtrees.
+--- explain
+`(a == NULL) != (b == NULL)` is true exactly when one is NULL and the other is not. The lecture writes the same logic with separate if statements.
+
+=== tree-sum
+title: Sum of a tree
+topic: binary-trees
+level: 1
+lecture: Lectures 5–6
+lessons: f3-tree-code
+blurb: Add up every value in a binary tree.
+--- prompt
+Write `treeSum`, which returns the sum of all values in the tree (0 for an empty tree).
+
+```cpp
+int treeSum (BTNode * root);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct BTNode {
+	int data;
+	BTNode * left;
+	BTNode * right;
+};
+--- starter
+int treeSum (BTNode * root) {
+	return root->data;
+}
+--- solution
+int treeSum (BTNode * root) {
+	if (root == NULL)
+		return 0;
+	return root->data + treeSum (root->left) + treeSum (root->right);
+}
+--- harness btree
+--- test: three nodes
+cout << treeSum (__n (5, __n (3, NULL, NULL), __n (4, NULL, NULL))) << endl;
+--- test: Lecture 6 tree
+BTNode * root = __n (10, __n (40, __n (30, NULL, NULL), NULL), __n (25, __n (50, NULL, NULL), __n (20, NULL, NULL)));
+cout << treeSum (root) << endl;
+--- test (hidden): empty
+cout << treeSum (NULL) << endl;
+--- hint
+Same shape as moment, but add `root->data` instead of 1.
+--- explain
+O(n). Changing "1" to "root->data" in moment gives the sum; changing it to a comparison gives a count of matching nodes.
+
+=== tree-contains
+title: preOrderContains
+topic: binary-trees
+level: 2
+lecture: Lecture 6
+lessons: f3-tree-code
+blurb: Search a (non-BST) binary tree in preorder.
+--- prompt
+Write `preOrderContains`, which returns `true` if `n` is anywhere in the binary tree. Check the root first, then the left subtree, then (only if not found yet) the right subtree. The tree is **not** a BST.
+
+```cpp
+bool preOrderContains (BTNode * root, int n);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct BTNode {
+	int data;
+	BTNode * left;
+	BTNode * right;
+};
+--- starter
+bool preOrderContains (BTNode * root, int n) {
+	if (root == NULL)
+		return false;
+	return root->data == n;
+}
+--- solution
+bool preOrderContains (BTNode * root, int n) {
+	if (root == NULL)
+		return false;
+	if (root->data == n)
+		return true;
+	bool found = preOrderContains (root->left, n);
+	if (!found)
+		return preOrderContains (root->right, n);
+	return true;
+}
+--- harness btree
+--- test: at the root
+BTNode * root = __n (10, __n (40, __n (30, NULL, NULL), NULL), __n (25, __n (50, NULL, NULL), __n (20, NULL, NULL)));
+cout << preOrderContains (root, 10) << endl;
+--- test: deep on the left
+BTNode * root = __n (10, __n (40, __n (30, NULL, NULL), NULL), __n (25, __n (50, NULL, NULL), __n (20, NULL, NULL)));
+cout << preOrderContains (root, 30) << endl;
+--- test: on the right
+BTNode * root = __n (10, __n (40, __n (30, NULL, NULL), NULL), __n (25, __n (50, NULL, NULL), __n (20, NULL, NULL)));
+cout << preOrderContains (root, 20) << endl;
+--- test (hidden): missing
+BTNode * root = __n (10, __n (40, __n (30, NULL, NULL), NULL), __n (25, __n (50, NULL, NULL), __n (20, NULL, NULL)));
+cout << preOrderContains (root, 99) << endl;
+--- hint
+Root first. If the root does not hold n, search the left subtree, and keep its answer.
+--- hint
+Only search the right subtree when the left subtree did not find it.
+--- explain
+In a plain binary tree the key could be anywhere, so the worst case visits every node: O(n). A BST does better because its values are ordered.
+
+=== tree-max
+title: Largest value in a binary tree
+topic: binary-trees
+level: 2
+lecture: Lectures 5–6
+lessons: f3-tree-code
+blurb: Find the maximum of a non-empty tree that is not a BST.
+--- prompt
+Write `treeMax`, which returns the largest value in a **non-empty** binary tree. The tree is not a BST, so the maximum could be anywhere. Values may be negative.
+
+```cpp
+int treeMax (BTNode * root);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct BTNode {
+	int data;
+	BTNode * left;
+	BTNode * right;
+};
+--- starter
+int treeMax (BTNode * root) {
+	while (root->right != NULL)
+		root = root->right;
+	return root->data;
+}
+--- solution
+int treeMax (BTNode * root) {
+	int best = root->data;
+	if (root->left != NULL) {
+		int l = treeMax (root->left);
+		if (l > best)
+			best = l;
+	}
+	if (root->right != NULL) {
+		int r = treeMax (root->right);
+		if (r > best)
+			best = r;
+	}
+	return best;
+}
+--- harness btree
+--- test: max on the left
+cout << treeMax (__n (10, __n (40, __n (30, NULL, NULL), NULL), __n (25, NULL, NULL))) << endl;
+--- test: max at the root
+cout << treeMax (__n (90, __n (40, NULL, NULL), __n (25, NULL, __n (5, NULL, NULL)))) << endl;
+--- test: all negative
+cout << treeMax (__n (-8, __n (-3, NULL, NULL), __n (-20, NULL, NULL))) << endl;
+--- test (hidden): one node
+cout << treeMax (__n (4, NULL, NULL)) << endl;
+--- hint
+The starter walks right, which only works for a BST.
+--- hint
+Start with `root->data`, then compare with the maximum of each subtree that is not empty.
+--- explain
+Only recurse into non-empty subtrees, because the function needs a real value to compare with (there is no "maximum of nothing"). O(n).
+
+=== tree-mirror
+title: Mirror a tree
+topic: binary-trees
+level: 3
+lecture: Lectures 5–6
+lessons: f3-tree-code
+blurb: Swap left and right everywhere.
+--- prompt
+Write `mirror`, which swaps the left and right child of **every** node, so the tree becomes its mirror image.
+
+```cpp
+void mirror (BTNode * root);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct BTNode {
+	int data;
+	BTNode * left;
+	BTNode * right;
+};
+--- starter
+void mirror (BTNode * root) {
+	if (root == NULL)
+		return;
+	BTNode * temp = root->left;
+	root->left = root->right;
+	root->right = temp;
+}
+--- solution
+void mirror (BTNode * root) {
+	if (root == NULL)
+		return;
+	BTNode * temp = root->left;
+	root->left = root->right;
+	root->right = temp;
+	mirror (root->left);
+	mirror (root->right);
+}
+--- harness btree
+--- test: preorder after mirroring
+BTNode * root = __n (10, __n (40, __n (30, NULL, NULL), NULL), __n (25, __n (50, NULL, NULL), __n (20, NULL, NULL)));
+mirror (root);
+__pre (root);
+cout << endl;
+--- test: inorder reverses
+BTNode * root = __n (4, __n (2, __n (1, NULL, NULL), __n (3, NULL, NULL)), __n (6, __n (5, NULL, NULL), __n (7, NULL, NULL)));
+mirror (root);
+__in (root);
+cout << endl;
+--- test (hidden): empty
+mirror (NULL);
+cout << "ok" << endl;
+--- hint
+The starter only swaps the root's children. Every node needs its children swapped.
+--- hint
+After swapping at the root, mirror both subtrees recursively.
+--- explain
+Mirroring reverses the inorder traversal: for a BST it turns ascending order into descending order. O(n).
+
+=== tree-count-level
+title: Nodes at a given level
+topic: binary-trees
+level: 3
+lecture: Lectures 5 and 10
+lessons: f1-terminology, f4-level-order-types
+blurb: How many nodes are at depth k?
+--- prompt
+Write `countAtLevel`, which returns how many nodes are on level `k` (the root is on level 0).
+
+```cpp
+int countAtLevel (BTNode * root, int k);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct BTNode {
+	int data;
+	BTNode * left;
+	BTNode * right;
+};
+--- starter
+int countAtLevel (BTNode * root, int k) {
+	return 0;
+}
+--- solution
+int countAtLevel (BTNode * root, int k) {
+	if (root == NULL)
+		return 0;
+	if (k == 0)
+		return 1;
+	return countAtLevel (root->left, k - 1) + countAtLevel (root->right, k - 1);
+}
+--- harness btree
+--- test: levels 0, 1, 2 and 3
+BTNode * root = __n (20, __n (17, __n (5, NULL, __n (10, NULL, NULL)), __n (18, NULL, NULL)), __n (30, __n (25, NULL, NULL), __n (50, NULL, NULL)));
+cout << countAtLevel (root, 0) << " " << countAtLevel (root, 1) << " " << countAtLevel (root, 2) << " " << countAtLevel (root, 3) << endl;
+--- test: deeper than the tree
+cout << countAtLevel (__n (1, NULL, NULL), 4) << endl;
+--- test (hidden): empty
+cout << countAtLevel (NULL, 0) << endl;
+--- hint
+Level k of the tree is level k − 1 of each subtree.
+--- hint
+When k reaches 0, the current node is on the level you want: count 1.
+--- explain
+Each call moves one level down and reduces k by 1. It visits at most the nodes on levels 0 to k.

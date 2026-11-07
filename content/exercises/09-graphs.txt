@@ -1,0 +1,722 @@
+=== graph-out-degree
+title: Out-degree and in-degree
+topic: graphs
+level: 1
+lecture: Lectures 15–16
+lessons: j1-graph-basics, j2-graph-code
+blurb: Count the edges leaving a vertex, and the edges entering it.
+--- prompt
+Using the lecture's Graph struct, write `outDegree`, the number of edges **leaving** vertex `v`, and `inDegree`, the number of edges **entering** it. The vertex always exists.
+
+```cpp
+int outDegree (Graph * g, string v);
+int inDegree (Graph * g, string v);
+```
+--- given
+#include <iostream>
+#include <string>
+using namespace std;
+
+#define MAX_VERTICES 20
+
+struct Edge {
+	string destID;
+	Edge * nextEdge;
+};
+
+struct Vertex {
+	string ID;
+	Edge * firstEdge;
+};
+
+struct Graph {
+	int numVertices;
+	Vertex vertices[MAX_VERTICES];
+};
+
+int findVertex (Graph * g, string id) {
+	for (int i = 0; i < g->numVertices; i++)
+		if (g->vertices[i].ID == id)
+			return i;
+	return -1;
+}
+--- starter
+int outDegree (Graph * g, string v) {
+	int count = 0;
+	for (int i = 0; i < g->numVertices; i++)
+		for (Edge * e = g->vertices[i].firstEdge; e != NULL; e = e->nextEdge)
+			count++;
+	return count;
+}
+
+int inDegree (Graph * g, string v) {
+	return outDegree (g, v);
+}
+--- solution
+int outDegree (Graph * g, string v) {
+	int loc = findVertex (g, v);
+	int count = 0;
+	for (Edge * e = g->vertices[loc].firstEdge; e != NULL; e = e->nextEdge)
+		count++;
+	return count;
+}
+
+int inDegree (Graph * g, string v) {
+	int count = 0;
+	for (int i = 0; i < g->numVertices; i++)
+		for (Edge * e = g->vertices[i].firstEdge; e != NULL; e = e->nextEdge)
+			if (e->destID == v)
+				count++;
+	return count;
+}
+--- harness
+Graph * __graph (string ids, string edges[], int m) {
+	Graph * g = new Graph;
+	g->numVertices = 0;
+	for (int i = 0; i < (int) ids.length (); i++) {
+		g->vertices[i].ID = ids.substr (i, 1);
+		g->vertices[i].firstEdge = NULL;
+		g->numVertices++;
+	}
+	for (int k = 0; k < m; k++) {
+		int u = findVertex (g, edges[k].substr (0, 1));
+		Edge * e = new Edge;
+		e->destID = edges[k].substr (1, 1);
+		e->nextEdge = NULL;
+		if (g->vertices[u].firstEdge == NULL)
+			g->vertices[u].firstEdge = e;
+		else {
+			Edge * last = g->vertices[u].firstEdge;
+			while (last->nextEdge != NULL)
+				last = last->nextEdge;
+			last->nextEdge = e;
+		}
+	}
+	return g;
+}
+--- test: Lecture 16 adjacency list example
+string E[] = {"AD", "AG", "CE", "CG", "DB", "DE", "DF", "DG", "EB", "EG", "FB", "FC", "FE"};
+Graph * g = __graph ("ABCDEFG", E, 13);
+cout << "D: out " << outDegree (g, "D") << ", in " << inDegree (g, "D") << endl;
+cout << "G: out " << outDegree (g, "G") << ", in " << inDegree (g, "G") << endl;
+cout << "B: out " << outDegree (g, "B") << ", in " << inDegree (g, "B") << endl;
+--- test: Lecture 16 BFS graph
+string E[] = {"AD", "AF", "AG", "BA", "CB", "CE", "DB", "DE", "EB", "FE", "FG", "GC"};
+Graph * g = __graph ("ABCDEFG", E, 12);
+cout << "A: out " << outDegree (g, "A") << ", in " << inDegree (g, "A") << endl;
+cout << "E: out " << outDegree (g, "E") << ", in " << inDegree (g, "E") << endl;
+--- hint
+outDegree only needs v's own list: find v's location with findVertex, then count the edges in `g->vertices[loc].firstEdge`'s list.
+--- hint
+Edges are stored with the vertex they leave, so for inDegree you must look through every vertex's list and count the edges whose `destID` is v.
+--- explain
+outDegree walks one list (O(out-degree)), but inDegree must walk every list (O(V + E)). Questions like in-degree are where an adjacency matrix does better: count the 1s in v's column.
+
+=== graph-has-edge
+title: Is there an edge from u to v?
+topic: graphs
+level: 1
+lecture: Lectures 16–17
+lessons: j2-graph-code
+blurb: The lecture's second question, answered with adjacency lists.
+--- prompt
+Write `hasEdge`, which returns `true` if there is an edge **from** u **to** v. If u is not a vertex of the graph, return `false`.
+
+```cpp
+bool hasEdge (Graph * g, string u, string v);
+```
+--- given
+#include <iostream>
+#include <string>
+using namespace std;
+
+#define MAX_VERTICES 20
+
+struct Edge {
+	string destID;
+	Edge * nextEdge;
+};
+
+struct Vertex {
+	string ID;
+	Edge * firstEdge;
+};
+
+struct Graph {
+	int numVertices;
+	Vertex vertices[MAX_VERTICES];
+};
+
+int findVertex (Graph * g, string id) {
+	for (int i = 0; i < g->numVertices; i++)
+		if (g->vertices[i].ID == id)
+			return i;
+	return -1;
+}
+--- starter
+bool hasEdge (Graph * g, string u, string v) {
+	int loc = findVertex (g, u);
+	Edge * e = g->vertices[loc].firstEdge;
+	return e != NULL && e->destID == v;
+}
+--- solution
+bool hasEdge (Graph * g, string u, string v) {
+	int loc = findVertex (g, u);
+	if (loc == -1)
+		return false;
+	for (Edge * e = g->vertices[loc].firstEdge; e != NULL; e = e->nextEdge)
+		if (e->destID == v)
+			return true;
+	return false;
+}
+--- harness
+Graph * __graph (string ids, string edges[], int m) {
+	Graph * g = new Graph;
+	g->numVertices = 0;
+	for (int i = 0; i < (int) ids.length (); i++) {
+		g->vertices[i].ID = ids.substr (i, 1);
+		g->vertices[i].firstEdge = NULL;
+		g->numVertices++;
+	}
+	for (int k = 0; k < m; k++) {
+		int u = findVertex (g, edges[k].substr (0, 1));
+		Edge * e = new Edge;
+		e->destID = edges[k].substr (1, 1);
+		e->nextEdge = NULL;
+		if (g->vertices[u].firstEdge == NULL)
+			g->vertices[u].firstEdge = e;
+		else {
+			Edge * last = g->vertices[u].firstEdge;
+			while (last->nextEdge != NULL)
+				last = last->nextEdge;
+			last->nextEdge = e;
+		}
+	}
+	return g;
+}
+--- test: first, middle and last edges
+string E[] = {"AD", "AF", "AG", "BA", "CB", "CE", "DB", "DE", "EB", "FE", "FG", "GC"};
+Graph * g = __graph ("ABCDEFG", E, 12);
+cout << hasEdge (g, "A", "D") << hasEdge (g, "A", "F") << hasEdge (g, "A", "G") << endl;
+--- test: direction matters
+string E[] = {"AD", "AF", "AG", "BA", "CB", "CE", "DB", "DE", "EB", "FE", "FG", "GC"};
+Graph * g = __graph ("ABCDEFG", E, 12);
+cout << hasEdge (g, "D", "A") << hasEdge (g, "B", "A") << hasEdge (g, "B", "C") << endl;
+--- test: unknown vertex
+string E[] = {"AB"};
+Graph * g = __graph ("AB", E, 1);
+cout << hasEdge (g, "Z", "A") << endl;
+--- hint
+The starter only looks at u's first edge. Walk the whole list.
+--- hint
+Check the result of findVertex before using it: −1 is not a valid location.
+--- explain
+This is `contains` (lesson C2) on u's edge list. With an adjacency matrix the same question is a single lookup, matrix[u][v].
+
+=== graph-bfs
+title: Breadth-first traversal
+topic: graphs
+level: 3
+lecture: Lectures 16–17
+lessons: j3-bfs-dfs, e2-queues
+blurb: A queue and three colours, exactly as in the lecture's algorithm.
+--- prompt
+Write the lecture's `breadthFirstTraversal`. It prints the IDs of the vertices in breadth-first order from the vertex at location `source`, each followed by a space, then ends the line. Use the colours: every vertex starts WHITE; a vertex becomes GREY when it is put in the queue and BLACK when its edges have been processed. Follow each adjacency list in order. The queue functions are given and hold vertex **locations**.
+
+```cpp
+void breadthFirstTraversal (Graph * g, int source);
+```
+--- given
+#include <iostream>
+#include <string>
+using namespace std;
+
+#define MAX_VERTICES 20
+const int WHITE = 0, GREY = 1, BLACK = 2;
+
+struct Edge {
+	string destID;
+	Edge * nextEdge;
+};
+
+struct Vertex {
+	string ID;
+	int colour;
+	Edge * firstEdge;
+};
+
+struct Graph {
+	int numVertices;
+	Vertex vertices[MAX_VERTICES];
+};
+
+int findVertex (Graph * g, string id) {
+	for (int i = 0; i < g->numVertices; i++)
+		if (g->vertices[i].ID == id)
+			return i;
+	return -1;
+}
+
+struct Node {
+	int data;
+	Node * next;
+};
+
+struct Queue {
+	Node * head;
+	Node * tail;
+};
+
+Queue * initQueue () {
+	Queue * q = new Queue;
+	q->head = NULL;
+	q->tail = NULL;
+	return q;
+}
+
+bool isEmptyQueue (Queue * q) {
+	return q->head == NULL;
+}
+
+void enqueue (Queue * q, int data) {
+	Node * newNode = new Node;
+	newNode->data = data;
+	newNode->next = NULL;
+	if (q->tail == NULL) {
+		q->head = newNode;
+		q->tail = newNode;
+	}
+	else {
+		q->tail->next = newNode;
+		q->tail = newNode;
+	}
+}
+
+int dequeue (Queue * q) {
+	if (q->head == NULL)
+		return -999;
+	Node * toDelete = q->head;
+	int save = toDelete->data;
+	q->head = q->head->next;
+	if (q->head == NULL)
+		q->tail = NULL;
+	delete toDelete;
+	return save;
+}
+--- starter
+void breadthFirstTraversal (Graph * g, int source) {
+	// Write your code here.
+	cout << endl;
+}
+--- solution
+void breadthFirstTraversal (Graph * g, int source) {
+	for (int i = 0; i < g->numVertices; i++)
+		g->vertices[i].colour = WHITE;
+	g->vertices[source].colour = GREY;
+	Queue * q = initQueue ();
+	enqueue (q, source);
+	while (!isEmptyQueue (q)) {
+		int u = dequeue (q);
+		cout << g->vertices[u].ID << " ";
+		for (Edge * e = g->vertices[u].firstEdge; e != NULL; e = e->nextEdge) {
+			int loc = findVertex (g, e->destID);
+			if (g->vertices[loc].colour == WHITE) {
+				g->vertices[loc].colour = GREY;
+				enqueue (q, loc);
+			}
+		}
+		g->vertices[u].colour = BLACK;
+	}
+	cout << endl;
+	delete q;
+}
+--- harness
+Graph * __graph (string ids, string edges[], int m) {
+	Graph * g = new Graph;
+	g->numVertices = 0;
+	for (int i = 0; i < (int) ids.length (); i++) {
+		g->vertices[i].ID = ids.substr (i, 1);
+		g->vertices[i].firstEdge = NULL;
+		g->numVertices++;
+	}
+	for (int k = 0; k < m; k++) {
+		int u = findVertex (g, edges[k].substr (0, 1));
+		Edge * e = new Edge;
+		e->destID = edges[k].substr (1, 1);
+		e->nextEdge = NULL;
+		if (g->vertices[u].firstEdge == NULL)
+			g->vertices[u].firstEdge = e;
+		else {
+			Edge * last = g->vertices[u].firstEdge;
+			while (last->nextEdge != NULL)
+				last = last->nextEdge;
+			last->nextEdge = e;
+		}
+	}
+	return g;
+}
+--- test: Lecture 16 graph from A
+string E[] = {"AD", "AF", "AG", "BA", "CB", "CE", "DB", "DE", "EB", "FE", "FG", "GC"};
+Graph * g = __graph ("ABCDEFG", E, 12);
+breadthFirstTraversal (g, findVertex (g, "A"));
+--- test: Lecture 17 example 2
+string E[] = {"AB", "AC", "AD", "BE", "BF", "CG", "DC", "DG", "FB", "GF"};
+Graph * g = __graph ("ABCDEFG", E, 10);
+breadthFirstTraversal (g, findVertex (g, "A"));
+--- test: Lecture 16 graph from B
+string E[] = {"AD", "AF", "AG", "BA", "CB", "CE", "DB", "DE", "EB", "FE", "FG", "GC"};
+Graph * g = __graph ("ABCDEFG", E, 12);
+breadthFirstTraversal (g, findVertex (g, "B"));
+--- test: some vertices unreachable
+string E[] = {"AB", "CA"};
+Graph * g = __graph ("ABC", E, 2);
+breadthFirstTraversal (g, findVertex (g, "A"));
+--- hint
+Set every colour to WHITE, make the source GREY and enqueue it. Then, while the queue is not empty: dequeue u, print it, look at each edge of u.
+--- hint
+For each edge, find the destination's location. Only a WHITE destination is coloured GREY and enqueued. When all of u's edges are done, colour u BLACK.
+--- explain
+Colouring a vertex GREY as soon as it is enqueued (not when it is dequeued) is what stops it being enqueued twice. Each vertex is enqueued at most once and each edge examined once.
+
+=== graph-dfs
+title: Depth-first traversal
+topic: graphs
+level: 3
+lecture: Lectures 16–17
+lessons: j3-bfs-dfs, d1-how-recursion-works
+blurb: Write the recursive dfTraverse from the lecture.
+--- prompt
+`depthFirstTraversal` is given. Write the recursive `dfTraverse`: print the ID of the vertex at location `u` followed by a space, colour it GREY, call dfTraverse on each WHITE vertex in u's adjacency list (in order), and finally colour u BLACK.
+
+```cpp
+void dfTraverse (Graph * g, int u);
+```
+--- given
+#include <iostream>
+#include <string>
+using namespace std;
+
+#define MAX_VERTICES 20
+const int WHITE = 0, GREY = 1, BLACK = 2;
+
+struct Edge {
+	string destID;
+	Edge * nextEdge;
+};
+
+struct Vertex {
+	string ID;
+	int colour;
+	Edge * firstEdge;
+};
+
+struct Graph {
+	int numVertices;
+	Vertex vertices[MAX_VERTICES];
+};
+
+int findVertex (Graph * g, string id) {
+	for (int i = 0; i < g->numVertices; i++)
+		if (g->vertices[i].ID == id)
+			return i;
+	return -1;
+}
+
+void dfTraverse (Graph * g, int u);
+
+void depthFirstTraversal (Graph * g) {
+	for (int i = 0; i < g->numVertices; i++)
+		g->vertices[i].colour = WHITE;
+	for (int i = 0; i < g->numVertices; i++)
+		if (g->vertices[i].colour == WHITE)
+			dfTraverse (g, i);
+	cout << endl;
+}
+--- starter
+void dfTraverse (Graph * g, int u) {
+	cout << g->vertices[u].ID << " ";
+	g->vertices[u].colour = GREY;
+	for (Edge * e = g->vertices[u].firstEdge; e != NULL; e = e->nextEdge) {
+		int v = findVertex (g, e->destID);
+		if (g->vertices[v].colour == WHITE) {
+			cout << g->vertices[v].ID << " ";
+			g->vertices[v].colour = BLACK;
+		}
+	}
+	g->vertices[u].colour = BLACK;
+}
+--- solution
+void dfTraverse (Graph * g, int u) {
+	cout << g->vertices[u].ID << " ";
+	g->vertices[u].colour = GREY;
+	for (Edge * e = g->vertices[u].firstEdge; e != NULL; e = e->nextEdge) {
+		int v = findVertex (g, e->destID);
+		if (g->vertices[v].colour == WHITE)
+			dfTraverse (g, v);
+	}
+	g->vertices[u].colour = BLACK;
+}
+--- harness
+Graph * __graph (string ids, string edges[], int m) {
+	Graph * g = new Graph;
+	g->numVertices = 0;
+	for (int i = 0; i < (int) ids.length (); i++) {
+		g->vertices[i].ID = ids.substr (i, 1);
+		g->vertices[i].firstEdge = NULL;
+		g->numVertices++;
+	}
+	for (int k = 0; k < m; k++) {
+		int u = findVertex (g, edges[k].substr (0, 1));
+		Edge * e = new Edge;
+		e->destID = edges[k].substr (1, 1);
+		e->nextEdge = NULL;
+		if (g->vertices[u].firstEdge == NULL)
+			g->vertices[u].firstEdge = e;
+		else {
+			Edge * last = g->vertices[u].firstEdge;
+			while (last->nextEdge != NULL)
+				last = last->nextEdge;
+			last->nextEdge = e;
+		}
+	}
+	return g;
+}
+--- test: Lecture 16 graph
+string E[] = {"AD", "AF", "AG", "BA", "CB", "CE", "DB", "DE", "EB", "FE", "FG", "GC"};
+depthFirstTraversal (__graph ("ABCDEFG", E, 12));
+--- test: Lecture 17 example 2
+string E[] = {"AB", "AC", "AD", "BE", "BF", "CG", "DC", "DG", "FB", "GF"};
+depthFirstTraversal (__graph ("ABCDEFG", E, 10));
+--- test: two separate pieces
+string E[] = {"AB", "CD", "DC"};
+depthFirstTraversal (__graph ("ABCD", E, 3));
+--- hint
+The starter visits u's neighbours but never goes deeper: a neighbour's own neighbours are never explored.
+--- hint
+Replace the inner printing with a recursive call: `if (g->vertices[v].colour == WHITE) dfTraverse (g, v);`.
+--- explain
+The recursion follows one path as deep as it can before backing up, and the call stack remembers where to continue. The GREY test stops it from going round a cycle forever.
+
+=== graph-dijkstra
+title: Dijkstra's algorithm
+topic: graphs
+level: 3
+lecture: Lecture 17
+lessons: j4-dijkstra
+blurb: Always take the cheapest vertex still in the queue.
+--- prompt
+Write `dijkstra` for a weighted graph with non-negative weights. Set every cost to INF and every parent to −1, and the source's cost to 0. Then repeat once per vertex: take the vertex **u with the smallest cost still in the queue** (`inQueue` is true; on a tie, the one with the smaller location), remove it from the queue, and for every edge (u, v) with weight w, if `u.cost + w < v.cost`, set v's cost to `u.cost + w` and its parent to u. Skip relaxing from a vertex whose cost is still INF.
+
+```cpp
+void dijkstra (Graph * g, int source);
+```
+--- given
+#include <iostream>
+#include <string>
+using namespace std;
+
+#define MAX_VERTICES 20
+const int INF = 999999;
+
+struct Edge {
+	string destID;
+	int weight;
+	Edge * nextEdge;
+};
+
+struct Vertex {
+	string ID;
+	Edge * firstEdge;
+	int cost;
+	int parent;
+	bool inQueue;
+};
+
+struct Graph {
+	int numVertices;
+	Vertex vertices[MAX_VERTICES];
+};
+
+int findVertex (Graph * g, string id) {
+	for (int i = 0; i < g->numVertices; i++)
+		if (g->vertices[i].ID == id)
+			return i;
+	return -1;
+}
+--- starter
+void dijkstra (Graph * g, int source) {
+	for (int i = 0; i < g->numVertices; i++) {
+		g->vertices[i].cost = INF;
+		g->vertices[i].parent = -1;
+		g->vertices[i].inQueue = true;
+	}
+	g->vertices[source].cost = 0;
+	for (int u = 0; u < g->numVertices; u++) {
+		g->vertices[u].inQueue = false;
+		if (g->vertices[u].cost == INF)
+			continue;
+		for (Edge * e = g->vertices[u].firstEdge; e != NULL; e = e->nextEdge) {
+			int v = findVertex (g, e->destID);
+			if (g->vertices[u].cost + e->weight < g->vertices[v].cost) {
+				g->vertices[v].cost = g->vertices[u].cost + e->weight;
+				g->vertices[v].parent = u;
+			}
+		}
+	}
+}
+--- solution
+void dijkstra (Graph * g, int source) {
+	for (int i = 0; i < g->numVertices; i++) {
+		g->vertices[i].cost = INF;
+		g->vertices[i].parent = -1;
+		g->vertices[i].inQueue = true;
+	}
+	g->vertices[source].cost = 0;
+	for (int round = 0; round < g->numVertices; round++) {
+		int u = -1;
+		for (int i = 0; i < g->numVertices; i++)
+			if (g->vertices[i].inQueue && (u == -1 || g->vertices[i].cost < g->vertices[u].cost))
+				u = i;
+		g->vertices[u].inQueue = false;
+		if (g->vertices[u].cost == INF)
+			continue;
+		for (Edge * e = g->vertices[u].firstEdge; e != NULL; e = e->nextEdge) {
+			int v = findVertex (g, e->destID);
+			if (g->vertices[u].cost + e->weight < g->vertices[v].cost) {
+				g->vertices[v].cost = g->vertices[u].cost + e->weight;
+				g->vertices[v].parent = u;
+			}
+		}
+	}
+}
+--- harness
+Graph * __wgraph (string ids, string edges[], int weights[], int m) {
+	Graph * g = new Graph;
+	g->numVertices = 0;
+	for (int i = 0; i < (int) ids.length (); i++) {
+		g->vertices[i].ID = ids.substr (i, 1);
+		g->vertices[i].firstEdge = NULL;
+		g->numVertices++;
+	}
+	for (int k = 0; k < m; k++) {
+		int u = findVertex (g, edges[k].substr (0, 1));
+		Edge * e = new Edge;
+		e->destID = edges[k].substr (1, 1);
+		e->weight = weights[k];
+		e->nextEdge = NULL;
+		if (g->vertices[u].firstEdge == NULL)
+			g->vertices[u].firstEdge = e;
+		else {
+			Edge * last = g->vertices[u].firstEdge;
+			while (last->nextEdge != NULL)
+				last = last->nextEdge;
+			last->nextEdge = e;
+		}
+	}
+	return g;
+}
+
+void __table (Graph * g) {
+	for (int i = 0; i < g->numVertices; i++) {
+		cout << g->vertices[i].ID << ":";
+		if (g->vertices[i].cost == INF)
+			cout << "inf";
+		else
+			cout << g->vertices[i].cost;
+		cout << "/" << (g->vertices[i].parent == -1 ? string ("nil") : g->vertices[g->vertices[i].parent].ID) << " ";
+	}
+	cout << endl;
+}
+--- test: Lecture 17 graph
+string E[] = {"AD", "AG", "CE", "CG", "DB", "DE", "DF", "DG", "EG", "FB", "FC", "FE"};
+int W[] = {20, 75, 5, 25, 40, 35, 10, 45, 10, 5, 15, 40};
+Graph * g = __wgraph ("ABCDEFG", E, W, 12);
+dijkstra (g, findVertex (g, "A"));
+__table (g);
+--- test: from D
+string E[] = {"AD", "AG", "CE", "CG", "DB", "DE", "DF", "DG", "EG", "FB", "FC", "FE"};
+int W[] = {20, 75, 5, 25, 40, 35, 10, 45, 10, 5, 15, 40};
+Graph * g = __wgraph ("ABCDEFG", E, W, 12);
+dijkstra (g, findVertex (g, "D"));
+__table (g);
+--- test: a longer path is cheaper
+string E[] = {"AC", "AB", "BC"};
+int W[] = {10, 1, 2};
+Graph * g = __wgraph ("ABC", E, W, 3);
+dijkstra (g, findVertex (g, "A"));
+__table (g);
+--- hint
+The starter processes the vertices in the order they are stored (A, B, C, …). Dijkstra's algorithm must always take the cheapest vertex still on the queue next.
+--- hint
+Each round, scan the vertices with `inQueue` true and pick the one with the smallest cost. Then mark it as removed and relax its edges.
+--- explain
+Taking the cheapest vertex first guarantees its cost is final (no negative weights can make it cheaper later). Scanning for the minimum makes each round O(V), so this version is O(V²); with a min-heap it would be faster.
+
+=== mst-kruskal
+title: Kruskal's algorithm
+topic: graphs
+level: 3
+lecture: Lecture 19
+lessons: j5-mst
+blurb: Add the cheapest edges that join two different trees.
+--- prompt
+The edges are already sorted by weight (smallest first), and the vertices are the letters 'A' onwards (vertex number `letter - 'A'`). Write `kruskal`: start with every vertex in its own tree, and for each edge in order, if its ends are in **different** trees, print it as `(u, v, w) ` and join the two trees. Return the total weight of the spanning tree.
+
+```cpp
+int kruskal (WEdge edges[], int m, int n);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct WEdge {
+	char u;
+	char v;
+	int weight;
+};
+--- starter
+int kruskal (WEdge edges[], int m, int n) {
+	int total = 0;
+	for (int i = 0; i < m; i++) {
+		cout << "(" << edges[i].u << ", " << edges[i].v << ", " << edges[i].weight << ") ";
+		total += edges[i].weight;
+	}
+	cout << endl;
+	return total;
+}
+--- solution
+int kruskal (WEdge edges[], int m, int n) {
+	int tree[26];
+	for (int v = 0; v < n; v++)
+		tree[v] = v;
+	int total = 0;
+	for (int i = 0; i < m; i++) {
+		int a = edges[i].u - 'A';
+		int b = edges[i].v - 'A';
+		if (tree[a] != tree[b]) {
+			cout << "(" << edges[i].u << ", " << edges[i].v << ", " << edges[i].weight << ") ";
+			total += edges[i].weight;
+			int oldTree = tree[b];
+			for (int v = 0; v < n; v++)
+				if (tree[v] == oldTree)
+					tree[v] = tree[a];
+		}
+	}
+	cout << endl;
+	return total;
+}
+--- test: Lecture 19 Kruskal example
+WEdge E[] = {{'A','B',1}, {'D','E',2}, {'B','C',3}, {'C','D',4}, {'A','E',5}, {'A','C',7}, {'A','D',10}};
+cout << "total " << kruskal (E, 7, 5) << endl;
+--- test: Lecture 19 Prim example graph
+WEdge E[] = {{'B','D',5}, {'A','B',6}, {'C','F',9}, {'E','F',10}, {'B','C',11}, {'F','G',12}, {'A','G',15}, {'C','D',17}, {'D','E',22}, {'C','G',25}};
+cout << "total " << kruskal (E, 10, 7) << endl;
+--- test: a triangle
+WEdge E[] = {{'A','B',2}, {'B','C',3}, {'A','C',4}};
+cout << "total " << kruskal (E, 3, 3) << endl;
+--- hint
+The starter adds every edge, including ones that close a cycle. An edge is only useful if its two ends are in different trees.
+--- hint
+Keep `tree[v]`, the tree number of each vertex, starting with `tree[v] = v`. When you add an edge (a, b), relabel every vertex whose tree number is `tree[b]` with `tree[a]`.
+--- explain
+Two vertices with the same tree number are already connected, so an edge between them would make a cycle. Relabelling merges two trees into one. For n vertices exactly n − 1 edges get added.

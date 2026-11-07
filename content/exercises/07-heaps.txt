@@ -1,0 +1,489 @@
+=== heap-heapify
+title: maxHeapify
+topic: heaps
+level: 2
+lecture: Lecture 12
+lessons: h2-heapify-build
+blurb: Sink a value until its children are smaller.
+--- prompt
+Write `maxHeapify`. Both subtrees of index `i` are already max-heaps; the value at `i` may be too small. Swap it with its larger child until it fits. The heap is stored in `A[1..size]`.
+
+```cpp
+void maxHeapify (MaxHeap * heap, int i);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct MaxHeap {
+	int A [100];
+	int size;
+};
+--- starter
+void maxHeapify (MaxHeap * heap, int i) {
+	int left = i * 2;
+	int right = i * 2 + 1;
+	if (heap->A[left] > heap->A[i]) {
+		int temp = heap->A[i];
+		heap->A[i] = heap->A[left];
+		heap->A[left] = temp;
+	}
+}
+--- solution
+void maxHeapify (MaxHeap * heap, int i) {
+	int left = i * 2;
+	int right = i * 2 + 1;
+	int largest = i;
+	if (left <= heap->size && heap->A[left] > heap->A[largest])
+		largest = left;
+	if (right <= heap->size && heap->A[right] > heap->A[largest])
+		largest = right;
+	if (largest != i) {
+		int temp = heap->A[i];
+		heap->A[i] = heap->A[largest];
+		heap->A[largest] = temp;
+		maxHeapify (heap, largest);
+	}
+}
+--- harness heap
+--- test: lecture example, i = 2
+int a[] = {16, 4, 10, 14, 7, 9, 3, 2, 8, 1};
+MaxHeap * heap = __heap (a, 10);
+maxHeapify (heap, 2);
+__showHeap (heap);
+--- test: the right child is larger
+int a[] = {3, 5, 9, 1, 2, 7};
+MaxHeap * heap = __heap (a, 6);
+maxHeapify (heap, 1);
+__showHeap (heap);
+--- test: already in place
+int a[] = {9, 5, 7};
+MaxHeap * heap = __heap (a, 3);
+maxHeapify (heap, 1);
+__showHeap (heap);
+--- test: a leaf
+int a[] = {9, 5, 7, 1};
+MaxHeap * heap = __heap (a, 4);
+maxHeapify (heap, 4);
+__showHeap (heap);
+--- hint
+Find the index of the largest of A[i], A[left] and A[right], counting a child only if its index is at most `heap->size`.
+--- hint
+If the largest is a child, swap, then call maxHeapify on that child's index: the small value may need to sink further.
+--- explain
+At most one swap per level: O(log n). The size checks stop the function from comparing with values outside the heap.
+
+=== heap-build
+title: buildMaxHeap
+topic: heaps
+level: 2
+lecture: Lecture 12
+lessons: h2-heapify-build
+blurb: Turn any array into a max-heap.
+--- prompt
+`maxHeapify` is given. Write `buildMaxHeap`, which rearranges `A[1..size]` into a max-heap.
+
+```cpp
+void buildMaxHeap (MaxHeap * heap);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct MaxHeap {
+	int A [100];
+	int size;
+};
+
+void maxHeapify (MaxHeap * heap, int i) {
+	int left = i * 2;
+	int right = i * 2 + 1;
+	int largest = i;
+	if (left <= heap->size && heap->A[left] > heap->A[largest])
+		largest = left;
+	if (right <= heap->size && heap->A[right] > heap->A[largest])
+		largest = right;
+	if (largest != i) {
+		int temp = heap->A[i];
+		heap->A[i] = heap->A[largest];
+		heap->A[largest] = temp;
+		maxHeapify (heap, largest);
+	}
+}
+--- starter
+void buildMaxHeap (MaxHeap * heap) {
+	for (int i = 1; i <= heap->size / 2; i++)
+		maxHeapify (heap, i);
+}
+--- solution
+void buildMaxHeap (MaxHeap * heap) {
+	for (int i = heap->size / 2; i >= 1; i--)
+		maxHeapify (heap, i);
+}
+--- harness heap
+--- test: Lecture 12 array
+int a[] = {4, 1, 3, 2, 16, 9, 10, 14, 8, 7};
+MaxHeap * heap = __heap (a, 10);
+buildMaxHeap (heap);
+__showHeap (heap);
+--- test: ascending input
+int a[] = {1, 2, 3, 4, 5, 6, 7};
+MaxHeap * heap = __heap (a, 7);
+buildMaxHeap (heap);
+__showHeap (heap);
+--- test: two values
+int a[] = {1, 2};
+MaxHeap * heap = __heap (a, 2);
+buildMaxHeap (heap);
+__showHeap (heap);
+--- hint
+The starter goes forwards. maxHeapify needs the subtrees below i to be heaps already, so which nodes must be fixed first?
+--- hint
+Start at the last non-leaf, `heap->size / 2`, and count down to 1.
+--- explain
+Working from the bottom up guarantees both subtrees of i are heaps before maxHeapify(i) runs. At most n/2 calls of O(log n) each.
+--- random: random arrays
+int a[] = {$KEYS(1-12,1,99)};
+MaxHeap * heap = __heap (a, $N());
+buildMaxHeap (heap);
+__showHeap (heap);
+
+=== heap-extract
+title: heapExtractMax
+topic: heaps
+level: 2
+lecture: Lecture 13
+lessons: h3-delete-heapsort
+blurb: Remove and return the largest value.
+--- prompt
+`maxHeapify` is given. Write `heapExtractMax`, which removes the maximum from the heap and returns it. The heap is never empty when it is called.
+
+```cpp
+int heapExtractMax (MaxHeap * heap);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct MaxHeap {
+	int A [100];
+	int size;
+};
+
+void maxHeapify (MaxHeap * heap, int i) {
+	int left = i * 2;
+	int right = i * 2 + 1;
+	int largest = i;
+	if (left <= heap->size && heap->A[left] > heap->A[largest])
+		largest = left;
+	if (right <= heap->size && heap->A[right] > heap->A[largest])
+		largest = right;
+	if (largest != i) {
+		int temp = heap->A[i];
+		heap->A[i] = heap->A[largest];
+		heap->A[largest] = temp;
+		maxHeapify (heap, largest);
+	}
+}
+--- starter
+int heapExtractMax (MaxHeap * heap) {
+	int toDelete = heap->A[1];
+	heap->size = heap->size - 1;
+	return toDelete;
+}
+--- solution
+int heapExtractMax (MaxHeap * heap) {
+	int toDelete = heap->A[1];
+	heap->A[1] = heap->A[heap->size];
+	heap->size = heap->size - 1;
+	maxHeapify (heap, 1);
+	return toDelete;
+}
+--- harness heap
+--- test: one extract
+int a[] = {16, 14, 10, 8, 7, 9, 3, 2, 4, 1};
+MaxHeap * heap = __heap (a, 10);
+cout << heapExtractMax (heap) << endl;
+__showHeap (heap);
+--- test: extract everything
+int a[] = {9, 7, 8, 3, 5, 1};
+MaxHeap * heap = __heap (a, 6);
+while (heap->size > 0)
+	cout << heapExtractMax (heap) << " ";
+cout << endl;
+--- test: last value
+int a[] = {5};
+MaxHeap * heap = __heap (a, 1);
+cout << heapExtractMax (heap) << " ";
+__showHeap (heap);
+--- hint
+The root cannot be left empty. Fill it with the last value in the heap, then shrink the heap.
+--- hint
+The value now at the root is probably too small: call `maxHeapify (heap, 1)`.
+--- explain
+Moving the last value keeps the tree almost complete; maxHeapify restores the order. O(log n). Extracting repeatedly gives the values in descending order.
+
+=== heap-insert
+title: insertMaxHeap
+topic: heaps
+level: 2
+lecture: Lecture 13
+lessons: h4-insert-priority
+blurb: Add a value at the end and bubble it up.
+--- prompt
+Write `insertMaxHeap`, which adds `n` to the max-heap.
+
+```cpp
+void insertMaxHeap (MaxHeap * heap, int n);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct MaxHeap {
+	int A [100];
+	int size;
+};
+--- starter
+void insertMaxHeap (MaxHeap * heap, int n) {
+	heap->size = heap->size + 1;
+	heap->A[heap->size] = n;
+}
+--- solution
+void insertMaxHeap (MaxHeap * heap, int n) {
+	heap->size = heap->size + 1;
+	heap->A[heap->size] = n;
+	int i = heap->size;
+	while (i > 1 && heap->A[i / 2] < heap->A[i]) {
+		int temp = heap->A[i / 2];
+		heap->A[i / 2] = heap->A[i];
+		heap->A[i] = temp;
+		i = i / 2;
+	}
+}
+--- harness heap
+--- test: insert 20 (climbs to the root)
+int a[] = {16, 14, 10, 8, 7, 9, 3, 2, 4, 1};
+MaxHeap * heap = __heap (a, 10);
+insertMaxHeap (heap, 20);
+__showHeap (heap);
+--- test: insert 12 (stops below 14)
+int a[] = {16, 14, 10, 8, 7, 9, 3, 2, 4, 1};
+MaxHeap * heap = __heap (a, 10);
+insertMaxHeap (heap, 12);
+__showHeap (heap);
+--- test (hidden): into an empty heap
+MaxHeap * heap = new MaxHeap;
+heap->size = 0;
+insertMaxHeap (heap, 5);
+insertMaxHeap (heap, 9);
+insertMaxHeap (heap, 7);
+__showHeap (heap);
+--- hint
+The starter puts the value in the right slot but never moves it up.
+--- hint
+While the value is not at the root (`i > 1`) and its parent `A[i / 2]` is smaller, swap them and move i to the parent.
+--- explain
+At most one swap per level: O(log n). The new value only ever needs to move up, because everything below its slot is empty.
+
+=== heap-increase
+title: increaseKeyMaxHeap
+topic: heaps
+level: 2
+lecture: Lecture 13
+lessons: h4-insert-priority
+blurb: Raise a key and let it climb.
+--- prompt
+Write `increaseKeyMaxHeap`, which sets `A[i]` to `key` (a value at least as large as the old one) and restores the max-heap property.
+
+```cpp
+void increaseKeyMaxHeap (MaxHeap * heap, int i, int key);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct MaxHeap {
+	int A [100];
+	int size;
+};
+--- starter
+void increaseKeyMaxHeap (MaxHeap * heap, int i, int key) {
+	heap->A[i] = key;
+}
+--- solution
+void increaseKeyMaxHeap (MaxHeap * heap, int i, int key) {
+	heap->A[i] = key;
+	while (i > 1 && heap->A[i / 2] < heap->A[i]) {
+		int temp = heap->A[i / 2];
+		heap->A[i / 2] = heap->A[i];
+		heap->A[i] = temp;
+		i = i / 2;
+	}
+}
+--- harness heap
+--- test: A[9] becomes 15
+int a[] = {16, 14, 10, 8, 7, 9, 3, 2, 4, 1};
+MaxHeap * heap = __heap (a, 10);
+increaseKeyMaxHeap (heap, 9, 15);
+__showHeap (heap);
+--- test: becomes the new maximum
+int a[] = {30, 20, 25, 10, 15, 18, 22};
+MaxHeap * heap = __heap (a, 7);
+increaseKeyMaxHeap (heap, 4, 35);
+__showHeap (heap);
+--- test: no move needed
+int a[] = {30, 20, 25};
+MaxHeap * heap = __heap (a, 3);
+increaseKeyMaxHeap (heap, 3, 28);
+__showHeap (heap);
+--- hint
+A bigger value can only conflict with its parent. Use the same loop as insertMaxHeap.
+--- explain
+Insert is really "add a slot at the end, then increase its key". Both climb at most the height of the heap: O(log n).
+
+=== heap-is-heap
+title: Is it a max-heap?
+topic: heaps
+level: 2
+lecture: Lectures 11–12
+lessons: h1-heap-arrays
+blurb: Check A[i / 2] ≥ A[i] for every index.
+--- prompt
+Write `isMaxHeap`, which returns `true` if `A[1..n]` satisfies the max-heap property. (A[0] is not used.)
+
+```cpp
+bool isMaxHeap (int A[], int n);
+```
+--- given
+#include <iostream>
+using namespace std;
+--- starter
+bool isMaxHeap (int A[], int n) {
+	for (int i = 1; i < n; i++)
+		if (A[i] < A[i + 1])
+			return false;
+	return true;
+}
+--- solution
+bool isMaxHeap (int A[], int n) {
+	for (int i = 2; i <= n; i++)
+		if (A[i / 2] < A[i])
+			return false;
+	return true;
+}
+--- test: the lecture heap
+int A[] = {0, 16, 14, 10, 8, 7, 9, 3, 2, 4, 1};
+cout << isMaxHeap (A, 10) << endl;
+--- test: not sorted, but still a heap
+int A[] = {0, 20, 15, 18, 9, 15, 18, 4};
+cout << isMaxHeap (A, 7) << endl;
+--- test: a child larger than its parent
+int A[] = {0, 20, 15, 18, 16, 4};
+cout << isMaxHeap (A, 5) << endl;
+--- test: one value
+int A[] = {0, 5};
+cout << isMaxHeap (A, 1) << endl;
+--- hint
+The starter checks neighbours in the array, which is a sortedness test. A heap only compares parents with children.
+--- hint
+For every i from 2 to n, its parent is at i / 2. Check that `A[i / 2] >= A[i]`.
+--- explain
+One check per non-root node: O(n). A sorted (descending) array is always a heap, but most heaps are not sorted.
+
+=== heap-sort
+title: heapSort
+topic: heaps
+level: 3
+lecture: Lecture 13
+lessons: h3-delete-heapsort
+blurb: Sort an array with a max-heap (version 2).
+--- prompt
+`maxHeapify` and `buildMaxHeap` are given. Write `heapSort`, which sorts `A[0..numElements-1]` in ascending order. Copy the values into a MaxHeap (from index 1), build the heap, then repeatedly swap the root with the last value in the heap, shrink the heap, and heapify the root. Finally copy the values back.
+
+```cpp
+void heapSort (int A[], int numElements);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct MaxHeap {
+	int A [100];
+	int size;
+};
+
+void maxHeapify (MaxHeap * heap, int i) {
+	int left = i * 2;
+	int right = i * 2 + 1;
+	int largest = i;
+	if (left <= heap->size && heap->A[left] > heap->A[largest])
+		largest = left;
+	if (right <= heap->size && heap->A[right] > heap->A[largest])
+		largest = right;
+	if (largest != i) {
+		int temp = heap->A[i];
+		heap->A[i] = heap->A[largest];
+		heap->A[largest] = temp;
+		maxHeapify (heap, largest);
+	}
+}
+
+void buildMaxHeap (MaxHeap * heap) {
+	for (int i = heap->size / 2; i >= 1; i--)
+		maxHeapify (heap, i);
+}
+--- starter
+void heapSort (int A[], int numElements) {
+	MaxHeap * heap = new MaxHeap;
+	for (int i = 0; i < numElements; i++)
+		heap->A[i + 1] = A[i];
+	heap->size = numElements;
+	buildMaxHeap (heap);
+	for (int i = 1; i <= numElements; i++)
+		A[i - 1] = heap->A[i];
+	delete heap;
+}
+--- solution
+void heapSort (int A[], int numElements) {
+	MaxHeap * heap = new MaxHeap;
+	for (int i = 0; i < numElements; i++)
+		heap->A[i + 1] = A[i];
+	heap->size = numElements;
+	buildMaxHeap (heap);
+	for (int i = heap->size; i >= 2; i--) {
+		int temp = heap->A[i];
+		heap->A[i] = heap->A[1];
+		heap->A[1] = temp;
+		heap->size = heap->size - 1;
+		maxHeapify (heap, 1);
+	}
+	for (int i = 1; i <= numElements; i++)
+		A[i - 1] = heap->A[i];
+	delete heap;
+}
+--- harness array
+--- test: Lecture 12 values
+int A[] = {4, 1, 3, 2, 16, 9, 10, 14, 8, 7};
+heapSort (A, 10);
+__showArr (A, 10);
+--- test: with duplicates
+int A[] = {5, 1, 5, 3, 1};
+heapSort (A, 5);
+__showArr (A, 5);
+--- test: already sorted
+int A[] = {1, 2, 3, 4};
+heapSort (A, 4);
+__showArr (A, 4);
+--- hint
+The starter builds the heap and copies it straight back, which is not sorted.
+--- hint
+After building: for i from size down to 2, swap A[1] and A[i], reduce size by 1, then maxHeapify(heap, 1).
+--- hint
+Copy back using `numElements`, not `heap->size` (which is 1 by then).
+--- explain
+Each pass puts the current maximum into its final place at the end. n − 1 passes of O(log n): O(n log n) in every case.
+--- random: random arrays, with repeats
+int A[] = {$VALS(1-12,1,99)};
+heapSort (A, $N());
+__showArr (A, $N());

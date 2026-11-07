@@ -1,0 +1,203 @@
+=== sum-to
+title: Sum from 1 to n
+topic: basics
+level: 1
+lecture: Review
+lessons: a4-loops
+blurb: Add up the whole numbers 1, 2, ..., n with a loop.
+--- prompt
+Write the function `sumTo` so that it returns 1 + 2 + ... + n. If n is 0 or negative, return 0.
+
+```cpp
+int sumTo (int n);
+```
+--- given
+#include <iostream>
+using namespace std;
+--- starter
+int sumTo (int n) {
+	// Write your code here.
+	return 0;
+}
+--- solution
+int sumTo (int n) {
+	int total = 0;
+	for (int i = 1; i <= n; i++)
+		total = total + i;
+	return total;
+}
+--- test: sumTo(5)
+cout << sumTo (5) << endl;
+--- test: sumTo(1)
+cout << sumTo (1) << endl;
+--- test: sumTo(0) and sumTo(-3)
+cout << sumTo (0) << " " << sumTo (-3) << endl;
+--- test: sumTo(100)
+cout << sumTo (100) << endl;
+--- hint
+Keep a running total that starts at 0, and add each number from 1 to n to it.
+--- hint
+A `for` loop that starts at 1 and stops after n does the job. If n is 0 or negative, the loop body never runs, so the total stays 0.
+--- explain
+The loop visits 1, 2, ..., n once each, so the function does n additions: it is O(n).
+
+=== count-digits
+title: Count the digits
+topic: basics
+level: 1
+lecture: Review
+lessons: a2-variables, a4-loops
+blurb: Use integer division by 10 to count the digits of a number.
+--- prompt
+Write `countDigits`, which returns how many digits the whole number `n` has. Treat a negative number like the positive one (−305 has 3 digits), and say that 0 has 1 digit.
+
+```cpp
+int countDigits (int n);
+```
+--- given
+#include <iostream>
+using namespace std;
+--- starter
+int countDigits (int n) {
+	int count = 0;
+	while (n > 0) {
+		count++;
+		n = n / 10;
+	}
+	return count;
+}
+--- solution
+int countDigits (int n) {
+	if (n < 0)
+		n = -n;
+	int count = 1;
+	while (n >= 10) {
+		count++;
+		n = n / 10;
+	}
+	return count;
+}
+--- test: countDigits(2611)
+cout << countDigits (2611) << endl;
+--- test: one digit
+cout << countDigits (7) << endl;
+--- test: zero
+cout << countDigits (0) << endl;
+--- test: negative
+cout << countDigits (-305) << endl;
+--- test: 1000000
+cout << countDigits (1000000) << endl;
+--- hint
+`n / 10` removes the last digit (integer division): 2611 / 10 is 261. Count how many times you can do that.
+--- hint
+The starter fails for 0 (the loop never runs, so it returns 0) and for negative numbers. Make n positive first, and start counting at 1 for the last digit.
+--- explain
+Each pass removes one digit, so the loop runs once per digit. Starting the count at 1 and looping while n >= 10 counts the digit that is left at the end, which also makes 0 come out as 1.
+
+=== letter-grade
+title: Letter grade
+topic: basics
+level: 1
+lecture: Review
+lessons: a3-decisions
+blurb: An else-if chain where the order of the tests matters.
+--- prompt
+Write `letterGrade`, which returns the letter for a mark from 0 to 100:
+
+| Mark | Grade |
+|---|---|
+| 80 and above | 'A' |
+| 70 to 79 | 'B' |
+| 60 to 69 | 'C' |
+| 50 to 59 | 'D' |
+| below 50 | 'F' |
+
+```cpp
+char letterGrade (int mark);
+```
+--- given
+#include <iostream>
+using namespace std;
+--- starter
+char letterGrade (int mark) {
+	if (mark >= 50)
+		return 'D';
+	else if (mark >= 60)
+		return 'C';
+	else if (mark >= 70)
+		return 'B';
+	else if (mark >= 80)
+		return 'A';
+	return 'F';
+}
+--- solution
+char letterGrade (int mark) {
+	if (mark >= 80)
+		return 'A';
+	else if (mark >= 70)
+		return 'B';
+	else if (mark >= 60)
+		return 'C';
+	else if (mark >= 50)
+		return 'D';
+	return 'F';
+}
+--- test: boundaries
+cout << letterGrade (80) << letterGrade (79) << letterGrade (70) << letterGrade (69) << letterGrade (60) << endl;
+--- test: low marks
+cout << letterGrade (59) << letterGrade (50) << letterGrade (49) << letterGrade (0) << endl;
+--- test: top marks
+cout << letterGrade (100) << letterGrade (91) << endl;
+--- hint
+An else-if chain stops at the first test that is true. In the starter, every mark of 50 or more stops at the very first test.
+--- hint
+Test the highest band first: 80, then 70, then 60, then 50.
+--- explain
+With the highest band first, each later test only sees marks that failed all the tests above it, so `mark >= 70` really means "70 to 79" by the time it is reached.
+
+=== is-prime
+title: Is it prime?
+topic: basics
+level: 2
+lecture: Review
+lessons: a4-loops, a5-functions
+blurb: A search loop that stops as soon as the answer is known.
+--- prompt
+Write `isPrime`, which returns `true` if `n` is a prime number (it has exactly two divisors, 1 and itself) and `false` otherwise. Numbers below 2 are not prime.
+
+```cpp
+bool isPrime (int n);
+```
+--- given
+#include <iostream>
+using namespace std;
+--- starter
+bool isPrime (int n) {
+	for (int d = 2; d < n; d++)
+		if (n % d == 0)
+			return false;
+	return true;
+}
+--- solution
+bool isPrime (int n) {
+	if (n < 2)
+		return false;
+	for (int d = 2; d * d <= n; d++)
+		if (n % d == 0)
+			return false;
+	return true;
+}
+--- test: small primes
+cout << isPrime (2) << isPrime (3) << isPrime (5) << isPrime (13) << endl;
+--- test: not prime
+cout << isPrime (4) << isPrime (9) << isPrime (91) << isPrime (100) << endl;
+--- test: below 2
+cout << isPrime (1) << isPrime (0) << isPrime (-7) << endl;
+--- test: a big prime
+cout << isPrime (7919) << endl;
+--- hint
+The starter's loop is right for numbers 2 and above, but 1, 0 and negative numbers reach `return true` without the loop running once.
+--- hint
+Return false straight away when n < 2. Then try divisors from 2 upwards and return false at the first one that divides n.
+--- explain
+A divisor larger than the square root of n would pair with one smaller than it, so stopping at `d * d <= n` is enough. That makes the loop run about √n times instead of n.

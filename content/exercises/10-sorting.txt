@@ -1,0 +1,444 @@
+=== sort-selection
+title: Selection sort
+topic: sorting
+level: 1
+lecture: Lectures 19–21
+lessons: k1-simple-sorts
+blurb: Swap the smallest remaining value to the front, n − 1 times.
+--- prompt
+Write `selectionSort`, which sorts `A[0..n-1]` into ascending order: for each position i, find the smallest value in `A[i..n-1]` and swap it into position i.
+
+```cpp
+void selectionSort (int A[], int n);
+```
+--- given
+#include <iostream>
+using namespace std;
+--- starter
+void selectionSort (int A[], int n) {
+	for (int i = 0; i < n - 1; i++) {
+		int smallest = i;
+		for (int j = i + 1; j < n; j++)
+			if (A[j] < A[smallest])
+				smallest = j;
+	}
+}
+--- solution
+void selectionSort (int A[], int n) {
+	for (int i = 0; i < n - 1; i++) {
+		int smallest = i;
+		for (int j = i + 1; j < n; j++)
+			if (A[j] < A[smallest])
+				smallest = j;
+		int temp = A[i];
+		A[i] = A[smallest];
+		A[smallest] = temp;
+	}
+}
+--- harness array
+--- test: lecture-style array
+int A[] = {29, 10, 14, 37, 13};
+selectionSort (A, 5);
+__showArr (A, 5);
+--- test: reversed
+int A[] = {9, 7, 5, 3, 1};
+selectionSort (A, 5);
+__showArr (A, 5);
+--- test: duplicates
+int A[] = {4, 1, 4, 2, 1};
+selectionSort (A, 5);
+__showArr (A, 5);
+--- test: one value
+int A[] = {42};
+selectionSort (A, 1);
+__showArr (A, 1);
+--- hint
+The starter finds the smallest value each time but never moves it.
+--- hint
+After the inner loop, swap `A[i]` with `A[smallest]`.
+--- explain
+Each pass puts one value in its final place. The inner loop always scans the rest of the array, so selection sort makes n(n − 1)/2 comparisons on every input: O(n²).
+--- random: random arrays, with repeats
+int A[] = {$VALS(1-12,1,99)};
+selectionSort (A, $N());
+__showArr (A, $N());
+
+=== sort-bubble
+title: Bubble sort with an early stop
+topic: sorting
+level: 2
+lecture: Lectures 19–21
+lessons: k1-simple-sorts
+blurb: Swap neighbours that are out of order; stop when a pass swaps nothing.
+--- prompt
+Write `bubbleSort`, which sorts `A[0..n-1]` into ascending order by repeatedly swapping neighbouring values that are out of order. Stop as soon as a whole pass makes no swaps. Return the number of **passes** made (a pass that finds nothing to swap counts).
+
+```cpp
+int bubbleSort (int A[], int n);
+```
+--- given
+#include <iostream>
+using namespace std;
+--- starter
+int bubbleSort (int A[], int n) {
+	int passes = 0;
+	for (int i = 0; i < n - 1; i++) {
+		passes++;
+		for (int j = 0; j < n - 1; j++)
+			if (A[j] > A[j + 1]) {
+				int temp = A[j];
+				A[j] = A[j + 1];
+				A[j + 1] = temp;
+			}
+	}
+	return passes;
+}
+--- solution
+int bubbleSort (int A[], int n) {
+	int passes = 0;
+	bool swapped = true;
+	for (int i = 0; i < n - 1 && swapped; i++) {
+		passes++;
+		swapped = false;
+		for (int j = 0; j < n - 1 - i; j++)
+			if (A[j] > A[j + 1]) {
+				int temp = A[j];
+				A[j] = A[j + 1];
+				A[j + 1] = temp;
+				swapped = true;
+			}
+	}
+	return passes;
+}
+--- harness array
+--- test: an unsorted array
+int A[] = {5, 2, 4, 6, 1, 3};
+int p = bubbleSort (A, 6);
+__showArr (A, 6);
+cout << p << " passes" << endl;
+--- test: already sorted
+int A[] = {1, 2, 3, 4, 5};
+int p = bubbleSort (A, 5);
+__showArr (A, 5);
+cout << p << " passes" << endl;
+--- test: one swap needed
+int A[] = {1, 2, 4, 3, 5};
+int p = bubbleSort (A, 5);
+__showArr (A, 5);
+cout << p << " passes" << endl;
+--- hint
+Use a bool `swapped`, set to false at the start of each pass and to true whenever two values are swapped. Keep going only while the last pass swapped something.
+--- hint
+After pass i, the last i values are already in place, so the inner loop can stop at `n - 1 - i`.
+--- explain
+On a sorted array the first pass swaps nothing, so the sort stops after one pass: O(n). The worst case (reversed input) is still O(n²).
+--- random: random arrays
+int A[] = {$VALS(1-10,1,99)};
+int p = bubbleSort (A, $N());
+__showArr (A, $N());
+cout << p << " passes" << endl;
+
+=== sort-insertion
+title: Insertion sort
+topic: sorting
+level: 2
+lecture: Lectures 19–21
+lessons: k1-simple-sorts
+blurb: Slide each key left into the sorted part.
+--- prompt
+Write `insertionSort`, which sorts `A[0..n-1]` into ascending order: for each i from 1, take `key = A[i]`, shift every larger value in `A[0..i-1]` one place right, and drop the key into the gap.
+
+```cpp
+void insertionSort (int A[], int n);
+```
+--- given
+#include <iostream>
+using namespace std;
+--- starter
+void insertionSort (int A[], int n) {
+	for (int i = 1; i < n; i++) {
+		int key = A[i];
+		int j = i - 1;
+		while (A[j] > key && j >= 0) {
+			A[j + 1] = A[j];
+			j = j - 1;
+		}
+		A[j + 1] = key;
+	}
+}
+--- solution
+void insertionSort (int A[], int n) {
+	for (int i = 1; i < n; i++) {
+		int key = A[i];
+		int j = i - 1;
+		while (j >= 0 && A[j] > key) {
+			A[j + 1] = A[j];
+			j = j - 1;
+		}
+		A[j + 1] = key;
+	}
+}
+--- harness array
+--- test: lecture-style array
+int A[] = {29, 10, 14, 37, 13};
+insertionSort (A, 5);
+__showArr (A, 5);
+--- test: smallest value last
+int A[] = {5, 4, 3, 2, 1};
+insertionSort (A, 5);
+__showArr (A, 5);
+--- test: already sorted
+int A[] = {1, 2, 3};
+insertionSort (A, 3);
+__showArr (A, 3);
+--- hint
+Look at the order of the two tests in the starter's while loop. What happens when j becomes −1?
+--- hint
+Test `j >= 0` first. Because && stops at the first false, `A[j]` is then never read with j = −1.
+--- explain
+The short-circuit order matters here exactly as it does with `curr != NULL && curr->data …` in a list. With it fixed, insertion sort is O(n²) in the worst case and O(n) on sorted input.
+--- random: random arrays, with repeats
+int A[] = {$VALS(1-12,1,99)};
+insertionSort (A, $N());
+__showArr (A, $N());
+
+=== sort-merge-array
+title: mergeArray
+topic: sorting
+level: 3
+lecture: Lecture 20
+lessons: k2-merge-sort
+blurb: Merge two sorted halves of one array.
+--- prompt
+`A[p..q]` and `A[q+1..r]` are each sorted. Write `mergeArray`, which merges them so that `A[p..r]` is sorted. Values outside p..r must not change. (mergeSort, which uses it, is given.)
+
+```cpp
+void mergeArray (int A[], int p, int q, int r);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+void mergeArray (int A[], int p, int q, int r);
+
+void mergeSort (int A[], int start, int end) {
+	int mid;
+	if (start < end) {
+		mid = (start + end) / 2;
+		mergeSort (A, start, mid);
+		mergeSort (A, mid+1, end);
+		mergeArray (A, start, mid, end);
+	}
+}
+--- starter
+void mergeArray (int A[], int p, int q, int r) {
+	int n1 = q - p + 1, n2 = r - q;
+	int * L = new int[n1];
+	int * R = new int[n2];
+	for (int i = 0; i < n1; i++)
+		L[i] = A[p + i];
+	for (int j = 0; j < n2; j++)
+		R[j] = A[q + 1 + j];
+	int i = 0, j = 0, k = p;
+	while (i < n1 && j < n2) {
+		if (L[i] <= R[j]) {
+			A[k] = L[i];
+			i++;
+		}
+		else {
+			A[k] = R[j];
+			j++;
+		}
+		k++;
+	}
+	delete [] L;
+	delete [] R;
+}
+--- solution
+void mergeArray (int A[], int p, int q, int r) {
+	int n1 = q - p + 1, n2 = r - q;
+	int * L = new int[n1];
+	int * R = new int[n2];
+	for (int i = 0; i < n1; i++)
+		L[i] = A[p + i];
+	for (int j = 0; j < n2; j++)
+		R[j] = A[q + 1 + j];
+	int i = 0, j = 0, k = p;
+	while (i < n1 && j < n2) {
+		if (L[i] <= R[j]) {
+			A[k] = L[i];
+			i++;
+		}
+		else {
+			A[k] = R[j];
+			j++;
+		}
+		k++;
+	}
+	while (i < n1) {
+		A[k] = L[i];
+		i++;
+		k++;
+	}
+	while (j < n2) {
+		A[k] = R[j];
+		j++;
+		k++;
+	}
+	delete [] L;
+	delete [] R;
+}
+--- harness array
+--- test: Lecture 20 halves
+int A[] = {28, 34, 38, 56, 71, 10, 18, 22, 75, 91};
+mergeArray (A, 0, 4, 9);
+__showArr (A, 10);
+--- test: only part of the array
+int A[] = {99, 3, 9, 4, 5, 0};
+mergeArray (A, 1, 2, 4);
+__showArr (A, 6);
+--- test: the whole merge sort
+int A[] = {38, 27, 43, 3, 9, 82, 10};
+mergeSort (A, 0, 6);
+__showArr (A, 7);
+--- hint
+When one half runs out, the starter stops, and the values left in the other half are never copied back.
+--- hint
+After the main loop, copy whatever is left in L, then whatever is left in R (only one of these loops will do anything).
+--- explain
+The leftover values are already sorted and are all at least as big as everything written so far, so they can be copied straight across. Merging n values takes O(n) time.
+
+=== sort-partition
+title: partition
+topic: sorting
+level: 3
+lecture: Lectures 20–21
+lessons: k3-quick-sort
+blurb: The lecture's partition, with the pivot A[r].
+--- prompt
+Write the lecture's `partition` for quick sort. The pivot is x = A[r]. i starts at p − 1. For each j from p to r − 1: if A[j] ≤ x, increase i and exchange A[i] with A[j]. Finally exchange A[i + 1] with A[r], and return i + 1. (quickSort, which uses it, is given.)
+
+```cpp
+int partition (int A[], int p, int r);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+int partition (int A[], int p, int r);
+
+void quickSort (int A[], int p, int r) {
+	int q;
+	if (p < r) {
+		q = partition (A, p, r);
+		quickSort (A, p, q-1);
+		quickSort (A, q+1, r);
+	}
+}
+--- starter
+int partition (int A[], int p, int r) {
+	int x = A[r];
+	int i = p;
+	for (int j = p; j <= r - 1; j++) {
+		if (A[j] <= x) {
+			int temp = A[i];
+			A[i] = A[j];
+			A[j] = temp;
+			i = i + 1;
+		}
+	}
+	int temp = A[i];
+	A[i] = A[r];
+	A[r] = temp;
+	return i + 1;
+}
+--- solution
+int partition (int A[], int p, int r) {
+	int x = A[r];
+	int i = p - 1;
+	for (int j = p; j <= r - 1; j++) {
+		if (A[j] <= x) {
+			i = i + 1;
+			int temp = A[i];
+			A[i] = A[j];
+			A[j] = temp;
+		}
+	}
+	int temp = A[i + 1];
+	A[i + 1] = A[r];
+	A[r] = temp;
+	return i + 1;
+}
+--- harness array
+--- test: Lecture 20 exercise
+int A[] = {30, 65, 10, 75, 55, 90, 60};
+int q = partition (A, 0, 6);
+__showArr (A, 7);
+cout << "q = " << q << endl;
+--- test: Lecture 21 example 2
+int A[] = {25, 90, 30, 5, 60, 70, 45};
+int q = partition (A, 0, 6);
+__showArr (A, 7);
+cout << "q = " << q << endl;
+--- test: the whole quick sort
+int A[] = {8, 3, 9, 1, 7, 4, 6};
+quickSort (A, 0, 6);
+__showArr (A, 7);
+--- hint
+The starter's swaps happen in the right places, but it returns the wrong location for the pivot. Trace Example 2: where does 45 end up, and what does the starter return?
+--- hint
+Follow the lecture exactly: i starts at p − 1 and is increased **before** each exchange; at the end the pivot goes to i + 1, and i + 1 is returned.
+--- explain
+At the end, A[p..i] holds the values ≤ pivot and A[i+1..r−1] the larger ones, so the pivot belongs at i + 1. Returning that location tells quickSort where the two parts are split.
+--- random: random arrays
+int A[] = {$KEYS(2-9,1,99)};
+int q = partition (A, 0, $N() - 1);
+__showArr (A, $N());
+cout << "q = " << q << endl;
+
+=== sort-is-sorted
+title: Is the array sorted?
+topic: sorting
+level: 1
+lecture: Lectures 19–21
+lessons: k1-simple-sorts, a7-arrays
+blurb: Compare each value with its neighbour.
+--- prompt
+Write `isSorted`, which returns `true` if `A[0..n-1]` is in ascending order (equal neighbours are allowed), and `false` otherwise. An array of 0 or 1 values is sorted.
+
+```cpp
+bool isSorted (int A[], int n);
+```
+--- given
+#include <iostream>
+using namespace std;
+--- starter
+bool isSorted (int A[], int n) {
+	for (int i = 0; i < n; i++)
+		if (A[i] > A[i + 1])
+			return false;
+	return true;
+}
+--- solution
+bool isSorted (int A[], int n) {
+	for (int i = 0; i < n - 1; i++)
+		if (A[i] > A[i + 1])
+			return false;
+	return true;
+}
+--- test: sorted
+int A[] = {1, 2, 2, 5, 9};
+cout << isSorted (A, 5) << endl;
+--- test: not sorted
+int A[] = {1, 3, 2};
+int B[] = {2, 1};
+cout << isSorted (A, 3) << isSorted (B, 2) << endl;
+--- test: tiny arrays
+int A[] = {7};
+cout << isSorted (A, 1) << isSorted (A, 0) << endl;
+--- hint
+The starter compares A[i] with A[i + 1] for every i up to n − 1, so on the last pass it reads A[n], which is outside the array.
+--- hint
+There are only n − 1 neighbouring pairs: loop while `i < n - 1`.
+--- explain
+Stopping one early keeps every comparison inside the array. The loop returns false at the first pair out of order, so a sorted array takes n − 1 comparisons: O(n).

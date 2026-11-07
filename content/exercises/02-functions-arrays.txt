@@ -1,0 +1,380 @@
+=== swap-ref
+title: Swap with references
+topic: functions
+level: 1
+lecture: Review
+lessons: a6-references
+blurb: Make a function change the caller's variables.
+--- prompt
+Write `swapValues`, which swaps the values of the caller's two variables. After `swapValues (x, y);`, x holds what y held and y holds what x held.
+
+```cpp
+void swapValues (int & a, int & b);
+```
+--- given
+#include <iostream>
+using namespace std;
+--- starter
+void swapValues (int a, int b) {
+	int temp = a;
+	a = b;
+	b = temp;
+}
+--- solution
+void swapValues (int & a, int & b) {
+	int temp = a;
+	a = b;
+	b = temp;
+}
+--- test: two values
+int x = 1, y = 2;
+swapValues (x, y);
+cout << x << " " << y << endl;
+--- test: twice is no change
+int x = 5, y = 9;
+swapValues (x, y);
+swapValues (x, y);
+cout << x << " " << y << endl;
+--- test: array elements
+int A[] = {10, 20, 30};
+swapValues (A[0], A[2]);
+cout << A[0] << " " << A[1] << " " << A[2] << endl;
+--- hint
+The starter's code inside is right, but `int a` and `int b` are copies: the swap happens to the copies and is thrown away.
+--- hint
+Add `&` after each parameter type so that a and b become other names for the caller's variables.
+--- explain
+With reference parameters, every use of a inside the function is a use of the caller's x. Array elements are variables too, so `swapValues (A[0], A[2])` swaps them in the array.
+
+=== min-max-ref
+title: Smallest and largest at once
+topic: functions
+level: 2
+lecture: Review
+lessons: a6-references, a7-arrays
+blurb: Return two results through reference parameters.
+--- prompt
+Write `minMax`, which finds the smallest and the largest value in `A[0..n-1]` (n is at least 1) and stores them in `smallest` and `largest`.
+
+```cpp
+void minMax (int A[], int n, int & smallest, int & largest);
+```
+--- given
+#include <iostream>
+using namespace std;
+--- starter
+void minMax (int A[], int n, int & smallest, int & largest) {
+	smallest = 0;
+	largest = 0;
+	for (int i = 0; i < n; i++) {
+		if (A[i] < smallest)
+			smallest = A[i];
+		if (A[i] > largest)
+			largest = A[i];
+	}
+}
+--- solution
+void minMax (int A[], int n, int & smallest, int & largest) {
+	smallest = A[0];
+	largest = A[0];
+	for (int i = 1; i < n; i++) {
+		if (A[i] < smallest)
+			smallest = A[i];
+		if (A[i] > largest)
+			largest = A[i];
+	}
+}
+--- test: mixed values
+int A[] = {12, 5, 41, 9, 23};
+int lo, hi;
+minMax (A, 5, lo, hi);
+cout << lo << " " << hi << endl;
+--- test: all negative
+int A[] = {-4, -9, -2};
+int lo, hi;
+minMax (A, 3, lo, hi);
+cout << lo << " " << hi << endl;
+--- test: all positive
+int A[] = {7, 3, 8};
+int lo, hi;
+minMax (A, 3, lo, hi);
+cout << lo << " " << hi << endl;
+--- test: one value
+int A[] = {6};
+int lo, hi;
+minMax (A, 1, lo, hi);
+cout << lo << " " << hi << endl;
+--- hint
+Starting both answers at 0 is wrong whenever every value is positive (the smallest is never below 0) or every value is negative.
+--- hint
+Start both answers at `A[0]`, a real element, and compare the rest against them.
+--- explain
+Starting with an element of the array guarantees the answers are values that are actually in the array. The loop then only needs to look at A[1] onwards.
+
+=== array-count-above
+title: Count values at or above the average
+topic: arrays
+level: 2
+lecture: Review
+lessons: a7-arrays, a2-variables
+blurb: Two passes over an array - one for the average, one to count.
+--- prompt
+Write `countAtLeastAverage`, which returns how many of the values in `A[0..n-1]` are greater than or equal to the average of all n values. n is at least 1. Be careful: the average may not be a whole number.
+
+```cpp
+int countAtLeastAverage (int A[], int n);
+```
+--- given
+#include <iostream>
+using namespace std;
+--- starter
+int countAtLeastAverage (int A[], int n) {
+	int total = 0;
+	for (int i = 0; i < n; i++)
+		total += A[i];
+	int average = total / n;
+	int count = 0;
+	for (int i = 0; i < n; i++)
+		if (A[i] >= average)
+			count++;
+	return count;
+}
+--- solution
+int countAtLeastAverage (int A[], int n) {
+	int total = 0;
+	for (int i = 0; i < n; i++)
+		total += A[i];
+	double average = (double) total / n;
+	int count = 0;
+	for (int i = 0; i < n; i++)
+		if (A[i] >= average)
+			count++;
+	return count;
+}
+--- test: whole-number average
+int A[] = {2, 4, 6, 8};
+cout << countAtLeastAverage (A, 4) << endl;
+--- test: average 2.5
+int A[] = {1, 2, 3, 4};
+cout << countAtLeastAverage (A, 4) << endl;
+--- test: average 3.5
+int A[] = {3, 4, 3, 4};
+cout << countAtLeastAverage (A, 4) << endl;
+--- test: all equal
+int A[] = {5, 5, 5};
+cout << countAtLeastAverage (A, 3) << endl;
+--- hint
+Check the second test by hand: the average of 1 2 3 4 is 2.5, so only 3 and 4 are at or above it. What does the starter's `total / n` give?
+--- hint
+`total / n` with two ints is integer division. Cast first, `(double) total / n`, and keep the average in a double.
+--- explain
+Integer division throws away the .5, which moves the average down to 2, so the 2 is wrongly counted. Keeping the average as a double fixes it.
+
+=== array-reverse
+title: Reverse an array in place
+topic: arrays
+level: 2
+lecture: Review
+lessons: a7-arrays, d3-recursion-arrays
+blurb: Swap from both ends towards the middle.
+--- prompt
+Write `reverseArray`, which reverses the order of the values in `A[0..n-1]`, in place (no second array).
+
+```cpp
+void reverseArray (int A[], int n);
+```
+--- given
+#include <iostream>
+using namespace std;
+--- starter
+void reverseArray (int A[], int n) {
+	for (int i = 0; i < n; i++) {
+		int temp = A[i];
+		A[i] = A[n - 1 - i];
+		A[n - 1 - i] = temp;
+	}
+}
+--- solution
+void reverseArray (int A[], int n) {
+	for (int i = 0; i < n / 2; i++) {
+		int temp = A[i];
+		A[i] = A[n - 1 - i];
+		A[n - 1 - i] = temp;
+	}
+}
+--- harness array
+--- test: five values
+int A[] = {1, 2, 3, 4, 5};
+reverseArray (A, 5);
+__showArr (A, 5);
+--- test: four values
+int A[] = {10, 20, 30, 40};
+reverseArray (A, 4);
+__showArr (A, 4);
+--- test: one value
+int A[] = {7};
+reverseArray (A, 1);
+__showArr (A, 1);
+--- hint
+Trace the starter on 1 2 3: what happens to the array after i passes the middle?
+--- hint
+Each swap fixes two positions, so only half as many swaps are needed: loop while `i < n / 2`.
+--- explain
+Swapping all the way to the end swaps every pair twice, which puts everything back where it started. Stopping at the middle swaps each pair once.
+
+=== array-insert-sorted
+title: Insert into a sorted array
+topic: arrays
+level: 2
+lecture: Review
+lessons: a7-arrays, k1-simple-sorts
+blurb: Shift larger values right to make a gap.
+--- prompt
+`A[0..n-1]` is sorted in ascending order and the array has room for at least one more value. Write `insertSorted`, which inserts `key` so the array stays sorted, and returns the new number of values (n + 1).
+
+```cpp
+int insertSorted (int A[], int n, int key);
+```
+--- given
+#include <iostream>
+using namespace std;
+--- starter
+int insertSorted (int A[], int n, int key) {
+	A[n] = key;
+	return n + 1;
+}
+--- solution
+int insertSorted (int A[], int n, int key) {
+	int i = n - 1;
+	while (i >= 0 && A[i] > key) {
+		A[i + 1] = A[i];
+		i--;
+	}
+	A[i + 1] = key;
+	return n + 1;
+}
+--- harness array
+--- test: in the middle
+int A[10] = {10, 20, 30, 40};
+int n = insertSorted (A, 4, 25);
+__showArr (A, n);
+--- test: at the front
+int A[10] = {10, 20, 30};
+int n = insertSorted (A, 3, 5);
+__showArr (A, n);
+--- test: at the end
+int A[10] = {10, 20, 30};
+int n = insertSorted (A, 3, 99);
+__showArr (A, n);
+--- test (hidden): into an empty array
+int A[10];
+int n = insertSorted (A, 0, 42);
+__showArr (A, n);
+--- test: several inserts
+int A[10];
+int n = 0;
+int keys[] = {5, 1, 4, 2, 3};
+for (int k = 0; k < 5; k++)
+	n = insertSorted (A, n, keys[k]);
+__showArr (A, n);
+--- hint
+Start at the last value and move left. While the value is bigger than key, copy it one place to the right.
+--- hint
+When the loop stops, `i` is the location of the first value that is not bigger than key (or −1), so key goes at `i + 1`. Check `i >= 0` before reading `A[i]`.
+--- explain
+This is the inner loop of insertion sort. In the worst case (key smaller than everything) every value shifts, so it is O(n). This shifting is why inserting into an array is slower than into a linked list.
+
+=== string-count-char
+title: Count a character
+topic: arrays
+level: 1
+lecture: Review
+lessons: a8-strings
+blurb: Loop over the characters of a string.
+--- prompt
+Write `countChar`, which returns how many times the character `c` appears in the string `s`. Upper and lower case count as the same letter: `countChar ("Banana", 'b')` is 1.
+
+```cpp
+int countChar (string s, char c);
+```
+--- given
+#include <iostream>
+#include <string>
+#include <cctype>
+using namespace std;
+--- starter
+int countChar (string s, char c) {
+	int count = 0;
+	for (int i = 0; i < (int) s.length (); i++)
+		if (s[i] == c)
+			count++;
+	return count;
+}
+--- solution
+int countChar (string s, char c) {
+	int count = 0;
+	for (int i = 0; i < (int) s.length (); i++)
+		if (tolower (s[i]) == tolower (c))
+			count++;
+	return count;
+}
+--- test: lowercase
+cout << countChar ("banana", 'a') << endl;
+--- test: mixed case
+cout << countChar ("Banana", 'b') << " " << countChar ("Data Structures", 'S') << endl;
+--- test: not there
+cout << countChar ("heap", 'z') << endl;
+--- test (hidden): empty string
+cout << countChar ("", 'a') << endl;
+--- hint
+The loop is right, but `'B' == 'b'` is false: they have different character codes.
+--- hint
+Compare `tolower (s[i])` with `tolower (c)` so both sides are in the same case.
+--- explain
+tolower turns a capital letter into the small letter and leaves everything else alone, so comparing the lower-case versions ignores case.
+
+=== string-palindrome
+title: Palindrome check
+topic: arrays
+level: 2
+lecture: Review
+lessons: a8-strings, d3-recursion-arrays
+blurb: Compare characters from both ends.
+--- prompt
+Write `isPalindrome`, which returns `true` if the string reads the same forwards and backwards ("racecar", "noon", "a", and the empty string ""), and `false` otherwise. Compare characters exactly (case matters).
+
+```cpp
+bool isPalindrome (string s);
+```
+--- given
+#include <iostream>
+#include <string>
+using namespace std;
+--- starter
+bool isPalindrome (string s) {
+	return s[0] == s[s.length () - 1];
+}
+--- solution
+bool isPalindrome (string s) {
+	int lo = 0;
+	int hi = (int) s.length () - 1;
+	while (lo < hi) {
+		if (s[lo] != s[hi])
+			return false;
+		lo++;
+		hi--;
+	}
+	return true;
+}
+--- test: palindromes
+cout << isPalindrome ("racecar") << isPalindrome ("noon") << isPalindrome ("a") << endl;
+--- test: not palindromes
+cout << isPalindrome ("heap") << isPalindrome ("abca") << isPalindrome ("ab") << endl;
+--- test (hidden): empty string
+cout << isPalindrome ("") << endl;
+--- hint
+Checking the first and last characters is only the first step: "abca" passes that test but is not a palindrome.
+--- hint
+Use two indexes, lo from the start and hi from the end. Compare, then move both inwards until they meet. Write hi as `(int) s.length () - 1` so the empty string gives −1 and the loop does not run.
+--- explain
+Each comparison checks one pair from the outside in, so at most n / 2 comparisons are made. The empty string and one-character strings never enter the loop, so they correctly count as palindromes.

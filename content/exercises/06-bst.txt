@@ -1,0 +1,431 @@
+=== bst-insert
+title: insertBST with parent pointers
+topic: bst
+level: 2
+lecture: Lectures 7–8
+lessons: g2-insert-search, g3-parent-successor
+blurb: Insert a key and keep every parent pointer correct.
+--- prompt
+Write `insertBST`, which inserts `key` into the BST and returns the root. Duplicates are ignored. Every node's `parent` must point to the node above it (the root's parent is NULL).
+
+```cpp
+BTNode * insertBST (BTNode * root, int key);
+```
+
+The tests print the tree in preorder and check every parent pointer.
+--- given
+#include <iostream>
+using namespace std;
+
+struct BTNode {
+	int data;
+	BTNode * left;
+	BTNode * right;
+	BTNode * parent;
+};
+
+BTNode * createBTNode (int data) {
+	BTNode * newNode = new BTNode;
+	newNode->data = data;
+	newNode->left = NULL;
+	newNode->right = NULL;
+	newNode->parent = NULL;
+	return newNode;
+}
+--- starter
+BTNode * insertBST (BTNode * root, int key) {
+	if (root == NULL)
+		return createBTNode (key);
+	if (key < root->data)
+		root->left = insertBST (root->left, key);
+	else
+		root->right = insertBST (root->right, key);
+	return root;
+}
+--- solution
+BTNode * insertBST (BTNode * root, int key) {
+	if (root == NULL)
+		return createBTNode (key);
+	if (key < root->data) {
+		root->left = insertBST (root->left, key);
+		root->left->parent = root;
+	}
+	else
+	if (key > root->data) {
+		root->right = insertBST (root->right, key);
+		root->right->parent = root;
+	}
+	return root;
+}
+--- harness bst
+--- test: Lecture 7 keys
+int keys[] = {10, 5, 23, 3, 7, 17, 41, 4, 9};
+BTNode * root = NULL;
+for (int i = 0; i < 9; i++)
+	root = insertBST (root, keys[i]);
+__pre (root);
+cout << endl << "parents ok: " << __parentsOK (root, NULL) << endl;
+--- test: duplicates are ignored
+int keys[] = {8, 3, 8, 10, 3};
+BTNode * root = NULL;
+for (int i = 0; i < 5; i++)
+	root = insertBST (root, keys[i]);
+__pre (root);
+cout << endl;
+--- test: sorted input
+BTNode * root = NULL;
+for (int k = 1; k <= 4; k++)
+	root = insertBST (root, k);
+__pre (root);
+cout << endl << "parents ok: " << __parentsOK (root, NULL) << endl;
+--- hint
+The starter forgets two things: parent pointers, and that a duplicate key should not be inserted again.
+--- hint
+After `root->left = insertBST (root->left, key);`, the left child's parent is `root`. Same on the right.
+--- hint
+Use `else if (key > root->data)` so that an equal key goes nowhere.
+--- explain
+Setting the parent after every recursive call is simple and always right: for the new node it sets the real parent, and for existing nodes it rewrites the same value.
+--- random: random keys, with repeats
+int keys[] = {$VALS(1-12,1,60)};
+BTNode * root = NULL;
+for (int i = 0; i < $N(); i++)
+	root = insertBST (root, keys[i]);
+__pre (root);
+cout << endl << "parents ok: " << __parentsOK (root, NULL) << endl;
+
+=== bst-contains
+title: containsBST
+topic: bst
+level: 1
+lecture: Lecture 7
+lessons: g2-insert-search
+blurb: Return the node holding a key, or NULL.
+--- prompt
+Write `containsBST`, which returns a pointer to the node holding `key`, or `NULL` if the key is not in the BST. Use the BST property so that only one path is followed.
+
+```cpp
+BTNode * containsBST (BTNode * root, int key);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct BTNode {
+	int data;
+	BTNode * left;
+	BTNode * right;
+	BTNode * parent;
+};
+--- starter
+BTNode * containsBST (BTNode * root, int key) {
+	return NULL;
+}
+--- solution
+BTNode * containsBST (BTNode * root, int key) {
+	if (root == NULL)
+		return NULL;
+	if (root->data == key)
+		return root;
+	if (key < root->data)
+		return containsBST (root->left, key);
+	return containsBST (root->right, key);
+}
+--- harness bst
+--- test: found deep
+int keys[] = {10, 5, 23, 3, 7, 17, 41, 4, 9};
+BTNode * root = __build (keys, 9);
+BTNode * p = containsBST (root, 9);
+cout << (p != NULL ? p->data : -1) << " parent " << (p != NULL && p->parent != NULL ? p->parent->data : -1) << endl;
+--- test: the root
+int keys[] = {10, 5, 23};
+BTNode * p = containsBST (__build (keys, 3), 10);
+cout << (p != NULL ? p->data : -1) << endl;
+--- test (hidden): missing
+int keys[] = {10, 5, 23, 3, 7};
+cout << (containsBST (__build (keys, 5), 6) == NULL ? "NULL" : "found") << endl;
+--- test: empty tree
+cout << (containsBST (NULL, 6) == NULL ? "NULL" : "found") << endl;
+--- hint
+Compare with the root: equal means found; smaller means search the left subtree only; larger means the right subtree only.
+--- explain
+At most one node per level is compared, so the search is O(h): O(log n) for a well-shaped tree, O(n) for a degenerate one.
+--- random: random trees, a key that is there and one that is not
+int keys[] = {$KEYS(1-10,1,50)};
+BTNode * root = __build (keys, $N());
+BTNode * p = containsBST (root, $PICK());
+BTNode * q = containsBST (root, $INT(51,70));
+cout << (p != NULL ? p->data : -1) << " " << (q == NULL) << endl;
+
+=== bst-min-max
+title: minimumBST and maximumBST
+topic: bst
+level: 1
+lecture: Lecture 7
+lessons: g1-bst-property
+blurb: Leftmost and rightmost nodes.
+--- prompt
+Write both functions. Each returns a pointer to the node with the smallest (or largest) key, or `NULL` for an empty tree.
+
+```cpp
+BTNode * minimumBST (BTNode * root);
+BTNode * maximumBST (BTNode * root);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct BTNode {
+	int data;
+	BTNode * left;
+	BTNode * right;
+	BTNode * parent;
+};
+--- starter
+BTNode * minimumBST (BTNode * root) {
+	return root;
+}
+
+BTNode * maximumBST (BTNode * root) {
+	return root;
+}
+--- solution
+BTNode * minimumBST (BTNode * root) {
+	if (root == NULL)
+		return NULL;
+	while (root->left != NULL)
+		root = root->left;
+	return root;
+}
+
+BTNode * maximumBST (BTNode * root) {
+	if (root == NULL)
+		return NULL;
+	while (root->right != NULL)
+		root = root->right;
+	return root;
+}
+--- harness bst
+--- test: Lecture 7 tree
+int keys[] = {10, 5, 23, 3, 7, 17, 41, 4, 9};
+BTNode * root = __build (keys, 9);
+cout << minimumBST (root)->data << " " << maximumBST (root)->data << endl;
+--- test: the root is the minimum
+int keys[] = {10, 20, 30};
+BTNode * root = __build (keys, 3);
+cout << minimumBST (root)->data << " " << maximumBST (root)->data << endl;
+--- test (hidden): empty tree
+cout << (minimumBST (NULL) == NULL) << " " << (maximumBST (NULL) == NULL) << endl;
+--- hint
+Smaller keys are always to the left, so keep going left until there is no left child.
+--- explain
+Both walk one path: O(h). The minimum is the leftmost node, which may still have a right child.
+
+=== bst-count-range
+title: Count keys in a range
+topic: bst
+level: 3
+lecture: Lectures 7–8
+lessons: g1-bst-property, g2-insert-search
+blurb: How many keys lie between low and high? Skip subtrees that cannot help.
+--- prompt
+Write `countRange`, which returns how many keys `k` in the BST satisfy `low <= k <= high`. Use the BST property: do not search a subtree that cannot contain keys in the range.
+
+```cpp
+int countRange (BTNode * root, int low, int high);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct BTNode {
+	int data;
+	BTNode * left;
+	BTNode * right;
+	BTNode * parent;
+};
+--- starter
+int countRange (BTNode * root, int low, int high) {
+	return 0;
+}
+--- solution
+int countRange (BTNode * root, int low, int high) {
+	if (root == NULL)
+		return 0;
+	if (root->data < low)
+		return countRange (root->right, low, high);
+	if (root->data > high)
+		return countRange (root->left, low, high);
+	return 1 + countRange (root->left, low, high) + countRange (root->right, low, high);
+}
+--- harness bst
+--- test: 10 to 30
+int keys[] = {20, 17, 30, 5, 18, 25, 50, 10, 45, 80, 40};
+cout << countRange (__build (keys, 11), 10, 30) << endl;
+--- test: nothing in range
+int keys[] = {20, 17, 30};
+cout << countRange (__build (keys, 3), 21, 29) << endl;
+--- test: everything
+int keys[] = {20, 17, 30, 5};
+cout << countRange (__build (keys, 4), 0, 100) << endl;
+--- test: one key
+int keys[] = {20, 17, 30, 5, 18};
+cout << countRange (__build (keys, 5), 18, 18) << endl;
+--- hint
+If the root's key is below `low`, nothing in its left subtree can be in range either: only search the right.
+--- hint
+If the root's key is above `high`, only search the left. Otherwise count the root and search both sides.
+--- explain
+This is the idea behind the assignment's rangeBST: pruning means only the nodes near the range are visited, instead of all n.
+
+=== bst-successor
+title: inOrderSuccessor
+topic: bst
+level: 3
+lecture: Lecture 8
+lessons: g3-parent-successor
+blurb: The next larger key, using parent pointers.
+--- prompt
+Write `inOrderSuccessor`, which returns the node with the next larger key after `node`, or `NULL` if `node` holds the largest key. Use the parent pointers.
+
+```cpp
+BTNode * inOrderSuccessor (BTNode * node);
+```
+--- given
+#include <iostream>
+using namespace std;
+
+struct BTNode {
+	int data;
+	BTNode * left;
+	BTNode * right;
+	BTNode * parent;
+};
+--- starter
+BTNode * inOrderSuccessor (BTNode * node) {
+	if (node->right != NULL)
+		return node->right;
+	return node->parent;
+}
+--- solution
+BTNode * inOrderSuccessor (BTNode * node) {
+	if (node == NULL)
+		return NULL;
+	if (node->right != NULL) {
+		BTNode * m = node->right;
+		while (m->left != NULL)
+			m = m->left;
+		return m;
+	}
+	BTNode * parent = node->parent;
+	while (parent != NULL && node == parent->right) {
+		node = parent;
+		parent = parent->parent;
+	}
+	return parent;
+}
+--- harness bst
+void __succ (BTNode * root, int key) {
+	BTNode * s = inOrderSuccessor (__find (root, key));
+	cout << key << " -> ";
+	if (s == NULL) cout << "none" << endl;
+	else cout << s->data << endl;
+}
+--- test: Case 2 (has a right subtree)
+int keys[] = {20, 17, 30, 5, 18, 25, 50, 10, 45, 80, 40};
+BTNode * root = __build (keys, 11);
+__succ (root, 30);
+__succ (root, 17);
+--- test: Case 1 (left child, no right subtree)
+int keys[] = {20, 17, 30, 5, 18, 25, 50, 10, 45, 80, 40};
+BTNode * root = __build (keys, 11);
+__succ (root, 25);
+__succ (root, 40);
+--- test: Case 3 (right child, no right subtree)
+int keys[] = {20, 17, 30, 5, 18, 25, 50, 10, 45, 80, 40};
+BTNode * root = __build (keys, 11);
+__succ (root, 18);
+__succ (root, 10);
+--- test: the largest key
+int keys[] = {20, 17, 30, 5, 18, 25, 50, 10, 45, 80, 40};
+BTNode * root = __build (keys, 11);
+__succ (root, 80);
+--- hint
+With a right subtree, the successor is the **minimum** of that subtree, not just the right child.
+--- hint
+Without one, walk up while you are your parent's right child. The first time you arrive at a parent from its left side, that parent is the successor.
+--- explain
+Both branches follow one path (down, or up), so it is O(h).
+
+=== bst-is-bst
+title: Is it a BST?
+topic: bst
+level: 3
+lecture: Lecture 7
+lessons: g1-bst-property
+blurb: Check the BST property for whole subtrees, not just children.
+--- prompt
+Write `isBST`, which returns `true` if every key in each node's left subtree is smaller than the node's key and every key in its right subtree is larger.
+
+```cpp
+bool isBST (BTNode * root);
+```
+
+Careful: checking only each node's children is not enough.
+--- given
+#include <iostream>
+using namespace std;
+
+struct BTNode {
+	int data;
+	BTNode * left;
+	BTNode * right;
+	BTNode * parent;
+};
+
+BTNode * __node (int d, BTNode * l, BTNode * r) {
+	BTNode * p = new BTNode;
+	p->data = d;
+	p->left = l;
+	p->right = r;
+	p->parent = NULL;
+	return p;
+}
+--- starter
+bool isBST (BTNode * root) {
+	if (root == NULL)
+		return true;
+	if (root->left != NULL && root->left->data >= root->data)
+		return false;
+	if (root->right != NULL && root->right->data <= root->data)
+		return false;
+	return isBST (root->left) && isBST (root->right);
+}
+--- solution
+bool inRange (BTNode * root, int low, int high) {
+	if (root == NULL)
+		return true;
+	if (root->data <= low || root->data >= high)
+		return false;
+	return inRange (root->left, low, root->data) && inRange (root->right, root->data, high);
+}
+
+bool isBST (BTNode * root) {
+	return inRange (root, -2147483647 - 1, 2147483647);
+}
+--- test: a real BST
+cout << isBST (__node (10, __node (5, __node (3, NULL, NULL), __node (7, NULL, NULL)), __node (20, NULL, NULL))) << endl;
+--- test: 12 is in the left subtree of 10
+cout << isBST (__node (10, __node (5, __node (3, NULL, NULL), __node (12, NULL, NULL)), __node (20, NULL, NULL))) << endl;
+--- test: 8 is in the right subtree of 10
+cout << isBST (__node (10, __node (5, NULL, NULL), __node (20, __node (8, NULL, NULL), NULL))) << endl;
+--- test (hidden): empty tree
+cout << isBST (NULL) << endl;
+--- hint
+Each node must lie inside a range of allowed values. The root can be anything; its left subtree must be below it, its right subtree above it.
+--- hint
+Write a helper `inRange (root, low, high)` and narrow the range as you go down: going left, the node's key becomes the new upper limit; going right, the new lower limit.
+--- hint
+Another way: an inorder traversal of a BST is strictly increasing.
+--- explain
+The starter only compares parents with children, so it accepts 10(5(3,12),20). Passing a range down catches every ancestor's limit. O(n).
