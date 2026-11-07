@@ -504,7 +504,9 @@
       var qq = q(it);
       if (!qq) { run.ans.push({ ok: false, a: null, skip: 1 }); run.i++; CL.save(); return run.i < run.plan.length ? ask() : finish(); }
       view = ui.renderQuestion(qq, host, { mcq: true, quiet: true, onAnswer: function (ok, x, shown, given) {
+        if (CL.Game) CL.Game.quiet(true);
         ui.recordTrain(x, ok);
+        if (CL.Game) CL.Game.quiet(false);
         run.ans.push({ ok: !!ok, a: given === undefined ? null : given });
         run.i++;
         CL.save();

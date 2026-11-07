@@ -1,7 +1,7 @@
 ---
 title: Queues
 summary: A queue adds at one end (the tail) and removes from the other (the head), so values leave in the order they arrived (FIFO). Keeping both a head and a tail pointer makes both operations O(1).
-lectures: Lecture 9
+lectures: COMP 1603 review; used in Lectures 10, 16 and 17
 goals:
   - Explain FIFO and predict a sequence of enqueues and dequeues
   - Write the Queue struct, enqueue and dequeue with head and tail pointers

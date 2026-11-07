@@ -1,10 +1,10 @@
 ---
 title: Stacks
 summary: A stack only lets you add and remove at one end, the top, so the last value in is the first value out (LIFO). Built on a linked list, push is insertAtHead and pop is deleteAtHead.
-lectures: Lecture 9
+lectures: COMP 1603 review (Lecture 1 lists it as review)
 goals:
   - Explain LIFO and predict the result of a sequence of pushes and pops
-  - Write the Stack struct, initStack, isEmpty, push and pop from Lecture 9
+  - Write the Stack struct, initStack, isEmpty, push and pop from COMP 1603
   - Implement a stack with an array and know its limits
 labs: [stackqueue, memory]
 ---

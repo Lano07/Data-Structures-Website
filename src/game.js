@@ -1,0 +1,515 @@
+/* COMP 2611 Code Lab — the game layer: XP, levels and ranks, answer combos, daily quests, achievements,
+   the header HUD, the combo meter and the Trophy Room. It listens to the activity the rest of the site already
+   records (CL.Progress.log), so every lesson check, practice question, lab prediction and exercise counts. */
+(function (CL) {
+  "use strict";
+  var G = CL.Game = {};
+  var esc = CL.esc, FX = CL.FX;
+  var store = null, g = null, D = null;
+
+  // ---------------------------------------------------------------- levels and ranks
+  // total XP needed to reach level L: 0, 120, 360, 720, 1200 ... (each level needs 120 more than the last)
+  function xpFor(L) { return 60 * (L - 1) * L; }
+  function levelOf(xp) { var L = 1; while (xpFor(L + 1) <= xp) L++; return L; }
+  var RANKS = [
+    [1, "Null Pointer", "Every journey starts at NULL."],
+    [3, "Hello, World", "You have printed your first output."],
+    [5, "Pointer Apprentice", "You know where things live in memory."],
+    [7, "Node Wrangler", "createNode is second nature."],
+    [9, "List Linker", "next, next, next: no node gets lost."],
+    [11, "Recursion Ranger", "Base case first, then trust the call."],
+    [13, "Tree Climber", "Preorder, inorder, postorder: all yours."],
+    [15, "BST Navigator", "Left is smaller, right is bigger."],
+    [18, "Heap Hacker", "A[i/2] >= A[i], always."],
+    [21, "Hash Slinger", "key % 12 + 1, collisions handled."],
+    [24, "Graph Explorer", "WHITE, GREY, BLACK."],
+    [27, "Path Finder", "Dijkstra would be proud."],
+    [30, "Sort Sorcerer", "n log n is the speed of thought."],
+    [35, "Big-O Oracle", "You see the cost of every line."],
+    [40, "Data Structures Legend", "Programs = Algorithms + Data Structures."]
+  ];
+  function rankOf(L) { var r = RANKS[0]; RANKS.forEach(function (x) { if (L >= x[0]) r = x; }); return r; }
+  function nextRank(L) { for (var i = 0; i < RANKS.length; i++) if (RANKS[i][0] > L) return RANKS[i]; return null; }
+  function mult(c) { return c >= 30 ? 4 : c >= 20 ? 3 : c >= 10 ? 2 : c >= 5 ? 1.5 : 1; }
+  G.xpFor = xpFor; G.levelOf = levelOf; G.rankOf = rankOf; G.RANKS = RANKS; G.mult = mult;
+
+  // ---------------------------------------------------------------- achievements
+  var ACH = [
+    ["first", "✨", "Hello, Memory", "Answer your first question.", 20, function (S) { return S.q >= 1; }],
+    ["r10", "🎯", "Warming Up", "Answer 10 questions correctly.", 30, function (S) { return S.r >= 10; }],
+    ["r100", "💯", "Century", "Answer 100 questions correctly.", 100, function (S) { return S.r >= 100; }],
+    ["r500", "🤖", "The Machine", "Answer 500 questions correctly.", 250, function (S) { return S.r >= 500; }],
+    ["r1000", "👑", "Unstoppable", "Answer 1,000 questions correctly.", 500, function (S) { return S.r >= 1000; }],
+    ["cb5", "🔥", "On Fire", "Get 5 answers right in a row.", 40, function (S) { return S.bestCombo >= 5; }],
+    ["cb10", "☄️", "Blazing", "Get 10 answers right in a row.", 80, function (S) { return S.bestCombo >= 10; }],
+    ["cb25", "🌟", "Supernova", "Get 25 answers right in a row.", 200, function (S) { return S.bestCombo >= 25; }],
+    ["cb50", "🌌", "Event Horizon", "Get 50 answers right in a row.", 400, function (S) { return S.bestCombo >= 50; }],
+    ["l1", "📘", "First Steps", "Complete a lesson.", 30, function (S) { return S.lessons >= 1; }],
+    ["l10", "📚", "Bookworm", "Complete 10 lessons.", 100, function (S) { return S.lessons >= 10; }],
+    ["l30", "🧠", "Big Brain", "Complete 30 lessons.", 200, function (S) { return S.lessons >= 30; }],
+    ["lall", "🏛️", "Completionist", "Complete every lesson.", 600, function (S) { return S.lessonTotal > 0 && S.lessons >= S.lessonTotal; }],
+    ["part", "🗺️", "Part Cleared", "Complete every lesson in one part of the course.", 80, function (S) { return S.partsDone >= 1; }],
+    ["outline", "🧭", "Off the Map", "Complete a lesson from the course-outline part (Part N).", 60, function (S) { return S.outlineDone >= 1; }],
+    ["x1", "💻", "It Compiles!", "Pass a Code Gym exercise.", 40, function (S) { return S.ex >= 1; }],
+    ["x10", "⌨️", "Code Monkey", "Pass 10 Code Gym exercises.", 120, function (S) { return S.ex >= 10; }],
+    ["x40", "🏋️", "Gym Rat", "Pass 40 Code Gym exercises.", 300, function (S) { return S.ex >= 40; }],
+    ["xall", "🦾", "Iron Coder", "Pass every Code Gym exercise.", 800, function (S) { return S.exTotal > 0 && S.ex >= S.exTotal; }],
+    ["s3", "📅", "Habit Forming", "Study 3 days in a row.", 50, function (S) { return S.streak >= 3; }],
+    ["s7", "🗓️", "Week Warrior", "Study 7 days in a row.", 150, function (S) { return S.streak >= 7; }],
+    ["s14", "⚔️", "Fortnight Fighter", "Study 14 days in a row.", 300, function (S) { return S.streak >= 14; }],
+    ["s30", "💎", "Unbreakable", "Study 30 days in a row.", 700, function (S) { return S.streak >= 30; }],
+    ["lab3", "🔬", "Lab Coat", "Open 3 different labs.", 30, function (S) { return S.labs >= 3; }],
+    ["laball", "🧪", "Lab Rat", "Open every lab.", 150, function (S) { return S.labTotal > 0 && S.labs >= S.labTotal; }],
+    ["lp25", "🔮", "Predictor", "Make 25 correct predictions in the labs (Your turn mode).", 120, function (S) { return S.lp >= 25; }],
+    ["c50", "🃏", "Card Shark", "Review 50 flashcards.", 80, function (S) { return S.c >= 50; }],
+    ["w1", "✍️", "Pen Pal", "Finish a written-answer question.", 40, function (S) { return S.w >= 1; }],
+    ["pz5", "🧩", "Puzzler", "Solve 5 code puzzles.", 60, function (S) { return S.pz >= 5; }],
+    ["exam1", "📝", "Exam Ready", "Finish a mock exam.", 80, function (S) { return S.exams >= 1; }],
+    ["exam90", "🏆", "Ace", "Score 90% or more on a mock exam.", 250, function (S) { return S.bestExam >= 0.9; }],
+    ["arc1", "🕹️", "Insert Coin", "Play an Arcade game.", 30, function (S) { return S.arcPlays >= 1; }],
+    ["arcall", "👾", "Arcade Regular", "Play every Arcade game.", 150, function (S) { return S.arcTotal > 0 && S.arcGames >= S.arcTotal; }],
+    ["arc1k", "🚀", "High Scorer", "Score 1,000 points in one Arcade round.", 150, function (S) { return S.arcBest >= 1000; }],
+    ["arc3k", "🛸", "Leaderboard Legend", "Score 3,000 points in one Arcade round.", 400, function (S) { return S.arcBest >= 3000; }],
+    ["owl", "🦉", "Night Owl", "Answer a question between midnight and 4 a.m.", 30, function (S) { return S.owl; }],
+    ["bird", "🐦", "Early Bird", "Answer a question between 5 and 7 a.m.", 30, function (S) { return S.bird; }],
+    ["lv5", "⭐", "Rising Star", "Reach level 5.", 0, function (S) { return S.level >= 5; }],
+    ["lv10", "🌠", "Double Digits", "Reach level 10.", 0, function (S) { return S.level >= 10; }],
+    ["lv20", "🏅", "Elite", "Reach level 20.", 0, function (S) { return S.level >= 20; }],
+    ["lv30", "🔱", "Mythic", "Reach level 30.", 0, function (S) { return S.level >= 30; }],
+    ["q1", "🎁", "Quest Complete", "Finish all three daily quests in one day.", 50, function (S) { return S.sets >= 1; }],
+    ["q7", "🧰", "Questing Hero", "Finish all three daily quests on 7 different days.", 250, function (S) { return S.sets >= 7; }]
+  ].map(function (a) { return { id: a[0], icon: a[1], t: a[2], d: a[3], xp: a[4], test: a[5] }; });
+  G.ACH = ACH;
+
+  // ---------------------------------------------------------------- daily quests (three a day, the same for the whole day)
+  var QUESTS = [
+    { id: "r10", k: "r", n: 10, xp: 60, icon: "🎯", t: "Answer 10 questions correctly" },
+    { id: "r20", k: "r", n: 20, xp: 100, icon: "🎯", t: "Answer 20 questions correctly" },
+    { id: "l1", k: "l", n: 1, xp: 60, icon: "📘", t: "Complete a lesson" },
+    { id: "x1", k: "x", n: 1, xp: 80, icon: "💻", t: "Pass a Code Gym exercise" },
+    { id: "c10", k: "c", n: 10, xp: 50, icon: "🃏", t: "Review 10 flashcards" },
+    { id: "cb5", k: "cb", n: 5, xp: 60, icon: "🔥", t: "Get a 5-answer combo" },
+    { id: "cb10", k: "cb", n: 10, xp: 110, icon: "🔥", t: "Get a 10-answer combo" },
+    { id: "ap1", k: "ap", n: 1, xp: 40, icon: "🕹️", t: "Play a round in the Arcade" },
+    { id: "ap3", k: "ap", n: 3, xp: 80, icon: "🕹️", t: "Play 3 rounds in the Arcade" },
+    { id: "lp5", k: "lp", n: 5, xp: 70, icon: "🔬", t: "Make 5 correct predictions in a lab (Your turn)" },
+    { id: "xp300", k: "xp", n: 300, xp: 80, icon: "⚡", t: "Earn 300 XP today" },
+    { id: "pz2", k: "pz", n: 2, xp: 60, icon: "🧩", t: "Solve 2 code puzzles in lessons" }
+  ];
+  function hashStr(s) { var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  function rng(seed) { return function () { seed |= 0; seed = seed + 0x6D2B79F5 | 0; var t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  function questsFor(day) {
+    var r = rng(hashStr("quests:" + day)), pool = QUESTS.slice(), out = [], kinds = {};
+    while (out.length < 3 && pool.length) {
+      var q = pool.splice(Math.floor(r() * pool.length), 1)[0];
+      if (kinds[q.k]) continue;
+      kinds[q.k] = 1;
+      out.push(q.id);
+    }
+    return out;
+  }
+  var questById = {};
+  QUESTS.forEach(function (q) { questById[q.id] = q; });
+
+  // ---------------------------------------------------------------- state
+  function today() { return CL.Progress.day(); }
+  function fresh() { return { v: 1, xp: 0, sound: true, tot: {}, best: {}, ach: {}, arc: {}, labs: {}, seenL: {}, seenW: {}, sets: 0, day: { d: today() }, qd: { d: "", done: {} }, u: Date.now() }; }
+  function ensureDay() {
+    var d = today();
+    if (!g.day || g.day.d !== d) g.day = { d: d };
+    if (!g.qd || g.qd.d !== d) g.qd = { d: d, list: questsFor(d), done: {}, chest: 0 };
+  }
+  function bump(k, n) { g.tot[k] = (g.tot[k] || 0) + (n || 1); g.day[k] = (g.day[k] || 0) + (n || 1); }
+  var saveT = 0;
+  function save() { g.u = Date.now(); clearTimeout(saveT); saveT = setTimeout(function () { if (CL.save) CL.save(); }, 350); }
+
+  function stats() {
+    var done = store.done || {}, lessons = 0, partsDone = 0, outlineDone = 0, lessonTotal = 0;
+    D.parts.forEach(function (p) {
+      var ids = p.lessons.filter(function (id) { return D.lessons[id]; }), n = ids.filter(function (id) { return done[id]; }).length;
+      lessons += n;
+      lessonTotal += ids.length;
+      if (ids.length && n === ids.length) partsDone++;
+      if (p.id === "n") outlineDone += n;
+    });
+    var ex = Object.keys(store.ex || {}).filter(function (k) { return store.ex[k] && store.ex[k].passed; }).length;
+    var bestExam = 0;
+    (store.exams || []).forEach(function (e) { if (e.max) bestExam = Math.max(bestExam, e.score / e.max); });
+    var arcPlays = 0, arcBest = 0, arcGames = 0;
+    Object.keys(g.arc || {}).forEach(function (k) { var a = g.arc[k]; arcPlays += a.plays || 0; arcBest = Math.max(arcBest, a.best || 0); if (a.plays) arcGames++; });
+    var L = levelOf(g.xp);
+    return {
+      q: g.tot.q || 0, r: g.tot.r || 0, c: g.tot.c || 0, w: g.tot.w || 0, lp: g.tot.lp || 0, pz: g.tot.pz || 0,
+      bestCombo: g.best.combo || 0, lessons: lessons, lessonTotal: lessonTotal, partsDone: partsDone, outlineDone: outlineDone,
+      ex: ex, exTotal: D.exercises.length, streak: CL.Progress.streak(), labs: Object.keys(g.labs || {}).length, labTotal: D.labs.length,
+      exams: (store.exams || []).length, bestExam: bestExam, arcPlays: arcPlays, arcBest: arcBest, arcGames: arcGames, arcTotal: (CL.Arcade && CL.Arcade.count) || 0,
+      owl: !!g.best.owl, bird: !!g.best.bird, level: L, sets: g.sets || 0, xp: g.xp
+    };
+  }
+  G.stats = function () { return stats(); };
+
+  // ---------------------------------------------------------------- XP and levelling up
+  var pendingLevel = 0;
+  function award(xp, label, o) {
+    o = o || {};
+    if (!g || !xp) return;
+    ensureDay();
+    var before = levelOf(g.xp);
+    g.xp += Math.round(xp);
+    g.day.xp = (g.day.xp || 0) + Math.round(xp);
+    var after = levelOf(g.xp);
+    if (!o.silent && label !== null) FX.float('<b>+' + Math.round(xp) + "</b> XP" + (label ? "<span>" + esc(label) + "</span>" : ""), "xp" + (o.big ? " big" : "") + (o.cls ? " " + o.cls : ""), o.x, o.y);
+    refreshHud(true);
+    if (after > before && !o.noLevel) { pendingLevel = Math.max(pendingLevel, after); setTimeout(levelUp, 650); }
+    if (!o.noQuest) checkQuests();
+    if (!o.noAch) checkAch();
+    save();
+  }
+  G.award = award;
+  function levelUp() {
+    if (!pendingLevel) return;
+    var L = pendingLevel;
+    pendingLevel = 0;
+    var r = rankOf(L), rankNew = r[0] === L || (rankOf(L - 1)[1] !== r[1]);
+    FX.sfx("level");
+    FX.celebrate(true);
+    FX.overlay('<div class="lu-k">Level up</div><div class="lu-ring"><svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="52" class="lu-bg"/><circle cx="60" cy="60" r="52" class="lu-fg"/></svg><b>' + L + "</b></div>" +
+      (rankNew ? '<div class="lu-rank">New rank: <b>' + esc(r[1]) + '</b></div><div class="lu-sub">' + esc(r[2]) + "</div>" : '<div class="lu-rank">' + esc(r[1]) + '</div><div class="lu-sub">' + (xpFor(L + 1) - g.xp).toLocaleString() + " XP to level " + (L + 1) + "</div>"),
+      { cls: "levelup", label: "Level " + L, button: "Let's go", ms: 6500 });
+  }
+
+  // ---------------------------------------------------------------- answers: combos and XP
+  var combo = 0, pendingQ = false, inLab = false, quiet = false;
+  // quiet: answers still count (flat XP, no combo, no sound or pop-ups), for marking a whole paper at once
+  // and for the diagnostic test, which must not reveal whether each answer was right
+  G.quiet = function (on) { quiet = !!on; };
+  function answered(ok) {
+    ensureDay();
+    bump("q");
+    if (quiet) { if (ok) bump("r"); award(ok ? 10 : 2, null, { silent: true, noLevel: true }); return; }
+    var hr = new Date().getHours();
+    if (hr < 4) g.best.owl = 1;
+    if (hr >= 5 && hr < 7) g.best.bird = 1;
+    if (ok) {
+      combo++;
+      bump("r");
+      if (inLab) bump("lp");
+      if (combo > (g.best.combo || 0)) g.best.combo = combo;
+      if (combo > (g.day.cb || 0)) g.day.cb = combo;
+      var m = mult(combo), xp = Math.round(10 * m);
+      FX.sfx("right", combo);
+      award(xp, combo >= 2 ? "combo " + combo : "", { cls: m > 1 ? "hot" : "" });
+      if (combo === 5 || combo === 10 || combo === 20 || combo === 30 || (combo > 30 && combo % 10 === 0)) {
+        var pt = FX.point();
+        FX.float("🔥 " + combo + " in a row <span>×" + mult(combo) + " XP</span>", "combo", window.innerWidth / 2, Math.max(120, window.innerHeight * 0.32));
+        FX.burst(pt.x, pt.y, 26 + Math.min(combo, 40), { power: 6 });
+      }
+    } else {
+      if (combo >= 5) FX.float("Combo of " + combo + " ended", "lost", undefined, undefined);
+      combo = 0;
+      FX.sfx("wrong");
+      award(2, null, { silent: true });
+    }
+    comboPill();
+  }
+  function onLog(kind) {
+    if (!g) return;
+    if (kind === "q") {
+      if (pendingQ) answered(false);
+      pendingQ = true;
+      Promise.resolve().then(function () { if (pendingQ) { pendingQ = false; answered(false); } });
+    } else if (kind === "r") {
+      pendingQ = false;
+      answered(true);
+    } else if (kind === "l") {
+      var lid = (location.hash || "").indexOf("#l-") === 0 ? location.hash.slice(3) : "";
+      if (lid && g.seenL[lid]) return;
+      if (lid) g.seenL[lid] = 1;
+      bump("l");
+      FX.sfx("chest");
+      var p = FX.point();
+      FX.burst(p.x, p.y, 60, { power: 8 });
+      award(50, "lesson complete", { big: true });
+    } else if (kind === "x") {
+      bump("x");
+      FX.sfx("chest");
+      FX.celebrate(false);
+      award(80, "exercise passed", { big: true });
+    } else if (kind === "c") {
+      bump("c");
+      award(3, "", { cls: "small" });
+    } else if (kind === "w") {
+      var wid = (location.hash || "").indexOf("#written-") === 0 ? location.hash.slice(9) : "";
+      bump("w");
+      if (wid && g.seenW[wid]) { save(); return; }
+      if (wid) g.seenW[wid] = 1;
+      award(30, "written answer", {});
+    }
+  }
+  // other events from the app: puzzles solved, mock exams finished
+  G.event = function (kind, info) {
+    if (!g) return;
+    ensureDay();
+    if (kind === "pz") { bump("pz"); FX.sfx("pop", 3); award(15, "puzzle solved"); }
+    else if (kind === "exam") {
+      var pct = info && info.max ? info.score / info.max : 0;
+      FX.celebrate(pct >= 0.7);
+      award(100 + Math.round(150 * pct), "mock exam", { big: true });
+    }
+  };
+
+  // ---------------------------------------------------------------- achievements
+  var achQueue = [], achBusy = false;
+  function checkAch(silent) {
+    var S = stats(), any = false;
+    ACH.forEach(function (a) {
+      if (g.ach[a.id]) return;
+      var ok = false;
+      try { ok = !!a.test(S); } catch (e) { ok = false; }
+      if (!ok) return;
+      g.ach[a.id] = Date.now();
+      any = true;
+      if (silent) { g.xp += a.xp; return; }
+      achQueue.push(a);
+    });
+    if (any) save();
+    if (!achBusy && achQueue.length) showAch();
+  }
+  function showAch() {
+    var a = achQueue.shift();
+    if (!a) { achBusy = false; return; }
+    achBusy = true;
+    FX.sfx("ach");
+    FX.toast('<div class="ach-badge">' + a.icon + '</div><div><div class="fx-k">Achievement unlocked</div><b>' + esc(a.t) + "</b><div class=\"fx-d\">" + esc(a.d) + "</div>" + (a.xp ? '<div class="fx-xp">+' + a.xp + " XP</div>" : "") + "</div>", "ach", 5200);
+    if (a.xp) award(a.xp, null, { silent: true, noAch: true });
+    setTimeout(showAch, 1100);
+  }
+  G.checkAch = checkAch;
+
+  // ---------------------------------------------------------------- quests
+  function questProgress(id) {
+    var q = questById[id];
+    if (!q) return { q: { t: id, n: 1, xp: 0, icon: "?" }, have: 0, done: false };
+    var have = Math.min(q.n, g.day[q.k] || 0);
+    return { q: q, have: have, done: !!g.qd.done[id] };
+  }
+  function checkQuests() {
+    ensureDay();
+    var changed = false;
+    g.qd.list.forEach(function (id) {
+      var p = questProgress(id);
+      if (!p.done && p.have >= p.q.n) {
+        g.qd.done[id] = 1;
+        changed = true;
+        FX.sfx("ach");
+        FX.toast('<div class="ach-badge q">' + p.q.icon + '</div><div><div class="fx-k">Daily quest complete</div><b>' + esc(p.q.t) + '</b><div class="fx-xp">+' + p.q.xp + " XP</div></div>", "quest", 4200);
+        award(p.q.xp, null, { silent: true, noQuest: true });
+      }
+    });
+    if (!g.qd.chest && g.qd.list.every(function (id) { return g.qd.done[id]; })) {
+      g.qd.chest = 1;
+      g.sets = (g.sets || 0) + 1;
+      changed = true;
+      setTimeout(function () {
+        FX.sfx("chest");
+        FX.celebrate(true);
+        FX.overlay('<div class="chest" aria-hidden="true">🎁</div><div class="lu-k">All daily quests done</div><div class="lu-rank">Bonus: <b>+150 XP</b></div><div class="lu-sub">New quests appear at midnight. Come back tomorrow to keep your streak alive.</div>', { cls: "chest-ov", label: "Daily chest", button: "Collect" });
+        award(150, null, { silent: true, noQuest: true });
+      }, 900);
+    }
+    if (changed) { save(); refreshQuestViews(); }
+  }
+  G.quests = function () { ensureDay(); return g.qd.list.map(questProgress); };
+  function questListHtml() {
+    return '<ul class="quests">' + G.quests().map(function (p) {
+      var pct = Math.round(100 * p.have / p.q.n);
+      return '<li class="' + (p.done ? "done" : "") + '"><span class="q-ic" aria-hidden="true">' + p.q.icon + '</span><div class="q-b"><div class="q-t">' + esc(p.q.t) + '</div><div class="q-bar"><i style="width:' + pct + '%"></i></div></div><span class="q-n">' + (p.done ? "✓" : p.have + "/" + p.q.n) + '</span><span class="q-x">+' + p.q.xp + "</span></li>";
+    }).join("") + "</ul>";
+  }
+  G.questListHtml = questListHtml;
+  function refreshQuestViews() {
+    document.querySelectorAll("[data-quests]").forEach(function (el) { el.innerHTML = questListHtml(); });
+  }
+
+  // ---------------------------------------------------------------- arcade results
+  G.arcadeResult = function (id, score, title, xpMult) {
+    ensureDay();
+    var a = g.arc[id] = g.arc[id] || { best: 0, plays: 0 };
+    var prev = a.best || 0, isBest = score > prev;
+    a.plays++;
+    a.last = score;
+    a.t = Date.now();
+    if (isBest) a.best = score;
+    bump("ap");
+    CL.Progress.log("a");
+    var xp = Math.round(Math.min(300, Math.max(5, Math.round(score / 15))) * (xpMult || 1));
+    award(xp, (title || "Arcade") + (isBest ? " · new best" : ""), { big: isBest, x: window.innerWidth / 2, y: window.innerHeight * 0.3 });
+    return { best: isBest, prev: prev, xp: xp };
+  };
+  G.arcadeBest = function (id) { return (g && g.arc[id] && g.arc[id].best) || 0; };
+  G.arcadePlays = function (id) { return (g && g.arc[id] && g.arc[id].plays) || 0; };
+
+  // ---------------------------------------------------------------- HUD in the top bar
+  var hud = null, sndBtn = null, pill = null;
+  var FLAME = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="url(#flG)" d="M12 2c.6 3.2-1.4 4.9-2.9 6.6C7.6 10.3 6 12.1 6 14.8 6 18.8 8.7 22 12 22s6-3.2 6-7.2c0-2.3-1-4.1-2.2-5.6-.3 1.6-1.1 2.8-2.4 3.3.6-3.9-.3-7.5-1.4-10.5z"/></svg>';
+  var SND_ON = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+  var SND_OFF = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M4 9h4l5-4v14l-5-4H4z"/><path d="m16.5 9.5 5 5m0-5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+  G.mountHud = function (bar) {
+    hud = document.createElement("a");
+    hud.className = "hud";
+    hud.href = "#trophies";
+    hud.innerHTML = '<span class="hud-streak">' + FLAME + '<b>0</b></span><span class="hud-lvl"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="16" class="r-bg"/><circle cx="20" cy="20" r="16" class="r-fg"/></svg><b>1</b></span><span class="hud-xp"><b>0</b><i>XP</i></span>';
+    sndBtn = document.createElement("button");
+    sndBtn.type = "button";
+    sndBtn.className = "srch-btn hud-snd";
+    sndBtn.addEventListener("click", function () {
+      g.sound = g.sound === false;
+      save();
+      paintSound();
+      if (g.sound) FX.sfx("right", 3);
+    });
+    var srch = bar.querySelector(".srch-btn");
+    bar.insertBefore(hud, srch);
+    bar.insertBefore(sndBtn, srch);
+    pill = document.createElement("div");
+    pill.className = "combo-pill";
+    pill.setAttribute("aria-live", "polite");
+    pill.hidden = true;
+    document.body.appendChild(pill);
+    paintSound();
+    refreshHud(false);
+  };
+  function paintSound() {
+    if (!sndBtn) return;
+    var on = g.sound !== false;
+    sndBtn.innerHTML = on ? SND_ON : SND_OFF;
+    sndBtn.setAttribute("aria-label", on ? "Sound effects on (press to mute)" : "Sound effects off (press to turn on)");
+    sndBtn.title = on ? "Sound on" : "Sound off";
+    sndBtn.classList.toggle("off", !on);
+  }
+  function refreshHud(anim) {
+    if (!hud || !g) return;
+    var L = levelOf(g.xp), lo = xpFor(L), hi = xpFor(L + 1), k = (g.xp - lo) / (hi - lo), C = 2 * Math.PI * 16, st = CL.Progress.streak();
+    var fg = hud.querySelector(".r-fg");
+    fg.style.strokeDasharray = C.toFixed(1);
+    fg.style.strokeDashoffset = (C * (1 - k)).toFixed(1);
+    var lb = hud.querySelector(".hud-lvl b"), xb = hud.querySelector(".hud-xp b"), sb = hud.querySelector(".hud-streak b");
+    if (lb.textContent !== String(L)) lb.textContent = L;
+    var oldXp = parseInt(xb.textContent.replace(/[^0-9]/g, ""), 10) || 0;
+    if (anim && oldXp !== g.xp) FX.countUp(xb, oldXp, g.xp, 600); else xb.textContent = g.xp.toLocaleString();
+    sb.textContent = st;
+    var lit = CL.Progress.dayActive(today());
+    hud.querySelector(".hud-streak").classList.toggle("lit", lit);
+    hud.setAttribute("aria-label", "Level " + L + " (" + rankOf(L)[1] + "), " + g.xp + " XP, " + (hi - g.xp) + " XP to the next level. Study streak " + st + " day" + (st === 1 ? "" : "s") + (lit ? "" : " (study today to keep it)") + ". Open the Trophy Room.");
+    hud.title = rankOf(L)[1] + " · " + (hi - g.xp).toLocaleString() + " XP to level " + (L + 1);
+    if (anim) { hud.classList.remove("pulse"); void hud.offsetWidth; hud.classList.add("pulse"); }
+  }
+  G.refreshHud = refreshHud;
+  function comboPill() {
+    if (!pill) return;
+    if (combo < 2) { if (!pill.hidden) { pill.classList.add("out"); setTimeout(function () { if (combo < 2) { pill.hidden = true; pill.classList.remove("out"); } }, 380); } return; }
+    pill.hidden = false;
+    pill.classList.remove("out");
+    var m = mult(combo), next = combo < 5 ? 5 : combo < 10 ? 10 : combo < 20 ? 20 : combo < 30 ? 30 : 0;
+    pill.className = "combo-pill" + (m >= 2 ? " hot" : "") + (m >= 3 ? " blaze" : "");
+    pill.innerHTML = '<span class="cp-f" aria-hidden="true">🔥</span><b>' + combo + '</b><span class="cp-t">in a row</span><span class="cp-m">×' + m + " XP</span>" + (next ? '<span class="cp-n">' + (next - combo) + " to ×" + mult(next) + "</span>" : "");
+    pill.classList.remove("bump"); void pill.offsetWidth; pill.classList.add("bump");
+  }
+
+  // ---------------------------------------------------------------- the player card on the home page
+  G.homeCard = function (nextHref, nextTitle) {
+    ensureDay();
+    var L = levelOf(g.xp), lo = xpFor(L), hi = xpFor(L + 1), pct = Math.round(100 * (g.xp - lo) / (hi - lo)), r = rankOf(L), st = CL.Progress.streak(), nr = nextRank(L);
+    var el = document.createElement("section");
+    el.className = "pcard";
+    el.innerHTML = '<div class="pl-id"><a class="pl-ring" href="#trophies" aria-label="Trophy Room"><svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="52" class="lu-bg"/><circle cx="60" cy="60" r="52" class="lu-fg" style="stroke-dasharray:326.7;stroke-dashoffset:' + (326.7 * (1 - pct / 100)).toFixed(1) + '"/></svg><b>' + L + "</b><span>level</span></a>" +
+      '<div class="pl-who"><div class="pl-k">Your rank</div><div class="pl-rank">' + esc(r[1]) + '</div><div class="pl-xp"><div class="xpbar"><i style="width:' + pct + '%"></i></div><span>' + (g.xp - lo).toLocaleString() + " / " + (hi - lo).toLocaleString() + " XP to level " + (L + 1) + "</span></div>" +
+      '<div class="pl-chips"><span class="chip fire">' + FLAME + " " + st + " day streak</span><span class=\"chip\">🏅 " + Object.keys(g.ach).length + " / " + ACH.length + " achievements</span>" + (g.best.combo ? '<span class="chip">🔥 best combo ' + g.best.combo + "</span>" : "") + (nr ? '<span class="chip">Next rank at level ' + nr[0] + ": " + esc(nr[1]) + "</span>" : "") + "</div></div></div>" +
+      '<div class="pl-q"><div class="pl-k">Today\'s quests <span class="muted">· reset at midnight</span></div><div data-quests>' + questListHtml() + "</div></div>" +
+      '<div class="pl-go btns">' + (nextHref ? '<a class="btn primary glow" href="' + nextHref + '">▶ ' + esc(nextTitle || "Continue") + "</a>" : "") + '<a class="btn arcade-btn" href="#arcade">🕹️ Arcade</a><a class="btn" href="#train">⚡ Practice</a><a class="btn ghost" href="#trophies">🏆 Trophy Room</a></div>';
+    return el;
+  };
+
+  // ---------------------------------------------------------------- the Trophy Room
+  function trophies(ui) {
+    ensureDay();
+    var p = ui.page("trophy-page");
+    ui.setTutor("progress", "Trophy Room", function () { var S = stats(); return "Game stats: level " + S.level + ", " + S.xp + " XP, best combo " + S.bestCombo + ", " + Object.keys(g.ach).length + " achievements. " + ui.progressText(); });
+    var S = stats(), L = S.level, lo = xpFor(L), hi = xpFor(L + 1), pct = Math.round(100 * (g.xp - lo) / (hi - lo)), r = rankOf(L);
+    var got = ACH.filter(function (a) { return g.ach[a.id]; }).length;
+    var html = '<div class="eyebrow">Progress</div><h1 class="title">Trophy Room</h1>' +
+      '<section class="tr-hero"><div class="tr-ring"><svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="52" class="lu-bg"/><circle cx="60" cy="60" r="52" class="lu-fg" style="stroke-dasharray:326.7;stroke-dashoffset:' + (326.7 * (1 - pct / 100)).toFixed(1) + '"/></svg><b>' + L + '</b><span>level</span></div>' +
+      '<div class="tr-who"><div class="pl-k">Rank</div><div class="tr-rank">' + esc(r[1]) + '</div><div class="muted">' + esc(r[2]) + '</div><div class="pl-xp"><div class="xpbar"><i style="width:' + pct + '%"></i></div><span><b class="tr-xp">' + g.xp.toLocaleString() + "</b> XP · " + (hi - g.xp).toLocaleString() + " more to level " + (L + 1) + "</span></div></div></section>" +
+      '<div class="tr-stats">' + [["🎯", S.r.toLocaleString(), "correct answers"], ["🔥", S.bestCombo, "best combo"], ["📘", S.lessons + "/" + S.lessonTotal, "lessons"], ["💻", S.ex + "/" + S.exTotal, "exercises passed"],
+        ["📅", S.streak, "day streak"], ["🔬", S.lp, "lab predictions right"], ["🕹️", S.arcPlays, "arcade rounds"], ["🎁", S.sets, "quest sets done"]].map(function (x) {
+        return '<div class="tr-stat"><span aria-hidden="true">' + x[0] + "</span><b>" + x[1] + "</b><i>" + x[2] + "</i></div>";
+      }).join("") + "</div>" +
+      '<div class="tr-cols"><section class="tr-box"><h2>Today\'s quests</h2><div data-quests>' + questListHtml() + '</div><p class="muted small">Finish all three for a <b>+150 XP</b> chest. Quests change every day at midnight.</p></section>' +
+      '<section class="tr-box"><h2>How to earn XP</h2><ul class="tr-how"><li><b>+10</b> each correct answer, anywhere on the site</li><li><b>×1.5 → ×4</b> combo multiplier for answers in a row (5, 10, 20, 30)</li><li><b>+50</b> each lesson completed · <b>+80</b> each exercise passed</li><li><b>+100 to +250</b> each mock exam · <b>+30</b> each written answer</li><li><b>+15</b> each code puzzle · <b>+3</b> each flashcard</li><li><b>Arcade</b> rounds pay XP for points scored</li><li><b>Achievements</b> and <b>daily quests</b> pay bonus XP</li></ul></section></div>' +
+      '<div class="sec-h"><h2>Achievements</h2><span class="muted small">' + got + " of " + ACH.length + " unlocked</span></div>" +
+      '<div class="ach-grid">' + ACH.map(function (a) {
+        var t = g.ach[a.id];
+        return '<div class="ach' + (t ? " got" : "") + '" title="' + esc(a.d) + '"><div class="ach-badge">' + (t ? a.icon : "🔒") + '</div><b>' + esc(a.t) + "</b><span>" + esc(a.d) + "</span>" + (a.xp ? "<i>+" + a.xp + " XP</i>" : "") + (t ? '<em>' + new Date(t).toLocaleDateString([], { day: "numeric", month: "short" }) + "</em>" : "") + "</div>";
+      }).join("") + "</div>" +
+      '<div class="sec-h"><h2>Rank ladder</h2><span class="muted small">Ranks unlock as you level up</span></div><ol class="ladder">' + RANKS.map(function (x) {
+        var state = L >= x[0] ? (rankOf(L)[0] === x[0] ? "now" : "past") : "";
+        return '<li class="' + state + '"><span class="ld-l">Lv ' + x[0] + '</span><b>' + esc(x[1]) + "</b><span class=\"muted\">" + esc(x[2]) + "</span></li>";
+      }).join("") + "</ol>" +
+      (CL.Arcade ? '<div class="sec-h"><h2>Arcade high scores</h2><a class="btn small" href="#arcade">Play</a></div><div class="tr-arc">' + CL.Arcade.games.map(function (gm) {
+        var a = g.arc[gm.id] || {};
+        return '<a class="tr-arcg" href="#arcade-' + gm.id + '"><span aria-hidden="true">' + gm.icon + "</span><b>" + esc(gm.title) + "</b><i>" + (a.best ? a.best.toLocaleString() + " pts" : "not played") + "</i></a>";
+      }).join("") + "</div>" : "");
+    p.innerHTML = html;
+    var xb = p.querySelector(".tr-xp");
+    FX.countUp(xb, Math.max(0, g.xp - 200), g.xp, 900);
+  }
+
+  // ---------------------------------------------------------------- start up
+  G.init = function (s) {
+    store = s;
+    D = window.CODELAB_DATA;
+    var first = !store.g;
+    store.g = store.g || fresh();
+    g = store.g;
+    ["tot", "best", "ach", "arc", "labs", "seenL", "seenW"].forEach(function (k) { g[k] = g[k] || {}; });
+    if (typeof g.xp !== "number") g.xp = 0;
+    ensureDay();
+    // credit progress made before the game layer existed, once
+    if (first) {
+      var S0 = 0;
+      Object.keys(store.done || {}).forEach(function (k) { if (store.done[k]) { g.seenL[k] = 1; S0 += 50; } });
+      Object.keys(store.ex || {}).forEach(function (k) { if (store.ex[k] && store.ex[k].passed) S0 += 80; });
+      Object.keys(store.quiz || {}).forEach(function (k) { if (store.quiz[k].right) S0 += 10; });
+      Object.keys(store.train || {}).forEach(function (k) { S0 += 10 * (store.train[k].r || 0); });
+      (store.exams || []).forEach(function (e) { S0 += 100 + Math.round(150 * (e.max ? e.score / e.max : 0)); });
+      g.xp = S0;
+      g.tot.r = Object.keys(store.train || {}).reduce(function (a, k) { return a + (store.train[k].r || 0); }, 0) + Object.keys(store.quiz || {}).filter(function (k) { return store.quiz[k].right; }).length;
+      g.tot.q = g.tot.r;
+      checkAch(true);
+      if (S0 > 0) setTimeout(function () { FX.toast('<div class="ach-badge">🎮</div><div><div class="fx-k">Welcome to the new Code Lab</div><b>Your earlier progress earned ' + g.xp.toLocaleString() + ' XP</b><div class="fx-d">Level ' + levelOf(g.xp) + ": " + esc(rankOf(levelOf(g.xp))[1]) + "</div></div>", "ach", 6500); }, 1200);
+      if (CL.save) CL.save();
+    }
+    // every activity the site records feeds the game
+    var orig = CL.Progress.log;
+    CL.Progress.log = function (kind) {
+      var r = orig.apply(this, arguments);
+      try { onLog(kind); } catch (e) { if (window.console) console.error(e); }
+      return r;
+    };
+    // lab "Your turn" answers come through onPractice: mark them so they count as lab predictions
+    var op = CL.onPractice;
+    if (op) CL.onPractice = function () { inLab = true; try { return op.apply(this, arguments); } finally { inLab = false; } };
+    // labs visited
+    function seen() {
+      var h = (location.hash || "").slice(1);
+      if (h.indexOf("lab-") === 0 && D.labs.some(function (l) { return l.id === h.slice(4); }) && !g.labs[h.slice(4)]) { g.labs[h.slice(4)] = 1; save(); checkAch(); }
+    }
+    window.addEventListener("hashchange", seen);
+    seen();
+    CL.pages = CL.pages || {};
+    CL.pages.trophies = { nav: "progress", draw: trophies };
+    // a new day may have started while the page was open
+    setInterval(function () { if (g.day.d !== today()) { ensureDay(); refreshHud(false); refreshQuestViews(); } }, 60000);
+    setTimeout(function () { checkAch(); }, 1500);
+  };
+})(CL);

@@ -1,9 +1,9 @@
 ---
 title: Using stacks and queues
 summary: A stack reverses order, so it is the tool for "undo the last thing" problems such as printing a list backwards or matching brackets. A queue keeps order, so it is the tool for "handle things in the order they arrived", such as level order traversal and breadth-first search.
-lectures: Lectures 9, 10, 16
+lectures: COMP 1603 review; Lectures 10, 14, 16
 goals:
-  - Print a linked list in reverse using a stack (Lecture 9)
+  - Print a linked list in reverse using a stack (COMP 1603)
   - Reverse the values of a list with a stack
   - Check that brackets are balanced with a stack
   - Recognise where queues appear in the course (level order, BFS)
@@ -12,7 +12,7 @@ labs: [stackqueue, traversal, graph]
 
 ## Stacks reverse
 
-Push a, b, c and then pop three times: you get c, b, a. Whatever goes into a stack comes out in **reverse order**. Lecture 9 uses this to print a list backwards without recursion:
+Push a, b, c and then pop three times: you get c, b, a. Whatever goes into a stack comes out in **reverse order**. A classic COMP 1603 use of this is printing a list backwards without recursion:
 
 1. Traverse the list from the top, pushing each value.
 2. Pop the values off the stack and print them.

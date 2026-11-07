@@ -2,7 +2,7 @@
 (function (CL) {
   "use strict";
   var KEY = "comp2611-prefs-v1";
-  var P = { theme: "system", size: 100, motion: "system", tutorMode: "guide" };
+  var P = { theme: "dark", size: 100, motion: "system", tutorMode: "guide" };
   try { var s = localStorage.getItem(KEY); if (s) Object.assign(P, JSON.parse(s)); } catch (e) { /* storage unavailable */ }
   var SIZES = [90, 100, 112.5, 125, 137.5];
   if (SIZES.indexOf(+P.size) < 0) P.size = 100;

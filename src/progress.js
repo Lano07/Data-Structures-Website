@@ -28,6 +28,23 @@
     (a || []).concat(b || []).forEach(function (x) { if (!x) return; var k = key(x); if (!m[k] || (x[sortKey] || 0) > (m[k][sortKey] || 0)) m[k] = x; });
     return Object.keys(m).map(function (k) { return m[k]; }).sort(function (x, y) { return (y[sortKey] || 0) - (x[sortKey] || 0); }).slice(0, cap);
   }
+  // the game layer (XP, achievements, arcade scores): nothing earned on either device is lost
+  function mergeGame(a, b) {
+    if (!a) return clone(b);
+    if (!b) return clone(a);
+    var n = (b.u || 0) > (a.u || 0) ? b : a, M = clone(n);
+    var maxNum = function (x, y) { return typeof x === "number" && typeof y === "number" ? Math.max(x, y) : (x || y); };
+    M.xp = Math.max(a.xp || 0, b.xp || 0);
+    M.sets = Math.max(a.sets || 0, b.sets || 0);
+    M.tot = byKey(a.tot, b.tot, maxNum);
+    M.best = byKey(a.best, b.best, maxNum);
+    M.ach = byKey(a.ach, b.ach, function (x, y) { return Math.min(x || Infinity, y || Infinity); });
+    ["labs", "seenL", "seenW"].forEach(function (k) { M[k] = byKey(a[k], b[k], function () { return 1; }); });
+    M.arc = byKey(a.arc, b.arc, function (x, y) { return { best: Math.max(x.best || 0, y.best || 0), plays: Math.max(x.plays || 0, y.plays || 0), last: (y.t || 0) > (x.t || 0) ? y.last : x.last, t: Math.max(x.t || 0, y.t || 0) }; });
+    if (a.day && b.day && a.day.d === b.day.d) M.day = byKey(a.day, b.day, maxNum);
+    if (a.qd && b.qd && a.qd.d === b.qd.d) { M.qd = clone(n.qd); M.qd.done = byKey(a.qd.done, b.qd.done, function () { return 1; }); M.qd.chest = Math.max(a.qd.chest || 0, b.qd.chest || 0); }
+    return M;
+  }
   P.merge = function (L, R) {
     L = L || {}; R = R || {};
     var M = {};
@@ -55,6 +72,7 @@
     M.diag = listBy(L.diag, R.diag, function (x) { return String(x.date); }, "date", 10);
     M.wr = byKey(L.wr, R.wr, newer);
     if (L.examLast || R.examLast) M.examLast = ((R.examLast && R.examLast.date) || 0) > ((L.examLast && L.examLast.date) || 0) ? clone(R.examLast) : clone(L.examLast);
+    if (L.g || R.g) M.g = mergeGame(L.g, R.g);
     ["play", "examNow", "trainPref", "goal", "path"].forEach(function (k) { M[k] = L[k] !== undefined && L[k] !== null ? clone(L[k]) : clone(R[k]); });
     return M;
   };
@@ -113,7 +131,7 @@
     if (saveLocal) saveLocal(true);
   }
   ["click", "keydown", "scroll", "touchstart"].forEach(function (ev) { window.addEventListener(ev, beat, { passive: true, capture: true }); });
-  P.dayActive = function (d) { var a = store && store.act && store.act[d]; return !!a && ((a.q || 0) + (a.l || 0) + (a.x || 0) + (a.c || 0) + (a.w || 0) > 0 || (a.m || 0) >= 5); };
+  P.dayActive = function (d) { var a = store && store.act && store.act[d]; return !!a && ((a.q || 0) + (a.l || 0) + (a.x || 0) + (a.c || 0) + (a.w || 0) + (a.a || 0) > 0 || (a.m || 0) >= 5); };
   P.streak = function () {
     var n = 0, t = new Date();
     if (!P.dayActive(day(t))) t.setDate(t.getDate() - 1);
@@ -126,7 +144,15 @@
   P.exportText = function () { return JSON.stringify(P.exportObject()); };
   P.exportFile = function () {
     var name = "comp2611-code-lab-progress-" + day() + ".json", text = JSON.stringify(P.exportObject(), null, 1);
-    if (!window.claude || !window.claude.use) return Promise.reject({ code: "unavailable" });
+    if (!window.claude || !window.claude.use) {
+      // hosted outside claude.ai (for example on GitHub Pages): an ordinary browser download
+      try {
+        var url = URL.createObjectURL(new Blob([text], { type: "application/json" })), a = document.createElement("a");
+        a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+        return Promise.resolve({ ok: true });
+      } catch (e) { return Promise.reject({ code: "unavailable" }); }
+    }
     return window.claude.use("downloads").then(function (dl) {
       if (!dl) throw { code: "unavailable" };
       return dl.save({ filename: name, data: text });

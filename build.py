@@ -30,7 +30,7 @@ PARTS = [
     {"id": "d", "title": "Recursion", "lectures": "Lectures 2–4", "topics": ["recursion"],
      "blurb": "Base cases, recursive cases, recursion trees, and recursive list and array functions.",
      "lessons": ["d1-how-recursion-works", "d2-recursion-lists", "d3-recursion-arrays"]},
-    {"id": "e", "title": "Stacks and queues", "lectures": "Lecture 9", "topics": ["stacks-queues"],
+    {"id": "e", "title": "Stacks and queues", "lectures": "COMP 1603 review", "topics": ["stacks-queues"],
      "blurb": "LIFO and FIFO, implemented with linked lists and arrays, and what they are used for.",
      "lessons": ["e1-stacks", "e2-queues", "e3-applications"]},
     {"id": "f", "title": "Binary trees", "lectures": "Lectures 5, 6, 10", "topics": ["binary-trees"],
@@ -70,7 +70,7 @@ LABS = [
      "intro": "Pick a program on the left (or edit one) and step through it. Variables live on the stack; objects made with new live on the heap; every pointer is drawn as an arrow to what it points at."},
     {"id": "lists", "title": "Linked List Lab", "lectures": "Lectures 1–4", "blurb": "Insert, delete, reverse and merge, with your own values.",
      "intro": "Choose an operation, type your own list values, and watch each pointer change in the real course code."},
-    {"id": "stackqueue", "title": "Stack and Queue Lab", "lectures": "Lecture 9", "blurb": "Type a sequence of push, pop, enqueue and dequeue operations.",
+    {"id": "stackqueue", "title": "Stack and Queue Lab", "lectures": "COMP 1603 review", "blurb": "Type a sequence of push, pop, enqueue and dequeue operations.",
      "intro": "Write a sequence like push 10, push 20, pop and see exactly which node is added or removed, and why the order is LIFO or FIFO."},
     {"id": "recursion", "title": "Recursion Lab", "lectures": "Lectures 2–4", "blurb": "See the call stack grow and shrink, and the recursion tree.",
      "intro": "Each call gets its own frame on the stack. Open the Call tree tab to see the recursion tree from the lectures, with each call's return value."},
@@ -764,16 +764,16 @@ def main():
                 t.pop("stdin", None)
 
     # ---- bundle
-    css = open(os.path.join(SRC, "style.css")).read()
+    css = open(os.path.join(SRC, "style.css")).read() + "\n" + open(os.path.join(SRC, "neon.css")).read()
     js_files = ["cpp_lex.js", "cpp_parse.js", "cpp_check.js", "cpp_run.js", "editor.js", "editor_tools.js", "settings.js", "md.js", "tutor.js", "memviz.js", "visualizer.js", "debugger.js",
-                "lab_core.js", "lab_tree.js", "lab_avl.js", "lab_heap.js", "lab_hash.js", "lab_graph.js", "lab_sort.js", "lab_race.js", "lab_mem.js", "trainer.js", "trainer2.js", "progress.js", "learn.js", "pages_learn.js", "pages_ref.js", "pages_exam.js"]
+                "lab_core.js", "lab_tree.js", "lab_avl.js", "lab_heap.js", "lab_hash.js", "lab_graph.js", "lab_sort.js", "lab_race.js", "lab_mem.js", "trainer.js", "trainer2.js", "progress.js", "fx.js", "game.js", "arcade.js", "arcade_games.js", "learn.js", "pages_learn.js", "pages_ref.js", "pages_exam.js"]
     js = "\n".join(open(os.path.join(SRC, f)).read() for f in js_files)
     app = open(os.path.join(SRC, "app.js")).read()
     data_js = "window.CODELAB_DATA = " + json.dumps(data, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/") + ";"
     head = ('<title>COMP 2611 Code Lab 2</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n'
             '<meta name="description" content="Learn COMP 2611 data structures in C++: lessons, a step-by-step memory visualizer, algorithm labs and auto-tested coding exercises.">\n'
             '<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
-            '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600;700&family=Martian+Mono:wght@500;600&display=swap">\n')
+            '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600;700&family=Martian+Mono:wght@500;600&family=Space+Grotesk:wght@500;600;700&display=swap">\n')
     body = ("<style>\n" + css + "\n</style>\n"
             '<div id="app"></div>\n'
             "<script>\n" + js + "\n</script>\n"

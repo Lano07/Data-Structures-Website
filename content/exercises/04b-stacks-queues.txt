@@ -2,7 +2,7 @@
 title: push and pop
 topic: stacks-queues
 level: 1
-lecture: Lecture 9
+lecture: COMP 1603 review
 lessons: e1-stacks
 blurb: A stack is a list where you only touch the top.
 --- prompt
@@ -91,7 +91,7 @@ push is insertAtHead and pop is deleteAtHead, so both are O(1). Saving the data 
 title: enqueue and dequeue
 topic: stacks-queues
 level: 2
-lecture: Lecture 9
+lecture: COMP 1603 review
 lessons: e2-queues
 blurb: Keep head and tail correct, especially when the queue is empty.
 --- prompt
@@ -189,7 +189,7 @@ The two edge cases are an empty queue (enqueue sets both pointers) and removing 
 title: Balanced brackets
 topic: stacks-queues
 level: 2
-lecture: Lecture 9
+lecture: COMP 1603 review
 lessons: e3-applications
 blurb: The most recent opening bracket must be closed first.
 --- prompt
@@ -251,9 +251,9 @@ A stack always gives back the most recent unmatched opening bracket, which is ex
 title: printListReverse with a stack
 topic: stacks-queues
 level: 2
-lecture: Lecture 9
+lecture: COMP 1603 review
 lessons: e3-applications
-blurb: Lecture 9 - print a list backwards without recursion.
+blurb: COMP 1603 classic - print a list backwards without recursion.
 --- prompt
 Using the given stack functions (and no recursion), write `printListReverse`, which prints the list's values from last to first, each followed by a space, then ends the line. Do not change the list.
 
@@ -313,7 +313,7 @@ void printListReverse (Node * top) {
 	cout << endl;
 }
 --- harness list
---- test: Lecture 9 list
+--- test: the example list
 int a[] = {250, 23, 17, 4};
 printListReverse (__make (a, 4));
 --- test (hidden): one node

@@ -152,7 +152,7 @@
 
   // ---------------------------------------------------------------- shell
   app.innerHTML = '<header class="top"><div class="top-in"><a class="brand" href="#home"><b>COMP 2611 <i>Code Lab</i></b><span>C++ data structures</span></a>' +
-    '<nav class="nav" aria-label="Main"><a href="#learn" data-r="learn">Learn</a><a href="#lab" data-r="lab">Labs</a><a href="#train" data-r="train">Practice</a><a href="#gym" data-r="gym">Code Gym</a><a href="#play" data-r="play">Playground</a><a href="#ref" data-r="ref">Reference</a><a href="#progress" data-r="progress">Progress</a></nav><button type="button" class="srch-btn" aria-label="Search the site (press /)" title="Search (/)"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>' +
+    '<nav class="nav" aria-label="Main"><a href="#learn" data-r="learn">Learn</a><a href="#lab" data-r="lab">Labs</a><a href="#train" data-r="train">Practice</a><a href="#arcade" data-r="arcade" class="nav-arcade">Arcade</a><a href="#gym" data-r="gym">Code Gym</a><a href="#play" data-r="play">Playground</a><a href="#ref" data-r="ref">Reference</a><a href="#progress" data-r="progress">Progress</a></nav><button type="button" class="srch-btn" aria-label="Search the site (press /)" title="Search (/)"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>' +
     '<a class="srch-btn set-btn" href="#prefs" aria-label="Settings and your data" title="Settings and your data"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M10.3 3h3.4l.5 2.4c.6.2 1.2.5 1.7.9l2.3-.8 1.7 2.9-1.8 1.6c.1.6.1 1.4 0 2l1.8 1.6-1.7 2.9-2.3-.8c-.5.4-1.1.7-1.7.9l-.5 2.4h-3.4l-.5-2.4c-.6-.2-1.2-.5-1.7-.9l-2.3.8-1.7-2.9 1.8-1.6c-.1-.6-.1-1.4 0-2L3.4 8.4l1.7-2.9 2.3.8c.5-.4 1.1-.7 1.7-.9z"/><circle cx="12" cy="12" r="2.8" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><i class="sync-dot" aria-hidden="true"></i></a></div></header>' +
     '<main id="main"></main><footer class="foot">Built for COMP 2611 at UWI. Your progress is saved in this browser, and on your account when sync is on (<a href="#prefs">settings and backups</a>). The C++ runner works in the page, so programs never leave your device.</footer>';
   var main = document.getElementById("main");
@@ -730,7 +730,7 @@
       var badUsed = placed.filter(function (l) { return l.bad; }).length;
       fb.className = "pz-fb " + (done ? "ok" : "bad");
       fb.innerHTML = done ? "<b>✓ Right.</b> That is the code, in order." : "<b>Not yet.</b> " + (right ? "The first " + right + " line" + (right > 1 ? "s are" : " is") + " in the right place. " : "The first line is not right yet. ") + (badUsed ? "Your code uses a line that does not belong. " : "") + (placed.length < sol.length ? "The finished code has " + sol.length + " lines; you have placed " + placed.length + "." : "");
-      if (pid) { var rec = store.pz[pid] = store.pz[pid] || {}; rec.tries = (rec.tries || 0) + 1; if (done) rec.ok = true; rec.t = Date.now(); if (rec.tries === 1) LN.record(LN.forLesson(pid.split("#")[0]), done, 0.5); save(); }
+      if (pid) { var rec = store.pz[pid] = store.pz[pid] || {}; rec.tries = (rec.tries || 0) + 1; if (done && !rec.ok && CL.Game) CL.Game.event("pz"); if (done) rec.ok = true; rec.t = Date.now(); if (rec.tries === 1) LN.record(LN.forLesson(pid.split("#")[0]), done, 0.5); save(); }
       if (done && Tu && !acts.querySelector(".tutor-btn")) acts.appendChild(Tu.button("Ask the tutor to explain each line", function () {
         Tu.ask("Explain this code line by line.", { content: "I just solved a code puzzle (putting lines in order) in a lesson. The code:\n" + sol.map(function (l) { return l.text; }).join("\n") + "\n\nExplain what each line does and why it has to come where it does. Keep it short." });
       }));
@@ -803,7 +803,7 @@
         Tu.ask(ok ? "I predicted this program's output correctly. Quiz me on a variation of it." : "Why does this program print what it prints?", { content: "A predict-the-output exercise from a lesson.\n\nThe program:\n" + CL.numbered(codeText) + "\n\nMy prediction:\n" + (guess === null ? "(I didn't predict; I just ran it)" : guess) + "\n\nWhat it actually printed:\n" + actual + "\n\n" + (ok ? "Give me one small change to the program and ask me to predict the new output. Wait for my answer." : "Walk through the program step by step, showing the values that matter, and point out where my prediction went wrong.") });
       }));
       out.appendChild(a2);
-      if (rid) { var rec = store.pz[rid] = store.pz[rid] || {}; rec.tries = (rec.tries || 0) + 1; if (ok) rec.ok = true; rec.t = Date.now(); if (rec.tries === 1) LN.record(LN.forLesson(rid.split("#")[0]), ok, 0.5); save(); }
+      if (rid) { var rec = store.pz[rid] = store.pz[rid] || {}; rec.tries = (rec.tries || 0) + 1; if (ok && !rec.ok && CL.Game) CL.Game.event("pz"); if (ok) rec.ok = true; rec.t = Date.now(); if (rec.tries === 1) LN.record(LN.forLesson(rid.split("#")[0]), ok, 0.5); save(); }
     }
     form.addEventListener("click", function (e) {
       var bt = e.target.closest("[data-r]");
@@ -1831,6 +1831,7 @@
       var ms = Math.min(elapsed(), S.minutes * 60000);
       var res = { paper: S.paper, title: paperById[S.paper].title, items: S.items, answers: S.answers, flags: S.flags, ms: ms, timeUp: !!timeUp, date: Date.now() };
       var score = 0, max = 0, right = 0, by = {};
+      if (CL.Game) CL.Game.quiet(true);
       qs.forEach(function (q, i) {
         var ok = S.answers[i] === q.mcq.answer;
         max += q.marks;
@@ -1839,6 +1840,7 @@
         t[0] += ok ? q.marks : 0; t[1] += q.marks; t[2] += ok ? 1 : 0; t[3]++;
         recordTrain(q, ok);
       });
+      if (CL.Game) { CL.Game.quiet(false); CL.Game.event("exam", { score: score, max: max }); }
       Object.assign(res, { score: score, max: max, right: right, n: qs.length, by: by });
       store.exams.unshift({ paper: res.paper, title: res.title, date: res.date, score: score, max: max, ms: ms });
       store.exams = store.exams.slice(0, 40);
@@ -2330,6 +2332,8 @@
     route: route, setCurrent: function (c) { current = c; }, gymTopic: function (t) { gymFilter.topic = t || ""; }, lessonLink: lessonLink, wireSectionLinks: wireSectionLinks, mdHooks: mdHooks,
     trainConcept: function (cid) { store.trainPref.mode = "c:" + cid; save(); location.hash = "#train"; },
     trainReview: function () { store.trainPref.mode = "review"; save(); location.hash = "#train"; } };
+  if (CL.FX) CL.FX.startBackground();
+  if (CL.Game) { CL.Game.init(store); CL.Game.mountHud(app.querySelector(".top-in")); }
   route();
   // merge the copy kept on the viewer's account, then keep it up to date
   CL.Progress.on(function (P) {

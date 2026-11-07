@@ -144,7 +144,7 @@ For a traversal question, write the adjacency lists first (in alphabetical order
 
 ## Both searches in C++
 
-The Vertex struct gets a `colour` field. The queue is Lecture 9's queue, holding vertex **locations** (ints), as the lecture's note says: "source and loc are locations in the array of vertices in G."
+The Vertex struct gets a `colour` field. The queue is the COMP 1603 queue from Part E, holding vertex **locations** (ints), as the lecture's note says: "source and loc are locations in the array of vertices in G."
 
 ```cpp example="BFS and DFS on the Lecture 16 graph" file="graph.txt|7\nA B C D E F G\nA 3 D F G\nB 1 A\nC 2 B E\nD 2 B E\nE 1 B\nF 2 E G\nG 1 C\n"
 #include <iostream>
@@ -174,7 +174,7 @@ struct Graph {
 	Vertex vertices[MAX_VERTICES];
 };
 
-// ---- a queue of ints (Lecture 9)
+// ---- a queue of ints (COMP 1603, Part E)
 struct Node {
 	int data;
 	Node * next;
