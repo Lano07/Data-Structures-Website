@@ -20,7 +20,7 @@ The whole site is one HTML file. It runs real C++ in the browser, so it works of
 ## Using it
 
 - **Open the built page**: `docs/index.html` is the complete site. Open it in any browser.
-- **GitHub Pages**: in the repository's *Settings → Pages*, serve the `docs/` folder of this branch (or of `main` once merged), and the site is live at `https://lano07.github.io/data-structures-website/`.
+- **Live site**: <https://lano07.github.io/Data-Structures-Website/>, served by GitHub Pages from the `docs/` folder of `main` (*Settings → Pages*). The address keeps the repository name's capital letters; the all-lowercase version does not work.
 
 Progress is saved in your browser. Use *Settings → your data* to download a backup and restore it on another device.
 
