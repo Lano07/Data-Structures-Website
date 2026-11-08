@@ -71,6 +71,18 @@
   L.addLesson("n3-graph-isomorphism", "graph.basics");
   L.addLesson("n4-integer-sorting", "sort.perf");
   L.addLesson("n5-trees-proofs", "tree.shape");
+  // the deep-dive theory lessons count towards their part's main concept
+  L.addLesson("b6-deep-memory", "cpp.mem");
+  L.addLesson("c6-deep-lists", "list.insert");
+  L.addLesson("d4-deep-recursion", "rec.basics");
+  L.addLesson("e4-deep-stacks-queues", "sq.apps");
+  L.addLesson("f5-deep-trees", "tree.trav");
+  L.addLesson("g6-deep-bst", "bst.succ");
+  L.addLesson("h5-deep-heaps", "heap.build");
+  L.addLesson("i4-deep-hashing", "hash.probe");
+  L.addLesson("j6-deep-graphs", "graph.dijkstra");
+  L.addLesson("k5-deep-sorting", "sort.quick");
+  L.addLesson("l3-deep-big-o", "bigo.code");
   L.addLesson("m4-avl-trees", "bst.perf");
   L.forGen = function (g) { return byGen[g] || null; };
   L.forQuestion = function (q) {

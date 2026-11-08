@@ -637,3 +637,26 @@ html.reduce-motion .fx-aurora, html.reduce-motion .brand::before, html.reduce-mo
 .xc-table summary { cursor: pointer; color: var(--ink-2); }
 .xc-table table { border-collapse: collapse; margin-top: 6px; }
 .xc-table td, .xc-table th { padding: 2px 14px 2px 0; text-align: left; font-variant-numeric: tabular-nums; }
+
+/* ======================================================================
+   DEEP-DIVE THEORY CALLOUTS: theorem, proof, invariant, insight, worked example, exam trap, challenge
+   ====================================================================== */
+.box-theorem, .box-proof, .box-invariant, .box-insight, .box-example, .box-trap, .box-challenge { position: relative; border-radius: 14px; }
+.box-theorem { border: 1px solid transparent; background: linear-gradient(var(--surface), var(--surface)) padding-box, linear-gradient(120deg, var(--n2), var(--n1)) border-box; box-shadow: 0 0 26px rgba(124, 92, 255, .14); }
+.box-theorem .box-k { color: var(--n2); }
+.box-theorem .box-t { font-family: var(--f-display); }
+.box-proof { border-left: 3px dashed color-mix(in srgb, var(--n2) 70%, transparent); background: color-mix(in srgb, var(--n2) 5%, var(--surface)); }
+.box-proof .box-k { color: var(--ink-2); }
+.box-proof .box-b::after { content: "∎"; display: block; text-align: right; color: var(--n2); font-size: 1.1rem; margin-top: -6px; }
+.box-invariant { border-left: 4px solid var(--n5); background: color-mix(in srgb, var(--n5) 7%, var(--surface)); }
+.box-invariant .box-k { color: var(--warn); }
+.box-insight { border-left: 4px solid var(--n1); background: color-mix(in srgb, var(--n1) 7%, var(--surface)); }
+.box-insight .box-k { color: var(--n1); }
+.box-example { border-left: 4px solid var(--n4); background: color-mix(in srgb, var(--n4) 6%, var(--surface)); }
+.box-example .box-k { color: var(--ok); }
+.box-trap { border-left: 4px solid var(--bad); background: color-mix(in srgb, var(--bad) 8%, var(--surface)); }
+.box-trap .box-k { color: var(--bad); }
+.box-trap .box-k::before { content: "⚠ "; }
+.box-challenge { border: 1px solid transparent; background: linear-gradient(var(--surface), var(--surface)) padding-box, linear-gradient(120deg, #f97316, #f472b6) border-box; }
+.box-challenge .box-k { color: #fb923c; }
+.box-challenge .box-k::before { content: "🔥 "; }

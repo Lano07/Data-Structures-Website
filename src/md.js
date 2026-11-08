@@ -135,7 +135,8 @@
     return { t: "quiz", q: q.join(" "), code: code, codeAttrs: codeAttrs, opts: opts, expl: expl.join(" "), title: (rest || "").trim() };
   };
 
-  var BOX_LABEL = { tip: "Tip", mistake: "Common mistake", exam: "Exam focus", remember: "Remember", why: "Why it works", warn: "Careful", def: "Definition", info: "Note", steps: "Step by step", trace: "Trace it" };
+  var BOX_LABEL = { tip: "Tip", mistake: "Common mistake", exam: "Exam focus", remember: "Remember", why: "Why it works", warn: "Careful", def: "Definition", info: "Note", steps: "Step by step", trace: "Trace it",
+    theorem: "Theorem", proof: "Proof", trap: "Exam trap", insight: "Insight", example: "Worked example", invariant: "Invariant", challenge: "Challenge" };
 
   CL.renderMd = function (src, hooks) {
     hooks = hooks || {};
