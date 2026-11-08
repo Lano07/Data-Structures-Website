@@ -8,19 +8,21 @@ The whole site is one HTML file. It runs real C++ in the browser, so it works of
 
 | | |
 |---|---|
-| **Learn** | 63 lessons in 14 parts, from C++ foundations and pointers to graphs and sorting, mapped to Lectures 1–21. Every lesson has runnable code, quick checks, code puzzles, predict-the-output exercises and explain-it-back prompts. |
+| **Learn** | 74 lessons in 14 parts, from C++ foundations and pointers to graphs and sorting, mapped to Lectures 1–21. Every part ends with a **deep-dive theory lesson**: invariants, proofs, cost derivations, worked exam problems and exam traps. Lessons have runnable code, quick checks, code puzzles, predict-the-output exercises and explain-it-back prompts. |
 | **Course outline topics** | Part N covers what the course outline lists but the notes don't yet: sequential and binary search, special matrices (triangular, symmetric, band, sparse), Floyd's algorithm, graph isomorphism, counting and radix sort, and structural induction. |
 | **Visual Labs** | 14 labs: memory, linked lists, stacks and queues, recursion, traversals, BSTs, AVL trees, heaps, hashing, graphs, sorting, matrices, Floyd and integer sorting. Each one steps through the course code line by line, and *Your turn* mode asks you to predict every step. |
 | **Arcade** | 8 timed games that drill exam skills: Big-O Blitz, Traversal Sprint, BST Builder, Heap Hero, Hash Dash, Dijkstra Dash, MST Rush and Sort Showdown (partition and sorting passes). They have combos, lives, high scores, a review of your mistakes, and a double-XP game of the day. |
+| **Boss Battles** | One boss per topic plus the Final Exam, fought with fresh exam-style questions: fast answers are critical hits, and every miss shows the worked solution and joins your review queue. |
+| **Algorithm Cards** | 27 collectible revision cards (costs on the front; power and exam trap on the back), unlocked by deep dives and bosses; master both and a card turns holographic. |
 | **Practice** | Endless exam-style questions with worked solutions, flashcards with spaced repetition, written answers marked against a scheme, a diagnostic test, and timed mock exams. |
 | **Code Gym** | 92 coding exercises with hidden tests, hints and model solutions. |
-| **Game layer** | XP for every answer, lesson, exercise, puzzle and mock exam. Levels with rank titles (Null Pointer → Data Structures Legend), combo multipliers, three daily quests with a bonus chest, 43 achievements, a study streak, a 14-day XP chart, sound effects and phone vibration (with one mute button) and a Trophy Room. |
+| **Game layer** | XP for every answer, lesson, exercise, puzzle and mock exam. Levels with rank titles (Null Pointer → Data Structures Legend), combo multipliers, daily quests with a bonus chest, 53 achievements, a study streak, a 14-day XP chart, sound effects and phone vibration (with one mute button) and a Trophy Room. |
 | **Look and feel** | A neon dark theme (a light theme is in settings), an animated background, a hero where data structures morph into each other, and glowing lab visuals. It respects *reduce motion*. |
 
 ## Using it
 
 - **Open the built page**: `docs/index.html` is the complete site. Open it in any browser.
-- **GitHub Pages**: in the repository's *Settings → Pages*, serve the `docs/` folder of this branch (or of `main` once merged), and the site is live at `https://lano07.github.io/data-structures-website/`.
+- **Live site**: <https://lano07.github.io/Data-Structures-Website/>, served by GitHub Pages from the `docs/` folder of `main` (*Settings → Pages*). The address keeps the repository name's capital letters; the all-lowercase version does not work.
 
 Progress is saved in your browser. Use *Settings → your data* to download a backup and restore it on another device.
 

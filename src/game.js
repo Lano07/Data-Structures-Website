@@ -76,6 +76,16 @@
     ["lv10", "🌠", "Double Digits", "Reach level 10.", 0, function (S) { return S.level >= 10; }],
     ["lv20", "🏅", "Elite", "Reach level 20.", 0, function (S) { return S.level >= 20; }],
     ["lv30", "🔱", "Mythic", "Reach level 30.", 0, function (S) { return S.level >= 30; }],
+    ["theorist", "🧠", "Theorist", "Complete 3 deep-dive theory lessons.", 120, function (S) { return S.deep >= 3; }],
+    ["professor", "🎓", "Professor", "Complete every deep-dive theory lesson.", 600, function (S) { return S.deepTotal > 0 && S.deep >= S.deepTotal; }],
+    ["boss1", "⚔️", "Boss Slayer", "Defeat your first boss.", 100, function (S) { return S.bosses >= 1; }],
+    ["boss5", "🛡️", "Raid Leader", "Defeat 5 different topic bosses.", 250, function (S) { return S.topicBosses >= 5; }],
+    ["bossall", "🐉", "Dragon Hunter", "Defeat all 11 topic bosses.", 600, function (S) { return S.topicBosses >= 11; }],
+    ["flawless", "💠", "Flawless Victory", "Defeat a boss without losing a heart.", 150, function (S) { return S.flawless; }],
+    ["final", "🏛️", "Valedictorian", "Defeat the Final Exam boss.", 800, function (S) { return S.finalWon; }],
+    ["cards10", "🃏", "Collector", "Collect 10 Algorithm Cards.", 120, function (S) { return S.cards >= 10; }],
+    ["cardsall", "🗃️", "Full Deck", "Collect every Algorithm Card.", 600, function (S) { return S.cardTotal > 0 && S.cards >= S.cardTotal; }],
+    ["foil1", "✨", "Shiny!", "Earn your first holographic card.", 80, function (S) { return S.foils >= 1; }],
     ["q1", "🎁", "Quest Complete", "Finish all three daily quests in one day.", 50, function (S) { return S.sets >= 1; }],
     ["q7", "🧰", "Questing Hero", "Finish all three daily quests on 7 different days.", 250, function (S) { return S.sets >= 7; }]
   ].map(function (a) { return { id: a[0], icon: a[1], t: a[2], d: a[3], xp: a[4], test: a[5] }; });
@@ -94,7 +104,9 @@
     { id: "ap3", k: "ap", n: 3, xp: 80, icon: "🕹️", t: "Play 3 rounds in the Arcade" },
     { id: "lp5", k: "lp", n: 5, xp: 70, icon: "🔬", t: "Make 5 correct predictions in a lab (Your turn)" },
     { id: "xp300", k: "xp", n: 300, xp: 80, icon: "⚡", t: "Earn 300 XP today" },
-    { id: "pz2", k: "pz", n: 2, xp: 60, icon: "🧩", t: "Solve 2 code puzzles in lessons" }
+    { id: "pz2", k: "pz", n: 2, xp: 60, icon: "🧩", t: "Solve 2 code puzzles in lessons" },
+    { id: "boss1", k: "boss", n: 1, xp: 120, icon: "⚔️", t: "Defeat a boss in Boss Battles" },
+    { id: "dd1", k: "dd", n: 1, xp: 100, icon: "🧠", t: "Complete a deep-dive theory lesson" }
   ];
   function hashStr(s) { var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
   function rng(seed) { return function () { seed |= 0; seed = seed + 0x6D2B79F5 | 0; var t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
@@ -113,7 +125,7 @@
 
   // ---------------------------------------------------------------- state
   function today() { return CL.Progress.day(); }
-  function fresh() { return { v: 1, xp: 0, sound: true, tot: {}, best: {}, ach: {}, arc: {}, labs: {}, seenL: {}, seenW: {}, sets: 0, day: { d: today() }, qd: { d: "", done: {} }, u: Date.now() }; }
+  function fresh() { return { v: 1, xp: 0, sound: true, tot: {}, best: {}, ach: {}, arc: {}, labs: {}, seenL: {}, seenW: {}, boss: {}, cards: {}, foils: {}, sets: 0, day: { d: today() }, qd: { d: "", done: {} }, u: Date.now() }; }
   function ensureDay() {
     var d = today();
     if (!g.day || g.day.d !== d) g.day = { d: d };
@@ -137,8 +149,12 @@
     (store.exams || []).forEach(function (e) { if (e.max) bestExam = Math.max(bestExam, e.score / e.max); });
     var arcPlays = 0, arcBest = 0, arcGames = 0;
     Object.keys(g.arc || {}).forEach(function (k) { var a = g.arc[k]; arcPlays += a.plays || 0; arcBest = Math.max(arcBest, a.best || 0); if (a.plays) arcGames++; });
-    var L = levelOf(g.xp);
+    var L = levelOf(g.xp), deep = 0, deepTotal = 0, bosses = 0, topicBosses = 0, flawless = false;
+    Object.keys(D.lessons).forEach(function (id) { if (id.indexOf("-deep-") > 0) { deepTotal++; if (done[id]) deep++; } });
+    Object.keys(g.boss || {}).forEach(function (k) { var b = g.boss[k]; if (b && b.wins) { bosses++; if (k !== "final") topicBosses++; if (b.flawless) flawless = true; } });
     return {
+      deep: deep, deepTotal: deepTotal, bosses: bosses, topicBosses: topicBosses, flawless: flawless, finalWon: !!(g.boss && g.boss.final && g.boss.final.wins),
+      cards: Object.keys(g.cards || {}).length, foils: Object.keys(g.foils || {}).length, cardTotal: (CL.Collection && CL.Collection.cards.length) || 0,
       q: g.tot.q || 0, r: g.tot.r || 0, c: g.tot.c || 0, w: g.tot.w || 0, lp: g.tot.lp || 0, pz: g.tot.pz || 0,
       bestCombo: g.best.combo || 0, lessons: lessons, lessonTotal: lessonTotal, partsDone: partsDone, outlineDone: outlineDone,
       ex: ex, exTotal: D.exercises.length, streak: CL.Progress.streak(), labs: Object.keys(g.labs || {}).length, labTotal: D.labs.length,
@@ -230,6 +246,7 @@
       if (lid && g.seenL[lid]) return;
       if (lid) g.seenL[lid] = 1;
       bump("l");
+      if (lid.indexOf("-deep-") > 0) bump("dd");
       FX.sfx("chest");
       var p = FX.point();
       FX.burst(p.x, p.y, 60, { power: 8 });
@@ -265,6 +282,7 @@
   // ---------------------------------------------------------------- achievements
   var achQueue = [], achBusy = false;
   function checkAch(silent) {
+    if (CL.Collection) { try { CL.Collection.check(silent); } catch (e) { /* cards are optional */ } }
     var S = stats(), any = false;
     ACH.forEach(function (a) {
       if (g.ach[a.id]) return;
@@ -350,6 +368,24 @@
     award(xp, (title || "Arcade") + (isBest ? " · new best" : ""), { big: isBest, x: window.innerWidth / 2, y: window.innerHeight * 0.3 });
     return { best: isBest, prev: prev, xp: xp };
   };
+  // ---------------------------------------------------------------- boss battles
+  G.bossResult = function (id, r) {
+    ensureDay();
+    var b = g.boss[id] = g.boss[id] || { wins: 0, tries: 0 };
+    b.tries++;
+    b.t = Date.now();
+    if (!r.won) { save(); return { xp: 0, first: false, cards: [] }; }
+    var first = !b.wins;
+    b.wins++;
+    if (!b.best || r.ms < b.best) b.best = r.ms;
+    if (r.flawless) b.flawless = 1;
+    bump("boss");
+    var before = CL.Collection ? CL.Collection.check(true) : [];
+    var xp = (id === "final" ? 600 : 200) + 50 * (r.hearts || 0) + (r.flawless ? 100 : 0) + (first ? 100 : 0);
+    award(xp, null, { silent: true });
+    checkAch();
+    return { xp: xp, first: first, cards: before };
+  };
   G.arcadeBest = function (id) { return (g && g.arc[id] && g.arc[id].best) || 0; };
   G.arcadePlays = function (id) { return (g && g.arc[id] && g.arc[id].plays) || 0; };
 
@@ -430,7 +466,7 @@
       '<div class="pl-who"><div class="pl-k">Your rank</div><div class="pl-rank">' + esc(r[1]) + '</div><div class="pl-xp"><div class="xpbar"><i style="width:' + pct + '%"></i></div><span>' + (g.xp - lo).toLocaleString() + " / " + (hi - lo).toLocaleString() + " XP to level " + (L + 1) + "</span></div>" +
       '<div class="pl-chips"><span class="chip fire">' + FLAME + " " + st + " day streak</span><span class=\"chip\">🏅 " + Object.keys(g.ach).length + " / " + ACH.length + " achievements</span>" + (g.best.combo ? '<span class="chip">🔥 best combo ' + g.best.combo + "</span>" : "") + (nr ? '<span class="chip">Next rank at level ' + nr[0] + ": " + esc(nr[1]) + "</span>" : "") + "</div></div></div>" +
       '<div class="pl-q"><div class="pl-k">Today\'s quests <span class="muted">· reset at midnight</span></div><div data-quests>' + questListHtml() + "</div></div>" +
-      '<div class="pl-go btns">' + (nextHref ? '<a class="btn primary glow" href="' + nextHref + '">▶ ' + esc(nextTitle || "Continue") + "</a>" : "") + '<a class="btn arcade-btn" href="#arcade">🕹️ Arcade</a><a class="btn" href="#train">⚡ Practice</a><a class="btn ghost" href="#trophies">🏆 Trophy Room</a></div>';
+      '<div class="pl-go btns">' + (nextHref ? '<a class="btn primary glow" href="' + nextHref + '">▶ ' + esc(nextTitle || "Continue") + "</a>" : "") + '<a class="btn arcade-btn" href="#arcade">🕹️ Arcade</a><a class="btn boss-btn" href="#boss">⚔️ Bosses</a><a class="btn" href="#collection">🃏 Cards</a><a class="btn" href="#train">⚡ Practice</a><a class="btn ghost" href="#trophies">🏆 Trophy Room</a></div>';
     return el;
   };
 
@@ -513,7 +549,7 @@
       }).join("") + "</div>" +
       xpChart() +
       '<div class="tr-cols"><section class="tr-box"><h2>Today\'s quests</h2><div data-quests>' + questListHtml() + '</div><p class="muted small">Finish all three for a <b>+150 XP</b> chest. Quests change every day at midnight.</p></section>' +
-      '<section class="tr-box"><h2>How to earn XP</h2><ul class="tr-how"><li><b>+10</b> each correct answer, anywhere on the site</li><li><b>×1.5 → ×4</b> combo multiplier for answers in a row (5, 10, 20, 30)</li><li><b>+50</b> each lesson completed · <b>+80</b> each exercise passed</li><li><b>+100 to +250</b> each mock exam · <b>+30</b> each written answer</li><li><b>+15</b> each code puzzle · <b>+3</b> each flashcard</li><li><b>Arcade</b> rounds pay XP for points scored</li><li><b>Achievements</b> and <b>daily quests</b> pay bonus XP</li></ul></section></div>' +
+      '<section class="tr-box"><h2>How to earn XP</h2><ul class="tr-how"><li><b>+10</b> each correct answer, anywhere on the site</li><li><b>×1.5 → ×4</b> combo multiplier for answers in a row (5, 10, 20, 30)</li><li><b>+50</b> each lesson completed · <b>+80</b> each exercise passed</li><li><b>+100 to +250</b> each mock exam · <b>+30</b> each written answer</li><li><b>+15</b> each code puzzle · <b>+3</b> each flashcard</li><li><b>Arcade</b> rounds pay XP for points scored · <b>+200 to +800</b> each boss defeated</li><li><b>Achievements</b> and <b>daily quests</b> pay bonus XP</li></ul></section></div>' +
       '<div class="sec-h"><h2>Achievements</h2><span class="muted small">' + got + " of " + ACH.length + " unlocked</span></div>" +
       '<div class="ach-grid">' + ACH.map(function (a) {
         var t = g.ach[a.id];
@@ -523,6 +559,7 @@
         var state = L >= x[0] ? (rankOf(L)[0] === x[0] ? "now" : "past") : "";
         return '<li class="' + state + '"><span class="ld-l">Lv ' + x[0] + '</span><b>' + esc(x[1]) + "</b><span class=\"muted\">" + esc(x[2]) + "</span></li>";
       }).join("") + "</ol>" +
+      '<div class="tr-links btns"><a class="btn" href="#boss">⚔️ Boss Battles · ' + S.topicBosses + "/11 defeated</a><a class=\"btn\" href=\"#collection\">🃏 Algorithm Cards · " + S.cards + "/" + S.cardTotal + "</a></div>" +
       (CL.Arcade ? '<div class="sec-h"><h2>Arcade high scores</h2><a class="btn small" href="#arcade">Play</a></div><div class="tr-arc">' + CL.Arcade.games.map(function (gm) {
         var a = g.arc[gm.id] || {};
         return '<a class="tr-arcg" href="#arcade-' + gm.id + '"><span aria-hidden="true">' + gm.icon + "</span><b>" + esc(gm.title) + "</b><i>" + (a.best ? a.best.toLocaleString() + " pts" : "not played") + "</i></a>";
@@ -540,7 +577,7 @@
     var first = !store.g;
     store.g = store.g || fresh();
     g = store.g;
-    ["tot", "best", "ach", "arc", "labs", "seenL", "seenW"].forEach(function (k) { g[k] = g[k] || {}; });
+    ["tot", "best", "ach", "arc", "labs", "seenL", "seenW", "boss", "cards", "foils"].forEach(function (k) { g[k] = g[k] || {}; });
     if (typeof g.xp !== "number") g.xp = 0;
     ensureDay();
     // credit progress made before the game layer existed, once
