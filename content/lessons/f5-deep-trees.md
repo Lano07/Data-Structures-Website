@@ -1,5 +1,5 @@
 ---
-title: "Deep dive: binary trees, traversals and tree shapes"
+title: Deep dive: binary trees, traversals and tree shapes
 summary: This deep dive turns the binary tree chapters into tools you can use in an exam. It covers the one pattern behind every recursive tree function, why each traversal costs O(n), how to rebuild a tree from two traversals, how traversals of expression trees give prefix, infix and postfix, and precise reasoning about complete, almost complete and full trees.
 lectures: Lectures 5, 6, 10 (deep dive)
 goals:

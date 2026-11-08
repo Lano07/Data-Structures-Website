@@ -1,5 +1,5 @@
 ---
-title: "Deep dive: graphs, searches and greedy algorithms, proved"
+title: Deep dive: graphs, searches and greedy algorithms, proved
 summary: Why does breadth-first search find shortest paths? Why is Dijkstra's greedy choice safe, and why do negative edges break it? Why do Kruskal and Prim always build a minimum spanning tree? This deep dive gives the counting facts, the invariants and the proofs behind Lectures 16, 17 and 19, plus the exam traps that catch most students.
 lectures: Lectures 15–17, 19 (deep dive)
 goals:

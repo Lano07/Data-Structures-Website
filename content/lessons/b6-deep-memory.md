@@ -1,5 +1,5 @@
 ---
-title: "Deep dive: the memory model behind every data structure"
+title: Deep dive: the memory model behind every data structure
 summary: Every list, tree and graph in this course is built from heap memory joined by pointers. This deep dive explains exactly where memory lives, how long it lives, what copying a pointer really does, and why so many functions in the notes return the new top instead of changing it.
 lectures: Lectures 1–2 (deep dive)
 goals:

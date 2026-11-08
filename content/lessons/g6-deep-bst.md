@@ -1,5 +1,5 @@
 ---
-title: "Deep dive: binary search trees, proved"
+title: Deep dive: binary search trees, proved
 summary: Why does an inorder traversal of a BST come out sorted? Why is the inorder successor where the lectures say it is? Why does deleting with the successor keep the BST property? This deep dive proves each claim from Lectures 6–11, shows how insertion order decides the shape, and turns the deletion cases into reasoning rather than memorisation.
 lectures: Lectures 6–11 (deep dive)
 goals:

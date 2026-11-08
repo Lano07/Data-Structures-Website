@@ -1,5 +1,5 @@
 ---
-title: "Deep dive: hashing, load factor and clustering"
+title: Deep dive: hashing, load factor and clustering
 summary: Hashing promises O(1) search, but only under conditions. This deep dive explains what makes a good hash function, how the load factor controls the number of probes, why linear probing clusters, why the course's quadratic probing can only reach half of a 12-location table, why deleted cells need a marker, and how to hash strings without anagrams colliding.
 lectures: Lectures 14–15 (deep dive)
 goals:

@@ -1,5 +1,5 @@
 ---
-title: "Deep dive: linked lists, invariants and costs"
+title: Deep dive: linked lists, invariants and costs
 summary: Every list operation is correct for one reason - it keeps the list invariant true. This deep dive teaches you to reason with invariants and loop invariants, to enumerate the cases an operation must handle, and to derive (not memorise) the cost of every operation in the notes.
 lectures: Lectures 1–4, 11 (deep dive)
 goals:

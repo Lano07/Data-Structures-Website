@@ -1,5 +1,5 @@
 ---
-title: "Deep dive: big-O from first principles"
+title: Deep dive: big-O from first principles
 summary: Big-O is a precise statement, not a vibe. This deep dive gives the formal definition, the rules that follow from it, the loop patterns you will be asked to analyse (including the shrinking loop that looks like n log n but is O(n)), recurrences, best, worst and average cases, and space complexity, so you can justify every cost in the course.
 lectures: Lectures 11, 14, 19–21 (deep dive)
 goals:

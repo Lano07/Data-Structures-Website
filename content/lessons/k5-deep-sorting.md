@@ -1,5 +1,5 @@
 ---
-title: "Deep dive: sorting algorithms, invariants and exact costs"
+title: Deep dive: sorting algorithms, invariants and exact costs
 summary: This deep dive explains why each of Lecture 21's six sorts is correct (its loop invariant), counts exactly how many comparisons the simple sorts make, derives merge sort's n log n from its recursion tree, explains quick sort's partition invariant and its O(n²) trap, and compares stability and memory so you can justify which sort to use.
 lectures: Lectures 19–21 (deep dive)
 goals:

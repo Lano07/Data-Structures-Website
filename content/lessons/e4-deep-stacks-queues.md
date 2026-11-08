@@ -1,5 +1,5 @@
 ---
-title: "Deep dive: stacks, queues and why their order matters"
+title: Deep dive: stacks, queues and why their order matters
 summary: A stack or queue is defined by what it promises (last in first out, or first in first out), not by how it is built. This deep dive separates the abstract data type from its implementations, derives every cost, handles the edge cases that break queues, and shows why the order a structure gives back is what makes recursion, level-order traversal and BFS work.
 lectures: COMP 1603 review; used in Lectures 10, 14, 16–17 (deep dive)
 goals:

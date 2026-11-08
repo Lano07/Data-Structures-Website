@@ -1,5 +1,5 @@
 ---
-title: "Deep dive: thinking recursively, and proving it works"
+title: Deep dive: thinking recursively, and proving it works
 summary: Recursion stops being magic once you see it as two ideas - a recursive definition of the data (a list is empty, or a head followed by a tail) and an induction proof that the function handles both cases. This deep dive covers designing recursive functions, the call stack, why order of statements changes the output, and how to find the cost with a recurrence.
 lectures: Lectures 2–4, 6, 20–21 (deep dive)
 goals:

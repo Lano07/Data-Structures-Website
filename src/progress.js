@@ -39,6 +39,9 @@
     M.tot = byKey(a.tot, b.tot, maxNum);
     M.best = byKey(a.best, b.best, maxNum);
     M.hist = byKey(a.hist, b.hist, maxNum);
+    M.boss = byKey(a.boss, b.boss, function (x, y) { return { wins: Math.max(x.wins || 0, y.wins || 0), tries: Math.max(x.tries || 0, y.tries || 0), best: Math.min(x.best || Infinity, y.best || Infinity) === Infinity ? undefined : Math.min(x.best || Infinity, y.best || Infinity), flawless: x.flawless || y.flawless ? 1 : undefined, t: Math.max(x.t || 0, y.t || 0) }; });
+    M.cards = byKey(a.cards, b.cards, function (x, y) { return Math.min(x || Infinity, y || Infinity); });
+    M.foils = byKey(a.foils, b.foils, function (x, y) { return Math.min(x || Infinity, y || Infinity); });
     M.ach = byKey(a.ach, b.ach, function (x, y) { return Math.min(x || Infinity, y || Infinity); });
     ["labs", "seenL", "seenW"].forEach(function (k) { M[k] = byKey(a[k], b[k], function () { return 1; }); });
     M.arc = byKey(a.arc, b.arc, function (x, y) { return { best: Math.max(x.best || 0, y.best || 0), plays: Math.max(x.plays || 0, y.plays || 0), last: (y.t || 0) > (x.t || 0) ? y.last : x.last, t: Math.max(x.t || 0, y.t || 0) }; });

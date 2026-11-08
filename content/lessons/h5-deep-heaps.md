@@ -1,5 +1,5 @@
 ---
-title: "Deep dive: heaps, from the array formulas to O(n) buildMaxHeap"
+title: Deep dive: heaps, from the array formulas to O(n) buildMaxHeap
 summary: Why are a node's children at 2i and 2i + 1? Why is a heap's height log₂ n? Why does buildMaxHeap start at size/2 and go down to 1, and why is it O(n), not O(n log n)? This deep dive proves the facts behind Lectures 11–14 and turns heap questions into reasoning rather than memorisation.
 lectures: Lectures 11–14 (deep dive)
 goals:

@@ -777,7 +777,7 @@ def main():
     # ---- bundle
     css = open(os.path.join(SRC, "style.css")).read() + "\n" + open(os.path.join(SRC, "neon.css")).read()
     js_files = ["cpp_lex.js", "cpp_parse.js", "cpp_check.js", "cpp_run.js", "editor.js", "editor_tools.js", "settings.js", "md.js", "tutor.js", "memviz.js", "visualizer.js", "debugger.js",
-                "lab_core.js", "lab_tree.js", "lab_avl.js", "lab_heap.js", "lab_hash.js", "lab_graph.js", "lab_sort.js", "lab_extra.js", "lab_race.js", "lab_mem.js", "trainer.js", "trainer2.js", "progress.js", "fx.js", "game.js", "arcade.js", "arcade_games.js", "hero.js", "learn.js", "pages_learn.js", "pages_ref.js", "pages_exam.js"]
+                "lab_core.js", "lab_tree.js", "lab_avl.js", "lab_heap.js", "lab_hash.js", "lab_graph.js", "lab_sort.js", "lab_extra.js", "lab_race.js", "lab_mem.js", "trainer.js", "trainer2.js", "progress.js", "fx.js", "game.js", "arcade.js", "arcade_games.js", "boss.js", "hero.js", "learn.js", "pages_learn.js", "pages_ref.js", "pages_exam.js"]
     js = "\n".join(open(os.path.join(SRC, f)).read() for f in js_files)
     app = open(os.path.join(SRC, "app.js")).read()
     data_js = "window.CODELAB_DATA = " + json.dumps(data, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/") + ";"

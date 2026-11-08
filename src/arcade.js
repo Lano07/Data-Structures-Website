@@ -203,6 +203,7 @@
     ui.setTutor("train", "Arcade", function () { return "The Arcade: timed games that drill exam skills (big-O, traversals, BST insertion, heapify, hashing, Dijkstra, MSTs). " + ui.progressText(); });
     var feat = A.featured();
     p.innerHTML = '<div class="eyebrow">Arcade</div><h1 class="title">The Arcade</h1><p class="lede">Fast rounds that drill the exact skills the exams test, using the algorithms from the lecture notes. Build combos for bigger scores, beat your best, and earn XP. The <b>game of the day</b> pays double XP.</p>' +
+      '<a class="boss-banner" href="#boss"><span class="bb-ic" aria-hidden="true">⚔️</span><span><b>Boss Battles</b><i>One boss per topic, fought with real exam questions. Defeat five to face the Final Exam.</i></span><span class="bb-go">Fight ▶</span></a>' +
       '<div class="arc-grid">' + A.games.map(function (g) {
         var best = CL.Game ? CL.Game.arcadeBest(g.id) : 0, plays = CL.Game ? CL.Game.arcadePlays(g.id) : 0;
         return '<a class="arc-card' + (g.id === feat ? " feat" : "") + '" href="#arcade-' + g.id + '" style="--gc:' + (g.color || "#a78bfa") + '">' + (g.id === feat ? '<span class="arc-feat">Game of the day · ×2 XP</span>' : "") +
