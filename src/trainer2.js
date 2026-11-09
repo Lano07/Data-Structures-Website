@@ -328,6 +328,7 @@
     var ans = kind === "in" ? inD : kind === "out" ? outD : inD + outD;
     var showList = r.chance(0.5);
     return {
+      lab: { id: "graph", preset: { alg: "bfs", graph: g, start: x } },
       text: "In this directed graph, what is the <b>" + (kind === "in" ? "in-degree" : kind === "out" ? "out-degree" : "degree") + "</b> of " + b(x) + "?",
       fig: showList ? '<div class="small muted">Adjacency lists:</div>' + adjText(g) : graphFig(g), ctx: graphCtx(g),
       type: "num", answer: String(ans), wrong: [kind === "in" ? outD : inD, kind === "deg" ? Math.max(inD, outD) : inD + outD, ans + 1], more: numMore(ans),
@@ -787,4 +788,53 @@
       };
     } });
   });
+
+  // ---------------------------------------------------------------- "try it with your own values"
+  // a complete program for each code-tracing question (the same programs dev/trainer_verify.py checks), so the student
+  // can run it, change the values and run it again; and a lab preset for the questions that are about a picture
+  var HDR = "#include <iostream>\nusing namespace std;\n\n";
+  var NODE = "struct Node {\n\tint data;\n\tNode * next;\n};\n\nNode * createNode (int n) {\n\tNode * newNode = new Node;\n\tnewNode->data = n;\n\tnewNode->next = NULL;\n\treturn newNode;\n}\n\nvoid printList (Node * top) {\n\tNode * curr = top;\n\twhile (curr != NULL) {\n\t\tcout << curr->data << \" \";\n\t\tcurr = curr->next;\n\t}\n\tcout << endl;\n}\n\n";
+  var LISTOPS = "Node * insertAtHead (Node * top, int n) {\n\tNode * newNode = createNode (n);\n\tnewNode->next = top;\n\treturn newNode;\n}\n\nNode * insertAtTail (Node * top, int n) {\n\tNode * newNode = createNode (n);\n\tif (top == NULL)\n\t\treturn newNode;\n\tNode * curr = top;\n\twhile (curr->next != NULL)\n\t\tcurr = curr->next;\n\tcurr->next = newNode;\n\treturn top;\n}\n\nNode * deleteAtHead (Node * top) {\n\tif (top == NULL)\n\t\treturn NULL;\n\tNode * next = top->next;\n\tdelete top;\n\treturn next;\n}\n\nNode * deleteKey (Node * top, int key) {\n\tif (top == NULL)\n\t\treturn NULL;\n\tif (top->data == key) {\n\t\tNode * next = top->next;\n\t\tdelete top;\n\t\treturn next;\n\t}\n\tNode * prev = top;\n\tNode * curr = top->next;\n\twhile (curr != NULL && curr->data != key) {\n\t\tprev = curr;\n\t\tcurr = curr->next;\n\t}\n\tif (curr != NULL) {\n\t\tprev->next = curr->next;\n\t\tdelete curr;\n\t}\n\treturn top;\n}\n\n";
+  var STACK = "struct Stack {\n\tNode * top;\n};\n\nStack * initStack () {\n\tStack * s = new Stack;\n\ts->top = NULL;\n\treturn s;\n}\n\nbool isEmpty (Stack * stack) {\n\treturn stack->top == NULL;\n}\n\nvoid push (Stack * stack, int data) {\n\tNode * newNode = createNode (data);\n\tnewNode->next = stack->top;\n\tstack->top = newNode;\n}\n\nint pop (Stack * stack) {\n\tint save = -999;\n\tif (stack->top != NULL) {\n\t\tNode * toDelete = stack->top;\n\t\tstack->top = stack->top->next;\n\t\tsave = toDelete->data;\n\t\tdelete toDelete;\n\t}\n\treturn save;\n}\n\n";
+  var QUEUE = "struct Queue {\n\tNode * head;\n\tNode * tail;\n};\n\nQueue * initQueue () {\n\tQueue * q = new Queue;\n\tq->head = NULL;\n\tq->tail = NULL;\n\treturn q;\n}\n\nbool isEmpty (Queue * queue) {\n\treturn queue->head == NULL;\n}\n\nvoid enqueue (Queue * queue, int data) {\n\tNode * newNode = createNode (data);\n\tif (queue->tail == NULL) {\n\t\tqueue->head = newNode;\n\t\tqueue->tail = newNode;\n\t}\n\telse {\n\t\tqueue->tail->next = newNode;\n\t\tqueue->tail = newNode;\n\t}\n}\n\nint dequeue (Queue * queue) {\n\tif (queue->head == NULL)\n\t\treturn -999;\n\tNode * toDelete = queue->head;\n\tint save = toDelete->data;\n\tqueue->head = queue->head->next;\n\tif (queue->head == NULL)\n\t\tqueue->tail = NULL;\n\tdelete toDelete;\n\treturn save;\n}\n\n";
+  var BT = "struct BTNode {\n\tint data;\n\tBTNode * left;\n\tBTNode * right;\n};\n\nBTNode * createBTNode (int data) {\n\tBTNode * n = new BTNode;\n\tn->data = data;\n\tn->left = NULL;\n\tn->right = NULL;\n\treturn n;\n}\n\n";
+  function buildTree(spec) {
+    var root = CL.parseTreeSpec(spec), k = 0, lines = [];
+    (function w(n, name) {
+      if (n.left) { var c = "n" + (++k); lines.push("\tBTNode * " + c + " = createBTNode (" + n.left.key + ");"); lines.push("\t" + name + "->left = " + c + ";"); w(n.left, c); }
+      if (n.right) { var c2 = "n" + (++k); lines.push("\tBTNode * " + c2 + " = createBTNode (" + n.right.key + ");"); lines.push("\t" + name + "->right = " + c2 + ";"); w(n.right, c2); }
+    })(root, "root");
+    return "\t// the tree from the question: change the keys or the shape here\n\tBTNode * root = createBTNode (" + root.key + ");\n" + lines.join("\n") + "\n";
+  }
+  function indent(code) { return "\t" + code.replace(/\n/g, "\n\t"); }
+  CL.Train.program = function (q) {
+    var T = CL.Train;
+    try {
+      if (q.gen === "bt-code" && T.TREE_FN && q.fnIndex !== undefined) {
+        var F = T.TREE_FN[q.fnIndex], spec = /^Tree: (.*)$/m.exec(q.ctx)[1];
+        return HDR + BT + F.code + "\n\nint main () {\n" + buildTree(spec) + "\n" + (F.out ? "\t" + F.call + ";\n\tcout << endl;\n" : "\tcout << " + F.call + " << endl;\n") + "\treturn 0;\n}\n";
+      }
+      if (q.gen === "ll-code" && T.LIST_FN && q.fnIndex !== undefined && q.list) {
+        var G = T.LIST_FN[q.fnIndex], L = q.list, call = G.call.replace("KEY", q.key);
+        var mk = "\t// the list from the question: change the values here\n\tint values[] = {" + L.join(", ") + "};\n\tint n = " + L.length + ";\n\tNode * top = createNode (values[0]);\n\tNode * last = top;\n\tfor (int i = 1; i < n; i++) {\n\t\tlast->next = createNode (values[i]);\n\t\tlast = last->next;\n\t}\n\tprintList (top);\n";
+        return HDR + NODE + G.code + "\n\nint main () {\n" + mk + (G.out ? "\t" + call.replace(/\n/g, "\n\t") + (/;$/.test(call) ? "" : ";") + "\n\tcout << endl;\n" : "\tcout << " + call + " << endl;\n") + "\treturn 0;\n}\n";
+      }
+      if (q.gen === "ll-ops") return HDR + NODE + LISTOPS + "int main () {\n" + indent(q.code) + "\n\treturn 0;\n}\n";
+      if (q.gen === "rec-trace" && q.call) {
+        var callLine = q.recIndex === 5 ? "\t" + q.call + ";\n\tcout << calls << endl;\n" : /void f/.test(q.code) ? "\t" + q.call + ";\n\tcout << endl;\n" : "\tcout << " + q.call + " << endl;\n";
+        return HDR + q.code + "\n\nint main () {\n\t// change the argument and run it again\n" + callLine + "\treturn 0;\n}\n";
+      }
+      if (q.gen === "cpp-ptr") return q.full ? HDR + q.code + "\n" : HDR + NODE + "int main () {\n" + indent(q.code) + "\n\treturn 0;\n}\n";
+      if (q.gen === "sq-ops") return HDR + NODE + (/Stack/.test(q.code) ? STACK : QUEUE) + "int main () {\n" + indent(q.code) + "\n\tcout << endl;\n\treturn 0;\n}\n";
+    } catch (e) { return null; }
+    return null;
+  };
+  CL.Train.labFor = function (q) {
+    if (q.lab) return q.lab;
+    var m;
+    if (/^(bt-props|bt-shape|bt-code)$/.test(q.gen) && (m = /^Tree: (.*)$/m.exec(q.ctx || ""))) return { id: "traversal", preset: { spec: m[1], kind: "level" } };
+    if (q.gen === "heap-check" && q.options) return { id: "heap", preset: { vals: String(q.options[q.answer]).split(/\s+/).map(Number), kind: "max", op: "build" } };
+    if (q.gen === "hash-step" && (m = /N = (\d+), key (\d+)/.exec(q.ctx || ""))) return { id: "hash", preset: { keys: [+m[2]], method: /Double/.test(q.text) ? "double" : /quadratic/i.test(q.text) ? "quad" : "linear", N: +m[1] } };
+    return null;
+  };
 })(CL);

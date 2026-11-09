@@ -36,6 +36,113 @@
     }
   });
   CL.GRAPHS = GRAPHS;
+
+  // ---- your own graph: "A B 4" per line (weight optional), "A->B" for one-way, a lone name for a vertex with no edges
+  var EDGE_RE = /^([A-Za-z0-9_]{1,4})\s*(->|→|<->|--|-|\s)\s*([A-Za-z0-9_]{1,4})(?:\s*[:=,]?\s*(-?\d+(?:\.\d+)?))?$/;
+  CL.parseGraphSpec = function (text, o) {
+    o = o || {};
+    var V = [], seenV = {}, E = [], errors = [], arrows = false, anyW = false;
+    function addV(v) { if (!seenV[v]) { seenV[v] = 1; V.push(v); } }
+    String(text || "").split(/\n|;/).forEach(function (line, li) {
+      line = line.replace(/\/\/.*$|#.*$/, "").trim();
+      if (!line) return;
+      // "A: B C D" lists A's neighbours (an adjacency list)
+      var al = /^([A-Za-z0-9_]{1,4})\s*:\s*(.*)$/.exec(line);
+      if (al && !/^-?\d/.test(al[2].trim())) {
+        addV(al[1]);
+        al[2].split(/[\s,]+/).filter(Boolean).forEach(function (tok) {
+          var m2 = /^([A-Za-z0-9_]{1,4})(?:\((-?\d+(?:\.\d+)?)\))?$/.exec(tok);
+          if (!m2) { errors.push("Line " + (li + 1) + ": cannot read " + tok); return; }
+          addV(m2[1]); if (m2[2] !== undefined) anyW = true;
+          E.push([al[1], m2[1], m2[2] === undefined ? 1 : +m2[2], m2[2] !== undefined]);
+        });
+        arrows = true;
+        return;
+      }
+      line.split(/\s*,\s*(?=[A-Za-z0-9_]{1,4}\s*(?:->|→|<->|--|-|\s)\s*[A-Za-z0-9_])/).forEach(function (item) {
+        item = item.trim();
+        if (/^[A-Za-z0-9_]{1,4}$/.test(item)) { addV(item); return; }
+        var m = EDGE_RE.exec(item);
+        if (!m) { errors.push("Line " + (li + 1) + ": cannot read \"" + item + "\" (write it like  A B 4  or  A->B 4)"); return; }
+        if (m[2] === "->" || m[2] === "→") arrows = true;
+        addV(m[1]); addV(m[3]);
+        if (m[4] !== undefined) anyW = true;
+        var w = m[4] === undefined ? 1 : +m[4];
+        E.push([m[1], m[3], w, m[4] !== undefined]);
+        if (m[2] === "<->") E.push([m[3], m[1], w, m[4] !== undefined]);
+      });
+    });
+    if (V.length > 26) errors.push("Up to 26 vertices, please (this graph has " + V.length + ").");
+    if (E.length > 90) errors.push("Up to 90 edges, please.");
+    var directed = o.directed === undefined ? arrows : !!o.directed;
+    // undirected: A B and B A are the same edge; keep the first
+    if (!directed) {
+      var key = {};
+      E = E.filter(function (e) { var k = e[0] < e[1] ? e[0] + "|" + e[1] : e[1] + "|" + e[0]; if (key[k] || e[0] === e[1]) return false; key[k] = 1; return true; });
+    } else {
+      var k2 = {};
+      E = E.filter(function (e) { var k = e[0] + "|" + e[1]; if (k2[k]) return false; k2[k] = 1; return true; });
+    }
+    var g = { id: "custom", name: o.name || "My own graph", directed: directed, weighted: o.weighted === undefined ? anyW : !!o.weighted, V: V.slice().sort(natural), E: E.map(function (e) { return [e[0], e[1], e[2]]; }), errors: errors };
+    g.adj = {};
+    g.V.forEach(function (u) { g.adj[u] = []; });
+    g.E.forEach(function (e) { g.adj[e[0]].push(e[1]); if (!g.directed) g.adj[e[1]].push(e[0]); });
+    if (o.alpha !== false) g.V.forEach(function (u) { g.adj[u].sort(natural); });
+    g.pos = o.pos && g.V.every(function (v) { return o.pos[v]; }) ? o.pos : CL.graphLayout(g);
+    return g;
+  };
+  function natural(a, b) { return a.length - b.length || (a < b ? -1 : a > b ? 1 : 0); }
+  // vertices on a circle (in drawGraph's grid units), in name order
+  CL.graphLayout = function (g) {
+    var n = g.V.length, pos = {}, R = Math.max(120, Math.min(260, 40 * n));
+    g.V.forEach(function (v, i) {
+      var t = -Math.PI / 2 + 2 * Math.PI * i / Math.max(1, n);
+      pos[v] = [(R + R * Math.cos(t)) / 112, (R + R * Math.sin(t)) / 88 * 0.86];
+    });
+    return pos;
+  };
+  CL.graphToSpec = function (g) {
+    var lines = [], used = {};
+    g.E.forEach(function (e) { used[e[0]] = used[e[1]] = 1; lines.push(e[0] + (g.directed ? "->" : " ") + e[1] + (g.weighted ? " " + e[2] : "")); });
+    g.V.forEach(function (v) { if (!used[v]) lines.push(v); });
+    return lines.join("\n");
+  };
+  CL.randomGraphSpec = function (n, directed, weighted) {
+    var V = "ABCDEFGHIJ".slice(0, n).split(""), lines = [], have = {};
+    function r(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
+    function add(a, b) { var k = directed ? a + b : [a, b].sort().join(""); if (a === b || have[k]) return; have[k] = 1; lines.push(a + (directed ? "->" : " ") + b + (weighted ? " " + r(1, 20) : "")); }
+    for (var i = 1; i < n; i++) add(V[r(0, i - 1)], V[i]);
+    for (var k = 0; k < n; k++) add(V[r(0, n - 1)], V[r(0, n - 1)]);
+    return lines.join("\n");
+  };
+  // drag the vertices of a graph drawn by drawGraph; onMove() redraws
+  CL.dragGraph = function (stage, getG, onMove) {
+    var drag = null;
+    stage.addEventListener("pointerdown", function (e) {
+      var node = e.target.closest(".g-node[data-v]");
+      var svg = stage.querySelector("svg");
+      if (!node || !svg) return;
+      e.preventDefault();
+      drag = { v: node.getAttribute("data-v"), svg: svg };
+      stage.setPointerCapture && stage.setPointerCapture(e.pointerId);
+    });
+    stage.addEventListener("pointermove", function (e) {
+      if (!drag) return;
+      var g = getG(), svg = stage.querySelector("svg");
+      if (!g || !svg || !g.pos[drag.v]) return;
+      var pt = svg.createSVGPoint();
+      pt.x = e.clientX; pt.y = e.clientY;
+      var m = svg.getScreenCTM();
+      if (!m) return;
+      var q = pt.matrixTransform(m.inverse());
+      g.pos[drag.v] = [Math.max(0, (q.x - 36) / 112), Math.max(0, (q.y - 36) / 88)];
+      onMove();
+    });
+    function end() { if (drag) { drag = null; if (getG()) CL.saveGraphPos && CL.saveGraphPos(getG()); } }
+    stage.addEventListener("pointerup", end);
+    stage.addEventListener("pointercancel", end);
+  };
+
   function weight(g, u, v) {
     for (var i = 0; i < g.E.length; i++) {
       var e = g.E[i];
@@ -78,7 +185,7 @@
     });
     g.V.forEach(function (v) {
       var p = P(v), c = f.nodeCls ? f.nodeCls(v) : "";
-      s += '<g class="g-node ' + c + '"><circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + R + '"/><text x="' + p[0] + '" y="' + p[1] + '">' + esc(v) + "</text></g>";
+      s += '<g class="g-node ' + c + '" data-v="' + esc(v) + '"><circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + R + '"/><text x="' + p[0] + '" y="' + p[1] + '">' + esc(v) + "</text></g>";
       var lb = f.label ? f.label(v) : "";
       if (lb) s += '<text class="g-tag" x="' + p[0] + '" y="' + (p[1] - R - 6) + '">' + esc(lb) + "</text>";
     });
@@ -190,10 +297,38 @@
     var ctl = document.createElement("div");
     ctl.className = "lab-ctl";
     ctl.appendChild(CL.opGroup("Algorithm", '<select id="gr-alg"><option value="bfs">Breadth-first search</option><option value="dfs">Depth-first search</option><option value="dijkstra">Dijkstra shortest paths</option><option value="kruskal">Kruskal (min spanning tree)</option><option value="prim">Prim (min spanning tree)</option></select>'));
-    ctl.appendChild(CL.opGroup("Graph", '<select id="gr-g"></select>'));
+    ctl.appendChild(CL.opGroup("Graph", '<select id="gr-g"></select><button type="button" class="btn small ghost" id="gr-edit" title="Copy this graph into the editor and change it">✎ Edit this graph</button>'));
     ctl.appendChild(CL.opGroup("Start vertex", '<select id="gr-s"></select>'));
     ctl.appendChild(CL.opGroup("", '<button type="button" class="btn primary" id="gr-go">Run</button><label class="small"><input type="checkbox" id="gr-rep"> Show adjacency list and matrix</label>'));
     host.appendChild(ctl);
+    // your own graph
+    var LSK = "comp2611-graph-custom", saved = {};
+    try { saved = JSON.parse(localStorage.getItem(LSK) || "{}") || {}; } catch (e) { saved = {}; }
+    var cus = document.createElement("div");
+    cus.className = "lab-custom gr-custom";
+    cus.hidden = true;
+    cus.innerHTML = '<div class="lc-h"><b>My own graph</b><span class="small muted">One edge per line: <code>A B 4</code> (the weight is optional), <code>A-&gt;B 4</code> for a one-way edge, <code>A: B C D</code> for A\'s adjacency list, or a single name for a vertex with no edges. Drag the vertices to move them.</span></div>' +
+      '<div class="lc-row"><textarea id="gr-spec" rows="6" spellcheck="false" aria-label="Edges of your graph"></textarea>' +
+      '<div class="lc-opts"><label class="small"><input type="checkbox" id="gr-dir"> Directed (one-way edges)</label><label class="small"><input type="checkbox" id="gr-wt"> Weighted</label><label class="small"><input type="checkbox" id="gr-abc" checked> Visit neighbours in alphabetical order</label>' +
+      '<div class="btns"><button type="button" class="btn small primary" id="gr-draw">Draw and run</button><button type="button" class="btn small" id="gr-rand">Random graph</button><button type="button" class="btn small ghost" id="gr-lay">Tidy layout</button></div></div></div><div class="lc-msg small" aria-live="polite"></div>';
+    host.appendChild(cus);
+    var specEl = cus.querySelector("#gr-spec"), dirEl = cus.querySelector("#gr-dir"), wtEl = cus.querySelector("#gr-wt"), abcEl = cus.querySelector("#gr-abc"), msgEl = cus.querySelector(".lc-msg");
+    specEl.value = saved.spec || "A B 4\nA C 2\nB C 5\nB D 10\nC E 3\nE D 4\nD F 11";
+    dirEl.checked = !!saved.directed;
+    wtEl.checked = saved.weighted !== undefined ? !!saved.weighted : true;
+    abcEl.checked = saved.alpha !== false;
+    function buildCustom(keepPos) {
+      var old = GRAPHS.custom;
+      var cg = CL.parseGraphSpec(specEl.value, { directed: dirEl.checked, weighted: wtEl.checked, alpha: abcEl.checked, pos: keepPos && old ? old.pos : saved.pos });
+      if (!cg.V.length) { msgEl.innerHTML = '<span class="bad">Type at least one edge, like  A B 4.</span>'; return false; }
+      msgEl.innerHTML = (cg.errors.length ? '<span class="bad">' + cg.errors.slice(0, 3).map(esc).join("<br>") + "</span><br>" : "") + cg.V.length + " vertices, " + cg.E.length + " edges" + (cg.directed ? " (directed)" : "") + ".";
+      GRAPHS.custom = cg;
+      saved = { spec: specEl.value, directed: dirEl.checked, weighted: wtEl.checked, alpha: abcEl.checked, pos: cg.pos };
+      try { localStorage.setItem(LSK, JSON.stringify(saved)); } catch (e) { /* ignore */ }
+      return true;
+    }
+    CL.saveGraphPos = function (gg) { if (gg.id === "custom") { saved.pos = gg.pos; try { localStorage.setItem(LSK, JSON.stringify(saved)); } catch (e) { /* ignore */ } } };
+    buildCustom(false);
     var g;
     var player = new CL.Player(host, {
       render: function (f) {
@@ -254,16 +389,29 @@
       return extra.concat(["g1", "g3", "rep", "file", "und", "dj"]);
     }
     function fillGraphs() {
-      var alg = algSel.value, ids = graphsFor(alg), cur = gSel.value;
-      gSel.innerHTML = ids.map(function (id) { return '<option value="' + id + '">' + esc(GRAPHS[id].name) + "</option>"; }).join("");
+      var alg = algSel.value, ids = graphsFor(alg).concat(["custom"]), cur = gSel.value;
+      gSel.innerHTML = ids.map(function (id) { return '<option value="' + id + '">' + (id === "custom" ? "✎ My own graph" : esc(GRAPHS[id].name)) + "</option>"; }).join("");
       if (ids.indexOf(cur) >= 0) gSel.value = cur;
       fillStarts();
     }
     function fillStarts() {
-      var gg = GRAPHS[gSel.value];
+      var gg = GRAPHS[gSel.value], cur = sSel.value;
+      cus.hidden = gSel.value !== "custom";
+      host.querySelector("#gr-edit").hidden = gSel.value === "custom";
       sSel.innerHTML = gg.V.map(function (v) { return '<option value="' + v + '">' + v + "</option>"; }).join("");
-      sSel.value = gg.V[0];
+      sSel.value = gg.V.indexOf(cur) >= 0 ? cur : gg.V[0];
       sSel.parentNode.parentNode.hidden = algSel.value === "kruskal";
+    }
+    // what the chosen algorithm needs from your graph: Dijkstra needs weights of 0 or more; Kruskal and Prim use undirected edges
+    function fitFor(alg, gg) {
+      if (gg.id !== "custom") return { g: gg };
+      if (alg === "dijkstra" && gg.E.some(function (e) { return e[2] < 0; })) return { err: "Dijkstra's algorithm needs every weight to be 0 or more: with a negative edge, a vertex it has finished could later get cheaper. Change the negative weights." };
+      if ((alg === "kruskal" || alg === "prim") && gg.directed) {
+        var und = CL.parseGraphSpec(CL.graphToSpec(Object.assign({}, gg, { directed: false })).replace(/->/g, " "), { directed: false, weighted: gg.weighted, alpha: abcEl.checked, pos: gg.pos });
+        return { g: und, note: "Spanning trees are for undirected graphs, so your edges are used without their directions." };
+      }
+      if ((alg === "kruskal" || alg === "prim" || alg === "dijkstra") && !gg.weighted) return { g: gg, note: "Your graph has no weights, so every edge costs 1." };
+      return { g: gg };
     }
     function colourPanel(colour, extra) {
       return '<div class="kv">' + extra + "<span>Colours</span><span class='small'>" + g.V.map(function (v) { return v + ": " + colour[v].toLowerCase(); }).join(", ") + "</span></div>";
@@ -347,7 +495,8 @@
         var mAsk = taken > 0 && Q.length ? CL.mkAsk("Which vertex does extractMin take off the queue next?", u, rest.slice(0, 3).concat(pf.hot && pf.hot !== u ? [pf.hot] : []).concat(CL.shuffle(Q.slice())), { view: { panel: '<div class="small muted" style="margin-bottom:6px">The queue is hidden: work it out from the costs.</div>' + pf.bare, hot: null, hotEdge: null, cost: pf.cost, done: done.slice() } }, "sort") : null;
         taken++;
         F("Take " + u + " off the queue: it has the lowest cost (" + cost[u] + "). Its cost is now final.", C.min, { hot: u, ask: mAsk }, u);
-        var edges = g.E.filter(function (e) { return e[0] === u; }).sort(function (a, b) { return a[1] < b[1] ? -1 : 1; });
+        // edges leaving u: in an undirected graph an edge stored as (v, u) leaves u too
+        var edges = g.E.filter(function (e) { return e[0] === u || (!g.directed && e[1] === u); }).map(function (e) { return e[0] === u ? e : [u, e[0], e[2]]; }).sort(function (a, b) { return a[1] < b[1] ? -1 : 1; });
         if (!edges.length) F("There are no edges leaving " + u + ".", C.edge, { hot: u });
         edges.forEach(function (e) {
           var v = e[1], nc = cost[u] + e[2], pf2 = frames[frames.length - 1];
@@ -433,13 +582,34 @@
       return frames;
     }
     function go() {
-      g = GRAPHS[gSel.value];
       var alg = algSel.value, s = sSel.value;
+      if (gSel.value === "custom" && !buildCustom(true)) return;
+      var fit = fitFor(alg, GRAPHS[gSel.value]);
+      if (fit.err) { msgEl.innerHTML = '<span class="bad">' + esc(fit.err) + "</span>"; return; }
+      if (fit.note) msgEl.innerHTML += " " + esc(fit.note);
+      g = fit.g;
+      if (g.V.indexOf(s) < 0) s = g.V[0];
       var code = CODE[alg];
       player.setCode({ bfs: "Breadth-first search", dfs: "Depth-first search", dijkstra: "Dijkstra's algorithm", kruskal: "Kruskal's algorithm", prim: "Prim's algorithm" }[alg], code.code);
       var frames = alg === "bfs" ? runBFS(s) : alg === "dfs" ? runDFS(s) : alg === "dijkstra" ? runDijkstra(s) : alg === "kruskal" ? runKruskal() : runPrim(s);
       player.load(frames);
     }
+    cus.querySelector("#gr-draw").addEventListener("click", function () { if (buildCustom(true)) { fillStarts(); go(); } });
+    cus.querySelector("#gr-rand").addEventListener("click", function () { var al = algSel.value; specEl.value = CL.randomGraphSpec(6 + Math.floor(Math.random() * 3), al === "kruskal" || al === "prim" ? false : al === "dijkstra" ? true : dirEl.checked, al === "dijkstra" || al === "kruskal" || al === "prim" || wtEl.checked); if (al === "dijkstra") { dirEl.checked = true; wtEl.checked = true; } if (al === "kruskal" || al === "prim") { dirEl.checked = false; wtEl.checked = true; } saved.pos = null; buildCustom(false); fillStarts(); go(); });
+    cus.querySelector("#gr-lay").addEventListener("click", function () { if (GRAPHS.custom) { GRAPHS.custom.pos = CL.graphLayout(GRAPHS.custom); CL.saveGraphPos(GRAPHS.custom); go(); } });
+    [dirEl, wtEl, abcEl].forEach(function (x) { x.addEventListener("change", function () { if (buildCustom(true)) { fillStarts(); go(); } }); });
+    specEl.addEventListener("keydown", function (e) { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); if (buildCustom(true)) { fillStarts(); go(); } } });
+    host.querySelector("#gr-edit").addEventListener("click", function () {
+      var gg = GRAPHS[gSel.value];
+      specEl.value = CL.graphToSpec(gg);
+      dirEl.checked = !!gg.directed; wtEl.checked = !!gg.weighted;
+      saved.pos = JSON.parse(JSON.stringify(gg.pos));
+      buildCustom(false);
+      gSel.value = "custom";
+      fillStarts(); go();
+      specEl.focus();
+    });
+    CL.dragGraph(player.stage, function () { return g && g.id === "custom" ? GRAPHS.custom : g; }, function () { if (g && g.id !== "custom") { /* lecture graphs can be moved for this visit */ } player.go(player.i); });
     algSel.addEventListener("change", function () { fillGraphs(); go(); });
     gSel.addEventListener("change", function () { fillStarts(); go(); });
     sSel.addEventListener("change", go);
@@ -448,6 +618,7 @@
     if (preset && preset.alg) algSel.value = preset.alg;
     fillGraphs();
     if (preset && preset.graph) { gSel.value = "trainer"; fillStarts(); if (preset.start) sSel.value = preset.start; }
+    if (preset && preset.spec) { specEl.value = preset.spec; if (preset.directed !== undefined) dirEl.checked = !!preset.directed; if (preset.weighted !== undefined) wtEl.checked = !!preset.weighted; saved.pos = null; buildCustom(false); gSel.value = "custom"; fillStarts(); if (preset.start) sSel.value = preset.start; }
     go();
     return player;
   };

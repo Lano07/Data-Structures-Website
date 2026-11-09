@@ -259,6 +259,55 @@
     }
     return node();
   };
+  // ---- trees typed by a person. Level order like a heap array: the value at position i has children at 2i + 1 and
+  // 2i + 2, and - (or null, x, #) marks an empty position.
+  CL.treeFromLevel = function (text) {
+    var toks = String(text || "").split(/[\s,]+/).filter(Boolean);
+    if (toks.length > 63) return { err: "Up to 63 positions (6 levels), please." };
+    function empty(t) { return /^(-|null|nil|x|#|_|\.)$/i.test(t); }
+    var nodes = toks.map(function (t) { return empty(t) ? null : { key: isNaN(+t) ? t : +t, left: null, right: null }; });
+    for (var i = 0; i < nodes.length; i++) {
+      if (!nodes[i]) continue;
+      if (i > 0 && !nodes[Math.floor((i - 1) / 2)]) return { err: "Position " + i + " (" + toks[i] + ") has no parent: position " + Math.floor((i - 1) / 2) + " is empty. Children of an empty position must be empty too." };
+      nodes[i].left = nodes[2 * i + 1] || null;
+      nodes[i].right = nodes[2 * i + 2] || null;
+    }
+    if (!nodes[0]) return { err: toks.length ? "The root (the first value) cannot be empty." : "Type the values, root first." };
+    return { root: nodes[0] };
+  };
+  CL.treeToLevel = function (root) {
+    var out = [], q = [root], i = 0;
+    while (i < q.length && i < 127) { var n = q[i++]; out.push(n ? n.key : "-"); if (n) { q.push(n.left); q.push(n.right); } else if (q.slice(i).some(Boolean)) { q.push(null); q.push(null); } }
+    while (out.length && out[out.length - 1] === "-") out.pop();
+    return out.join(" ");
+  };
+  CL.treeToSpec = function (n) {
+    if (!n) return "";
+    if (!n.left && !n.right) return String(n.key);
+    return n.key + "(" + CL.treeToSpec(n.left) + (n.right ? "," + CL.treeToSpec(n.right) : "") + ")";
+  };
+  // rebuild a tree from preorder (or postorder) and inorder; the keys must all be different
+  CL.treeFromTraversals = function (firstText, inText, kind) {
+    var A = String(firstText || "").split(/[\s,]+/).filter(Boolean), I = String(inText || "").split(/[\s,]+/).filter(Boolean);
+    if (!A.length) return { err: "Type the " + (kind === "post" ? "postorder" : "preorder") + " sequence." };
+    if (A.length !== I.length) return { err: "The two sequences have different lengths (" + A.length + " and " + I.length + ")." };
+    var seen = {};
+    for (var i = 0; i < I.length; i++) { if (seen[I[i]]) return { err: "The key " + I[i] + " appears twice: rebuilding needs every key to be different." }; seen[I[i]] = 1; }
+    if (A.some(function (x) { return !seen[x]; }) || A.slice().sort().join() !== I.slice().sort().join()) return { err: "The two sequences do not hold the same keys." };
+    if (kind === "post") A = A.slice().reverse();
+    var at = 0, bad = null;
+    function build(lo, hi) {
+      if (lo > hi || bad) return null;
+      var key = A[at++], k = I.indexOf(key, lo);
+      if (k < lo || k > hi) { bad = "These sequences do not come from the same tree (" + key + " is in the wrong place)."; return null; }
+      var n = { key: isNaN(+key) ? key : +key, left: null, right: null };
+      if (kind === "post") { n.right = build(k + 1, hi); n.left = build(lo, k - 1); }
+      else { n.left = build(lo, k - 1); n.right = build(k + 1, hi); }
+      return n;
+    }
+    var root = build(0, I.length - 1);
+    return bad ? { err: bad } : { root: root };
+  };
   CL.bstInsert = function (root, key) {
     var n = { key: key, left: null, right: null, parent: null };
     if (!root) return n;

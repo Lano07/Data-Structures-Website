@@ -209,3 +209,22 @@ textarea.ide-inp { font-family: var(--f-code); font-size: .84rem; }
   .ide-hint { display: none; }
   .ide-proj-n { max-width: 18ch; }
 }
+
+/* ---------- "My own ..." panels in the labs */
+.lab-custom { margin-top: 10px; padding: 12px 14px; border: 1px dashed color-mix(in srgb, var(--accent) 55%, var(--line)); border-radius: var(--r); background: color-mix(in srgb, var(--accent) 5%, var(--surface)); display: grid; gap: 10px; }
+.lab-custom .lc-h { display: grid; gap: 2px; }
+.lab-custom .lc-h b { font-family: var(--f-display); }
+.lab-custom .lc-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 15rem); gap: 12px; align-items: start; }
+.lab-custom textarea { width: 100%; font-family: var(--f-code); font-size: .86rem; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--code-bg); color: var(--ink); resize: vertical; min-height: 110px; }
+.lab-custom input[type=text] { font-family: var(--f-code); }
+.lab-custom .lc-opts { display: grid; gap: 6px; }
+.lab-custom .lc-msg { color: var(--ink-2); min-height: 1.2em; }
+.lab-custom .lc-msg .bad, .lab-custom .bad { color: var(--bad); }
+.lab-custom .tv-m { display: grid; gap: 6px; }
+.lab-custom .tv-m p { margin: 0; }
+.lab-custom .seg { justify-self: start; flex-wrap: wrap; }
+@media (max-width: 700px) { .lab-custom .lc-row { grid-template-columns: minmax(0, 1fr); } }
+.stage .g-node[data-v] { cursor: grab; }
+.stage .g-node[data-v]:active { cursor: grabbing; }
+.tq-try { margin-top: 12px; padding: 12px; border: 1px dashed color-mix(in srgb, var(--accent) 55%, var(--line)); border-radius: var(--r); display: grid; gap: 8px; background: color-mix(in srgb, var(--accent) 4%, transparent); }
+.tq-try-h { display: grid; gap: 2px; }

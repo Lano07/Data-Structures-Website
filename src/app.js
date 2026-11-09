@@ -1516,11 +1516,20 @@
         sb.addEventListener("click", function () { finish(false, null, true); });
         acts.appendChild(sb);
       } else {
-        if (q.lab && labById[q.lab.id]) {
-          var lb = h("button", "btn small", "Watch it in the " + esc(labById[q.lab.id].title));
+        var qlab = TR.labFor ? TR.labFor(q) : q.lab;
+        if (qlab && labById[qlab.id]) {
+          var lb = h("button", "btn small", "Watch it in the " + esc(labById[qlab.id].title));
           lb.type = "button";
-          lb.addEventListener("click", function () { CL.labPreset = q.lab; location.hash = "#lab-" + q.lab.id; });
+          lb.title = "Opens the lab with this question's values; change them there to see what happens";
+          lb.addEventListener("click", function () { CL.labPreset = qlab; location.hash = "#lab-" + qlab.id; });
           acts.appendChild(lb);
+        }
+        var qprog = TR.program ? TR.program(q) : null;
+        if (qprog) {
+          var pb = h("button", "btn small", "▶ Run it with your own values");
+          pb.type = "button";
+          pb.addEventListener("click", function () { tryProgram(card, qprog, q); pb.remove(); });
+          acts.appendChild(pb);
         }
         if (Tu) acts.appendChild(Tu.button("Ask the tutor to explain", function () {
           var right = useMcq ? plain(q.mcq.options[q.mcq.answer]) : String(q.answer);
@@ -1533,6 +1542,32 @@
     return { card: card, finish: finish, isDone: function () { return done; }, pick: function (i) { if (useMcq && !done && q.mcq.options[i] !== undefined) finish(i === q.mcq.answer, i, false); } };
   }
   CL.renderQuestion = renderQuestion;
+  // the question's code as a whole program: change the values, run it, step through it
+  function tryProgram(card, src, q) {
+    var box = h("div", "tq-try");
+    box.innerHTML = '<div class="tq-try-h"><b>Try it with your own values</b><span class="small muted">This is the question\'s code as a complete program. Change the values in main() (or the function), then run it or step through it.</span></div>';
+    card.appendChild(box);
+    var ed = new CL.Editor(box, { value: src, label: "The question's program", tools: true, onRun: function () { go(); } });
+    ed.scroll.style.maxHeight = "380px";
+    var bar = h("div", "btns", '<button type="button" class="btn small primary" data-t="run">▶ Run</button><button type="button" class="btn small" data-t="viz">Step through</button><button type="button" class="btn small ghost" data-t="reset">Reset</button><button type="button" class="btn small ghost" data-t="play">Open in Playground</button>');
+    box.appendChild(bar);
+    var out = h("div", "run");
+    box.appendChild(out);
+    var term = null;
+    function go() { runInTerminal(out, ed, { title: "Output", getTerm: function () { return term; }, setTerm: function (t) { term = t; } }); }
+    bar.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-t]");
+      if (!b) return;
+      var t = b.getAttribute("data-t");
+      if (t === "run") go();
+      if (t === "viz") openViz(ed.getValue(), { title: "Step through: " + (q.title || "question") });
+      if (t === "reset") ed.setValue(src);
+      if (t === "play") CL.toPlayground(ed.getValue(), "", {}, q.title || "question");
+    });
+    go();
+    box.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+  CL.tryProgram = tryProgram;
   function questionText(q, mcq) {
     var s = "Topic: " + (TR.topicById[q.topic] || {}).title + " (" + q.title + ", " + q.marks + " marks)\nQuestion: " + plain(q.text);
     if (q.code) s += "\nCode shown:\n" + q.code;
@@ -1963,7 +1998,8 @@
           sol.innerHTML = "<summary>Worked solution</summary><ol>" + q.steps.map(function (st) { return "<li>" + st + "</li>"; }).join("") + "</ol>";
           card.appendChild(sol);
           var ra = h("div", "tq-acts");
-          if (q.lab && labById[q.lab.id]) { var lb = h("button", "btn small", "Watch it in the " + esc(labById[q.lab.id].title)); lb.type = "button"; lb.addEventListener("click", function () { CL.labPreset = q.lab; location.hash = "#lab-" + q.lab.id; }); ra.appendChild(lb); }
+          var ql = TR.labFor ? TR.labFor(q) : q.lab;
+          if (ql && labById[ql.id]) { var lb = h("button", "btn small", "Watch it in the " + esc(labById[ql.id].title)); lb.type = "button"; lb.addEventListener("click", function () { CL.labPreset = ql; location.hash = "#lab-" + ql.id; }); ra.appendChild(lb); }
           if (Tu) ra.appendChild(Tu.button("Ask the tutor about this question", function () {
             Tu.ask("Explain question " + (i + 1) + " of my mock exam.", { content: "From my mock exam:\n\n" + questionText(q, true) + "\n\nMy answer: " + (mine === undefined ? "(not answered)" : plain(q.mcq.options[mine])) + "\nThe right answer: " + plain(q.mcq.options[q.mcq.answer]) + "\nThe worked solution shown to me: " + q.steps.map(plain).join(" | ") + "\n\nExplain step by step how to get the right answer" + (ok ? "" : " and where my thinking probably went wrong") + "." });
           }));
