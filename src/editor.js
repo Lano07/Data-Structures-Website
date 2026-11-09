@@ -120,6 +120,7 @@ var CL = typeof CL !== "undefined" ? CL : {};
     this.ta.value = v.replace(/\r\n?/g, "\n");
     this.refresh();
   };
+  Editor.prototype.setLang = function (lang) { this.opts.lang = lang; this.refresh(); };
   Editor.prototype.setReadOnly = function (b) {
     this.ta.readOnly = !!b;
     this.el.classList.toggle("ro", !!b);
@@ -128,7 +129,7 @@ var CL = typeof CL !== "undefined" ? CL : {};
   Editor.prototype.refresh = function () {
     var v = this.ta.value;
     var n = v.split("\n").length;
-    this.hl.innerHTML = CL.highlight(v) + "\n ";
+    this.hl.innerHTML = (this.opts.lang === "text" ? esc(v) : CL.highlight(v)) + "\n ";
     if (this.lineCount !== n) {
       var g = "";
       for (var i = 1; i <= n; i++) g += "<span>" + i + "</span>";

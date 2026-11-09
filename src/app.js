@@ -434,7 +434,7 @@
     }
   }
   CL.showResult = showResult;
-  CL.toPlayground = function (code, stdin, files) { store.play = { code: code, stdin: stdin || "", files: files || {} }; save(); location.hash = "#play"; };
+  CL.toPlayground = function (code, stdin, files, title) { CL.IDE.openExample(code, stdin || "", files || {}, title || "example"); };
 
   // modal visualizer
   function openViz(code, opts) {
@@ -481,18 +481,48 @@
     wrap.appendChild(res);
     var resetBtn = bar.querySelector('[data-a="reset"]');
     ed.onChange(function (v) { resetBtn.hidden = v === code; });
-    function run() { showResult(res, CPP.run(ed.getValue(), { stdin: stdin, files: files }), ed, { files: files }); }
+    var term = null;
+    function run() { runInTerminal(res, ed, { stdin: stdin, files: files, getTerm: function () { return term; }, setTerm: function (t) { term = t; } }); }
     bar.addEventListener("click", function (e) {
       var t = e.target.closest("button");
       if (!t) return;
       var act = t.getAttribute("data-a");
       if (act === "run") run();
       if (act === "viz") openViz(ed.getValue(), { stdin: stdin, files: files, title: a.example && a.example !== true ? a.example : "Step through the program" });
-      if (act === "reset") { ed.setValue(code); ed.clearMarks(); res.innerHTML = ""; resetBtn.hidden = true; }
-      if (act === "play") { store.play = { code: ed.getValue(), stdin: stdin, files: files }; save(); location.hash = "#play"; }
+      if (act === "reset") { ed.setValue(code); ed.clearMarks(); if (term) { term.destroy(); term = null; } res.innerHTML = ""; resetBtn.hidden = true; }
+      if (act === "play") CL.toPlayground(ed.getValue(), stdin, files, a.example && a.example !== true ? a.example : "example");
     });
     return wrap;
   }
+  // run a program in a small terminal under its editor (lessons, puzzles, the quest): output streams in, cin waits for typing
+  function runInTerminal(box, ed, o) {
+    var term = o.getTerm();
+    if (!term || !box.contains(term.el)) {
+      box.innerHTML = "";
+      term = new CL.Terminal(box, { title: o.title || "Output", cls: "term-inline",
+        onLocate: function (file, line) { ed.revealLine(line); ed.mark(line, "cur", ""); setTimeout(function () { ed.clearMarks("cur"); }, 1400); ed.focus(); },
+        onError: function (w, err, kind) { if (w.line) { ed.mark(w.line, kind === "warning" ? "warn" : "err", err.msg); if (kind !== "warning") ed.revealLine(w.line); } } });
+      o.setTerm(term);
+    }
+    ed.clearMarks("err"); ed.clearMarks("warn");
+    term.clear();
+    var peeks = box.querySelectorAll(".file-peek.after");
+    peeks.forEach(function (x) { x.remove(); });
+    var files = o.files || {};
+    term.exec({ src: ed.getValue(), files: files, file: "program.cpp", prepared: o.stdin ? o.stdin.replace(/\n$/, "").split("\n") : [],
+      onDone: function (r) {
+        if (o.onDone) o.onDone(r);
+        if (!r || !r.files) return;
+        Object.keys(r.files).forEach(function (n) {
+          if (files[n] === r.files[n]) return;
+          var d = h("details", "file-peek after", "<summary>File " + esc(n) + " after the run</summary>");
+          var fp = h("pre"); fp.textContent = r.files[n]; d.appendChild(fp);
+          box.appendChild(d);
+        });
+      } });
+    return term;
+  }
+  CL.runInTerminal = runInTerminal;
 
   function errorExample(b) {
     var wrap = h("div", "ex error-ex");
@@ -504,11 +534,12 @@
     wrap.appendChild(res);
     var resetBtn = bar.querySelector('[data-a="reset"]');
     ed.onChange(function (v) { resetBtn.hidden = v === code; });
+    var term = null;
     bar.addEventListener("click", function (e) {
       var t = e.target.closest("button");
       if (!t) return;
-      if (t.getAttribute("data-a") === "run") showResult(res, CPP.run(ed.getValue(), {}), ed);
-      if (t.getAttribute("data-a") === "reset") { ed.setValue(code); ed.clearMarks(); res.innerHTML = ""; resetBtn.hidden = true; }
+      if (t.getAttribute("data-a") === "run") runInTerminal(res, ed, { getTerm: function () { return term; }, setTerm: function (x) { term = x; } });
+      if (t.getAttribute("data-a") === "reset") { ed.setValue(code); ed.clearMarks(); if (term) { term.destroy(); term = null; } res.innerHTML = ""; resetBtn.hidden = true; }
     });
     return wrap;
   }
@@ -2120,6 +2151,7 @@
     right.appendChild(bar);
     var results = h("div", "tests");
     right.appendChild(results);
+    var runBtn = bar.querySelector('[data-a="run"]');
     bar.addEventListener("click", function (ev) {
       var b = ev.target.closest("button");
       if (!b) return;
@@ -2129,36 +2161,69 @@
         else { b.dataset.armed = "1"; b.textContent = "Click again to erase your code"; }
       }
     });
+    // the tests run in the background (a worker), one after another, so the page stays responsive; Stop ends them
+    var gymRunner = CL.Runner.create(), running = false;
     function runTests() {
       var code = ed.getValue();
+      if (running) gymRunner.stop(true);
       ed.clearMarks();
       results.innerHTML = "";
       var userLines = code.replace(/\s+$/, "").split("\n").length;
-      var pass = 0, compileErr = null, cards = [];
-      for (var i = 0; i < e.tests.length; i++) {
-        var t = e.tests[i];
-        var src = CL.assemble(e, code, t);
-        var r = CPP.run(src, { stdin: t.stdin || "", maxSteps: 2000000 });
-        if (!r.compiled) { compileErr = r.err; break; }
-        var ok = !r.err && norm(r.out) === norm(t.expect);
-        if (ok) pass++;
-        cards.push({ t: t, r: r, ok: ok, src: src });
-      }
+      var jobs = [], plan = [];
+      e.tests.forEach(function (t) {
+        plan.push({ t: t, at: jobs.length });
+        jobs.push({ src: CL.assemble(e, code, t), opts: { stdin: t.stdin || "", maxSteps: 2000000 } });
+      });
       // random tests: new values every run; the expected output comes from the model solution on the same values
-      if (!compileErr && e.random && e.solution) {
+      if (e.random && e.solution) {
         e.random.forEach(function (rt) {
           for (var k = 0; k < 2; k++) {
             var tt = { name: "Random: " + rt.name, main: CL.expandRandom(rt.tpl), random: true };
-            var ref = CPP.run(CL.assemble(e, e.solution, tt), { maxSteps: 2000000 });
-            if (!ref.compiled || ref.err) continue;
-            tt.expect = ref.out;
-            var src2 = CL.assemble(e, code, tt), r2 = CPP.run(src2, { maxSteps: 2000000 });
-            var ok2 = r2.compiled && !r2.err && norm(r2.out) === norm(ref.out);
-            if (ok2) pass++;
-            cards.push({ t: tt, r: r2, ok: ok2, src: src2 });
+            plan.push({ t: tt, at: jobs.length + 1, ref: jobs.length });
+            jobs.push({ src: CL.assemble(e, e.solution, tt), opts: { maxSteps: 2000000 } });
+            jobs.push({ src: CL.assemble(e, code, tt), opts: { maxSteps: 2000000 } });
           }
         });
       }
+      var got = new Array(jobs.length), nTests = plan.length;
+      var prog = h("div", "gym-prog", '<div class="gym-prog-t"><i class="t-spin" aria-hidden="true"></i> <span>Running test 1 of ' + nTests + '…</span></div><div class="xpbar"><i style="width:0%"></i></div><button type="button" class="btn small ghost" data-stop>Stop</button>');
+      results.appendChild(prog);
+      prog.querySelector("[data-stop]").addEventListener("click", function () { gymRunner.stop(true); running = false; prog.innerHTML = '<span class="muted">Stopped. Press Run the tests to try again.</span>'; });
+      running = true;
+      runBtn.disabled = false;
+      gymRunner.batch(jobs, {
+        onResult: function (i, r) {
+          got[i] = r;
+          // a compile error makes every test fail the same way: stop at the first one
+          if (i === 0 && !r.compiled) { gymRunner.stop(true); finish(); return; }
+          var doneTests = plan.filter(function (x) { return got[x.at]; }).length;
+          prog.querySelector(".gym-prog-t span").textContent = doneTests >= nTests ? "Checking…" : "Running test " + (doneTests + 1) + " of " + nTests + "…";
+          prog.querySelector(".xpbar i").style.width = Math.round(100 * doneTests / nTests) + "%";
+        },
+        onDone: function () { finish(); }
+      });
+      function finish() {
+        if (!running) return;
+        running = false;
+        prog.remove();
+        var pass = 0, compileErr = got[0] && !got[0].compiled ? got[0].err : null, cards = [];
+        if (!compileErr) plan.forEach(function (x) {
+          var r = got[x.at];
+          if (!r) return;
+          var t = x.t;
+          if (x.ref !== undefined) {
+            var ref = got[x.ref];
+            if (!ref || !ref.compiled || ref.err) return;
+            t.expect = ref.out;
+          }
+          var ok = r.compiled && !r.err && norm(r.out) === norm(t.expect);
+          if (ok) pass++;
+          cards.push({ t: t, r: r, ok: ok, src: jobs[x.at].src });
+        });
+        showResults(code, userLines, pass, compileErr, cards);
+      }
+    }
+    function showResults(code, userLines, pass, compileErr, cards) {
       if (compileErr) {
         lastResults = "Last test run: the code did not compile" + (compileErr.line ? " (line " + compileErr.line + ")" : "") + ": " + compileErr.msg;
         var inUser = compileErr.line && compileErr.line <= userLines;
@@ -2168,7 +2233,7 @@
         var s0 = store.ex[id] = store.ex[id] || {}; s0.tried = true; save();
         return;
       }
-      var all = pass === cards.length;
+      var all = pass === cards.length && cards.length > 0;
       lastResults = "Last test run: " + pass + " of " + cards.length + " tests pass.\n" + cards.map(function (c) {
         return (c.ok ? "PASS " : "FAIL ") + c.t.name + (c.ok ? "" : ": expected output " + JSON.stringify(Tu.clip(c.t.expect || "", 300)) + ", the student's output " + JSON.stringify(Tu.clip(c.r.out || "", 300)) +
           (c.r.err ? ", stopped with " + (c.r.err.kind === "limit" ? "a limit" : "a runtime error") + (c.r.err.line && c.r.err.line <= userLines ? " on line " + c.r.err.line : "") + ": " + c.r.err.msg : ""));
@@ -2184,9 +2249,9 @@
         }));
         results.appendChild(trow);
       }
-      cards.forEach(function (c, k) {
+      cards.forEach(function (c) {
         var el = h("div", "test " + (c.ok ? "pass" : "fail"));
-        el.innerHTML = '<div class="test-h"><span class="r">' + (c.ok ? "✓ Pass" : "✗ Fail") + '</span><span class="nm">' + esc(c.t.name) + (c.t.hidden ? ' <span class="chip">hidden test</span>' : "") + "</span></div>";
+        el.innerHTML = '<div class="test-h"><span class="r">' + (c.ok ? "✓ Pass" : "✗ Fail") + '</span><span class="nm">' + esc(c.t.name) + (c.t.hidden ? ' <span class="chip">hidden test</span>' : "") + '</span><span class="tm">' + (c.r.ms !== undefined ? CL.fmtMs(c.r.ms) : "") + "</span></div>";
         if (!c.ok) {
           var b = h("div", "test-b");
           if (c.t.hidden) {
@@ -2207,14 +2272,21 @@
           }
           var cmp = h("div", "cmp");
           var exp = h("div"); exp.appendChild(h("div", "out-h", "Expected output")); var p1 = h("pre", "out"); p1.textContent = c.t.expect || "(nothing)"; exp.appendChild(p1);
-          var got = h("div"); got.appendChild(h("div", "out-h", "Your output")); var p2 = h("pre", "out" + (c.r.out ? "" : " empty")); p2.textContent = c.r.out || "(nothing was printed)"; got.appendChild(p2);
-          cmp.appendChild(exp); cmp.appendChild(got);
+          var gotEl = h("div"); gotEl.appendChild(h("div", "out-h", "Your output")); var p2 = h("pre", "out" + (c.r.out ? "" : " empty")); p2.textContent = c.r.out || "(nothing was printed)"; gotEl.appendChild(p2);
+          cmp.appendChild(exp); cmp.appendChild(gotEl);
           b.appendChild(cmp);
+          var vrow = h("div", "btns");
           var vb = h("button", "btn small");
           vb.type = "button";
           vb.textContent = "Step through this test";
           vb.addEventListener("click", function () { openViz(c.src, { stdin: c.t.stdin || "", title: "Test: " + c.t.name }); });
-          b.appendChild(vb);
+          vrow.appendChild(vb);
+          var tb = h("button", "btn small ghost");
+          tb.type = "button";
+          tb.textContent = "Try this test's values below";
+          tb.addEventListener("click", function () { tryEd.setValue(c.t.main); tryBox.open = true; tryBox.scrollIntoView({ behavior: "smooth", block: "start" }); });
+          vrow.appendChild(tb);
+          b.appendChild(vrow);
           el.appendChild(b);
         }
         results.appendChild(el);
@@ -2228,101 +2300,49 @@
       }
       save();
     }
+    // your own values: write any main() body that calls your function, and run it in a terminal (cin works too)
+    var tryBox = h("details", "ex-try");
+    tryBox.open = !!st.tryOpen;
+    tryBox.innerHTML = '<summary><b>Try it with your own values</b><span class="small muted"> · write your own main() and run it in a terminal</span></summary>';
+    var tryIn = h("div", "ex-try-in");
+    tryBox.appendChild(tryIn);
+    tryIn.appendChild(h("p", "small muted", "This code becomes the body of <code>main()</code>, after your function" + (e.harness ? " and the test helpers (" + esc((e.harness.match(/\b(__\w+)\s*\(/g) || []).map(function (x) { return x.replace(/\s*\($/, ""); }).filter(function (x, i, a) { return a.indexOf(x) === i; }).slice(0, 6).join(", ")) + ")" : "") + ". Change the values, add <code>cout</code> lines, or read values with <code>cin</code>."));
+    var firstTest = e.tests.filter(function (t) { return !t.hidden; })[0] || e.tests[0];
+    var tryEd = new CL.Editor(tryIn, { value: st.tryMain || (firstTest ? firstTest.main : "cout << \"hello\" << endl;"), label: "Your own main() body", tools: true, minLines: 4, onRun: function () { runTry(); } });
+    tryEd.onChange(function (v) { var s2 = store.ex[id] = store.ex[id] || {}; s2.tryMain = v; save(); });
+    var tryBar = h("div", "btns", '<button type="button" class="btn primary small" data-try>▶ Run my main()</button><button type="button" class="btn ghost small" data-tryreset>Reset to the first test</button>');
+    tryIn.appendChild(tryBar);
+    var tryOut = h("div", "run");
+    tryIn.appendChild(tryOut);
+    var tryTerm = null;
+    function runTry() {
+      var body = tryEd.getValue();
+      var src = CL.assemble(e, ed.getValue(), { main: body });
+      // errors in your function are marked in the main editor; errors in your main() body, in this one
+      var mainStart = src.split("\n").indexOf("int main() {") + 2, nBody = body.split("\n").length;
+      function edFor(line) { return line <= userLinesNow() ? { ed: ed, line: line } : line >= mainStart && line < mainStart + nBody ? { ed: tryEd, line: line - mainStart + 1 } : null; }
+      var fake = { getValue: function () { return src; },
+        clearMarks: function (c) { ed.clearMarks(c); tryEd.clearMarks(c); },
+        mark: function (line, cls, msg) { var x = edFor(line); if (x) x.ed.mark(x.line, cls, msg); },
+        revealLine: function (line) { var x = edFor(line); if (x) x.ed.revealLine(x.line); },
+        focus: function () { tryEd.focus(); } };
+      runInTerminal(tryOut, fake, { title: "Your main()", getTerm: function () { return tryTerm; }, setTerm: function (t) { tryTerm = t; } });
+    }
+    function userLinesNow() { return ed.getValue().replace(/\s+$/, "").split("\n").length; }
+    tryBar.addEventListener("click", function (ev) {
+      if (ev.target.closest("[data-try]")) runTry();
+      if (ev.target.closest("[data-tryreset]") && firstTest) tryEd.setValue(firstTest.main);
+    });
+    tryBox.addEventListener("toggle", function () { var s3 = store.ex[id] = store.ex[id] || {}; s3.tryOpen = tryBox.open; save(); if (tryBox.open) tryEd.refresh(); });
+    right.appendChild(tryBox);
+    current = { destroy: function () { gymRunner.destroy(); if (tryTerm) tryTerm.destroy(); } };
     grid.appendChild(left);
     grid.appendChild(right);
     p.appendChild(grid);
   }
 
-  // ---------------------------------------------------------------- playground
-  function pagePlay() {
-    var p = page();
-    var st = store.play || { code: D.playStart, stdin: "", files: {} };
-    var lastRun = null;
-    setTutor("play", "Playground", function () {
-      var r = lastRun;
-      return "The student's program in the Playground:\n" + CL.numbered(ed.getValue()) + "\n\nKeyboard input: " + JSON.stringify(stdinEl.value) +
-        (Object.keys(files).length ? "\nFiles: " + Object.keys(files).map(function (n) { return n + " = " + JSON.stringify(files[n].slice(0, 400)); }).join("; ") : "") +
-        (r ? "\n\nLast run: " + (!r.compiled ? "did not compile: line " + r.err.line + ": " + r.err.msg : "output " + JSON.stringify(Tu.clip(r.out, 1500)) + (r.err ? "; stopped with an error on line " + r.err.line + ": " + r.err.msg : "")) : "\n\nThe program has not been run yet.") +
-        (CL.activeViz && CL.activeViz.code === ed.getValue() ? "\n\nStepping through it in the visualizer:\n" + CL.activeViz.tutorContext() : "");
-    });
-    p.innerHTML = '<div class="eyebrow">Playground</div><h1 class="title">Run any program</h1><p class="lede">Write or paste C++ here. Give it keyboard input and files, run it, and step through it to see the stack and the heap. Your code is kept in this browser. The runner covers the C++ used in COMP 2611, not all of C++: <a href="#cpp">see exactly what it supports</a>.</p>';
-    var grid = h("div", "play");
-    var left = h("div");
-    var ed = new CL.Editor(left, { value: st.code, label: "Playground code", tools: true, onRun: function () { run(); } });
-    var bar = h("div", "btns");
-    bar.style.marginTop = "10px";
-    bar.innerHTML = '<button type="button" class="btn primary" data-a="run">Run</button><button type="button" class="btn" data-a="viz">Step through</button><select id="play-ex" aria-label="Load an example"><option value="">Load an example…</option>' +
-      D.examples.map(function (x, i) { return '<option value="' + i + '">' + esc(x.title) + "</option>"; }).join("") + "</select>";
-    left.appendChild(bar);
-    var res = h("div", "run");
-    left.appendChild(res);
-    var side = h("div", "play-side");
-    var inPanel = h("div", "panel", '<h4>Keyboard input (what cin reads)</h4><textarea class="plain" id="play-stdin" rows="4" placeholder="Type the input here, for example: 5 3 8"></textarea>');
-    var filesPanel = h("div", "panel", '<h4>Files (for ifstream / ofstream)</h4><div class="files"></div><button type="button" class="btn small" data-add style="margin-top:8px">Add a file</button>');
-    side.appendChild(inPanel);
-    side.appendChild(filesPanel);
-    side.appendChild(h("div", "panel", "<h4>Tips</h4><ul class='small' style='margin:0;padding-left:18px'><li>Ctrl + Enter runs the program.</li><li>Step through shows memory after every line.</li><li>Errors explain what went wrong and how to fix it.</li></ul>"));
-    grid.appendChild(left);
-    grid.appendChild(side);
-    p.appendChild(grid);
-    var stdinEl = inPanel.querySelector("textarea");
-    stdinEl.value = st.stdin || "";
-    var filesEl = filesPanel.querySelector(".files");
-    var files = Object.assign({}, st.files || {});
-    function persist() { store.play = { code: ed.getValue(), stdin: stdinEl.value, files: files }; save(); }
-    function drawFiles() {
-      filesEl.innerHTML = "";
-      Object.keys(files).forEach(function (name) {
-        var row = h("div", "file-row");
-        row.innerHTML = '<div class="fh"><input type="text" value="' + esc(name) + '" aria-label="File name"><button type="button" class="btn small ghost" aria-label="Remove file">Remove</button></div><textarea class="plain" rows="4" aria-label="File contents"></textarea>';
-        var nameIn = row.querySelector("input"), ta = row.querySelector("textarea");
-        ta.value = files[name];
-        nameIn.addEventListener("change", function () { var v = files[name]; delete files[name]; name = nameIn.value.trim() || name; files[name] = v; persist(); });
-        ta.addEventListener("input", function () { files[name] = ta.value; persist(); });
-        row.querySelector("button").addEventListener("click", function () { delete files[name]; drawFiles(); persist(); });
-        filesEl.appendChild(row);
-      });
-      if (!Object.keys(files).length) filesEl.innerHTML = '<p class="small muted" style="margin:0">No files yet.</p>';
-    }
-    drawFiles();
-    filesPanel.querySelector("[data-add]").addEventListener("click", function () {
-      var n = 1;
-      while (files["data" + (n > 1 ? n : "") + ".txt"] !== undefined) n++;
-      files["data" + (n > 1 ? n : "") + ".txt"] = "";
-      drawFiles(); persist();
-    });
-    ed.onChange(persist);
-    stdinEl.addEventListener("input", persist);
-    var vizHost = h("div");
-    vizHost.style.marginTop = "18px";
-    p.appendChild(vizHost);
-    var viz = null;
-    function run() { lastRun = CPP.run(ed.getValue(), { stdin: stdinEl.value, files: files }); showResult(res, lastRun, ed, { files: files }); }
-    bar.addEventListener("click", function (e) {
-      var b = e.target.closest("button");
-      if (!b) return;
-      if (b.getAttribute("data-a") === "run") run();
-      if (b.getAttribute("data-a") === "viz") {
-        vizHost.innerHTML = "";
-        if (viz) viz.destroy();
-        viz = new CL.Visualizer(vizHost);
-        viz.load(ed.getValue(), { stdin: stdinEl.value, files: files });
-        vizHost.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    });
-    bar.querySelector("select").addEventListener("change", function (e) {
-      var x = D.examples[+e.target.value];
-      if (!x) return;
-      ed.setValue(x.code);
-      stdinEl.value = x.stdin || "";
-      files = Object.assign({}, x.files || {});
-      drawFiles();
-      persist();
-      res.innerHTML = "";
-      e.target.value = "";
-    });
-    current = { destroy: function () { if (viz) viz.destroy(); } };
-  }
+  // ---------------------------------------------------------------- playground: the IDE (ide.js)
+  function pagePlay() { CL.IDE.page(CL.ui); }
 
   // ---------------------------------------------------------------- reference
   function pageRef() {

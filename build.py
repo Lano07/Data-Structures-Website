@@ -99,6 +99,8 @@ LABS = [
      "intro": "Compare how each algorithm moves the values. Merge sort shows its split-and-merge picture from the slides; quick sort shows partition's p, i, j and r."},
 ]
 
+QUEST_JS = []   # the quest engine and its widgets (added below when present)
+
 # ---------------------------------------------------------------- helpers
 def sha(s):
     return hashlib.sha1(s.encode()).hexdigest()[:12]
@@ -775,10 +777,18 @@ def main():
                 t.pop("stdin", None)
 
     # ---- bundle
-    css = open(os.path.join(SRC, "style.css")).read() + "\n" + open(os.path.join(SRC, "neon.css")).read()
-    js_files = ["cpp_lex.js", "cpp_parse.js", "cpp_check.js", "cpp_run.js", "editor.js", "editor_tools.js", "settings.js", "md.js", "tutor.js", "memviz.js", "visualizer.js", "debugger.js",
+    css_files = ["style.css", "neon.css", "ide.css"]
+    css = "\n".join(open(os.path.join(SRC, f)).read() for f in css_files if os.path.exists(os.path.join(SRC, f)))
+    # the interpreter has its own <script id="cpp-core">: the runner builds its Web Worker from that element's text
+    core_files = ["cpp_lex.js", "cpp_parse.js", "cpp_check.js", "cpp_run.js"]
+    core = "\n".join(open(os.path.join(SRC, f)).read() for f in core_files)
+    js_files = ["editor.js", "editor_tools.js", "settings.js", "md.js", "tutor.js", "runner.js", "project.js", "terminal.js", "ide.js", "memviz.js", "visualizer.js", "debugger.js",
                 "lab_core.js", "lab_tree.js", "lab_avl.js", "lab_heap.js", "lab_hash.js", "lab_graph.js", "lab_sort.js", "lab_extra.js", "lab_race.js", "lab_mem.js", "trainer.js", "trainer2.js", "progress.js", "fx.js", "game.js", "arcade.js", "arcade_games.js", "boss.js", "hero.js", "learn.js", "pages_learn.js", "pages_ref.js", "pages_exam.js"]
+    js_files += [f for f in QUEST_JS if os.path.exists(os.path.join(SRC, f))]
     js = "\n".join(open(os.path.join(SRC, f)).read() for f in js_files)
+    for f in core_files + js_files:
+        if "</script" in open(os.path.join(SRC, f)).read().lower():
+            err("%s contains </script, which would end the page's script early" % f)
     app = open(os.path.join(SRC, "app.js")).read()
     data_js = "window.CODELAB_DATA = " + json.dumps(data, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/") + ";"
     head = ('<title>COMP 2611 Code Lab</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n'
@@ -787,6 +797,7 @@ def main():
             '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600;700&family=Martian+Mono:wght@500;600&family=Space+Grotesk:wght@500;600;700&display=swap">\n')
     body = ("<style>\n" + css + "\n</style>\n"
             '<div id="app"></div>\n'
+            '<script id="cpp-core">\n' + core + "\n</script>\n"
             "<script>\n" + js + "\n</script>\n"
             "<script>\n" + data_js + "\n</script>\n"
             "<script>\n" + app + "\n</script>\n")
