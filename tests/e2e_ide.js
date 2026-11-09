@@ -63,14 +63,22 @@ const wait = (pg, ms) => pg.waitForTimeout(ms);
   await pg.click(".ide-term .term-body");
   for (const c of ["g++ main.cpp -o dbl", "./dbl < data.txt"]) { await pg.keyboard.type(c); await pg.keyboard.press("Enter"); await wait(pg, 600); }
   check(/\n42\n/.test(await term()), "./prog < file redirects cin");
-  // the Code Gym runs its tests in the background and has a your-own-values terminal
+  // the Code Gym workspace: real typing, ▶ Run in the terminal (with main.cpp), ✓ Submit runs the tests in the background
   await pg.goto(URL + "#ex-list-delete-key"); await wait(pg, 800);
+  await pg.click(".ws-ed .ed-scroll"); await pg.keyboard.press("Control+End"); await pg.keyboard.type("// typed here");
+  check(/\/\/ typed here$/.test(await pg.evaluate(() => document.querySelector(".ws-ed .ed-ta").value.trimEnd())), "typing with the keyboard reaches the Code Gym editor");
   const sol = await pg.evaluate("CODELAB_DATA.exercises.find(x => x.id === 'list-delete-key').solution");
-  await pg.evaluate((c) => { const t = document.querySelector(".ex-work .ed-ta"); t.value = c; t.dispatchEvent(new Event("input")); }, sol);
-  await pg.click('[data-a="run"]'); await wait(pg, 1800);
-  check((await pg.locator(".summary").innerText()).startsWith("All"), "the model solution passes every Code Gym test");
-  await pg.click(".ex-try > summary"); await pg.click("[data-try]"); await wait(pg, 1200);
-  check(/Process finished/.test(await pg.locator(".ex-try .term-out").innerText()), "Try it with your own values runs your own main()");
+  await pg.evaluate((c) => { const t = document.querySelector(".ws-ed .ed-ta"); t.value = c; t.dispatchEvent(new Event("input")); }, sol);
+  await pg.click('.ws-head [data-a="submit"]'); await wait(pg, 1800);
+  check((await pg.locator(".ws-results .summary").innerText()).startsWith("All"), "the model solution passes every Code Gym test");
+  await pg.click('.ws-head [data-a="run"]'); await wait(pg, 1200);
+  t = await pg.locator(".ws-p-term .term-out").innerText();
+  check(/solution\.cpp main\.cpp/.test(t) && /Process finished/.test(t), "▶ Run compiles your code with main.cpp and runs it in the terminal");
+  await pg.click('.ws-tabs [data-p="main"]');
+  await pg.evaluate(() => { const t = document.querySelector(".ws-p-main .ed-ta"); t.value = "int main() {\n\tint a;\n\tcin >> a;\n\tcout << a * 3 << endl;\n\treturn 0;\n}\n"; t.dispatchEvent(new Event("input")); });
+  await pg.click('.ws-p-main [data-a="run"]'); await wait(pg, 900);
+  await pg.keyboard.type("14"); await pg.keyboard.press("Enter"); await wait(pg, 900);
+  check(/\n14\n42\n/.test(await pg.locator(".ws-p-term .term-out").innerText()), "main.cpp can read cin: the terminal waits for the typed value");
   // every code-tracing question rebuilds into a program that prints its answer
   const qres = await pg.evaluate(() => {
     const T = CL.Train, bad = [];

@@ -399,7 +399,8 @@
 
   // ---------------------------------------------------------------- HUD in the top bar
   var hud = null, sndBtn = null, pill = null;
-  var FLAME = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="url(#flG)" d="M12 2c.6 3.2-1.4 4.9-2.9 6.6C7.6 10.3 6 12.1 6 14.8 6 18.8 8.7 22 12 22s6-3.2 6-7.2c0-2.3-1-4.1-2.2-5.6-.3 1.6-1.1 2.8-2.4 3.3.6-3.9-.3-7.5-1.4-10.5z"/></svg>';
+  // the streak flame, as pixel art
+  var FLAME = '<svg viewBox="0 0 8 10" width="16" height="18" shape-rendering="crispEdges" aria-hidden="true"><rect x="3" y="0" width="1" height="1" fill="#ff8a1c"/><rect x="3" y="1" width="1" height="1" fill="#ff8a1c"/><rect x="4" y="1" width="1" height="1" fill="#ff8a1c"/><rect x="2" y="2" width="1" height="1" fill="#ff8a1c"/><rect x="3" y="2" width="1" height="1" fill="#ff8a1c"/><rect x="4" y="2" width="1" height="1" fill="#ff8a1c"/><rect x="6" y="2" width="1" height="1" fill="#ff8a1c"/><rect x="1" y="3" width="1" height="1" fill="#ff8a1c"/><rect x="2" y="3" width="1" height="1" fill="#ff8a1c"/><rect x="3" y="3" width="1" height="1" fill="#ff8a1c"/><rect x="4" y="3" width="1" height="1" fill="#ff8a1c"/><rect x="5" y="3" width="1" height="1" fill="#ff8a1c"/><rect x="1" y="4" width="1" height="1" fill="#ff8a1c"/><rect x="2" y="4" width="1" height="1" fill="#ff8a1c"/><rect x="3" y="4" width="1" height="1" fill="#ffd23f"/><rect x="4" y="4" width="1" height="1" fill="#ff8a1c"/><rect x="5" y="4" width="1" height="1" fill="#ff8a1c"/><rect x="6" y="4" width="1" height="1" fill="#ff8a1c"/><rect x="0" y="5" width="1" height="1" fill="#ff8a1c"/><rect x="1" y="5" width="1" height="1" fill="#ff8a1c"/><rect x="2" y="5" width="1" height="1" fill="#ff8a1c"/><rect x="3" y="5" width="1" height="1" fill="#ffd23f"/><rect x="4" y="5" width="1" height="1" fill="#ffd23f"/><rect x="5" y="5" width="1" height="1" fill="#ff8a1c"/><rect x="6" y="5" width="1" height="1" fill="#ff8a1c"/><rect x="7" y="5" width="1" height="1" fill="#ff8a1c"/><rect x="0" y="6" width="1" height="1" fill="#ff8a1c"/><rect x="1" y="6" width="1" height="1" fill="#ff8a1c"/><rect x="2" y="6" width="1" height="1" fill="#ffd23f"/><rect x="3" y="6" width="1" height="1" fill="#ffd23f"/><rect x="4" y="6" width="1" height="1" fill="#ffd23f"/><rect x="5" y="6" width="1" height="1" fill="#ffd23f"/><rect x="6" y="6" width="1" height="1" fill="#ff8a1c"/><rect x="7" y="6" width="1" height="1" fill="#ff8a1c"/><rect x="0" y="7" width="1" height="1" fill="#ff8a1c"/><rect x="1" y="7" width="1" height="1" fill="#ff8a1c"/><rect x="2" y="7" width="1" height="1" fill="#ffd23f"/><rect x="3" y="7" width="1" height="1" fill="#ffd23f"/><rect x="4" y="7" width="1" height="1" fill="#ffd23f"/><rect x="5" y="7" width="1" height="1" fill="#ffd23f"/><rect x="6" y="7" width="1" height="1" fill="#ff8a1c"/><rect x="7" y="7" width="1" height="1" fill="#ff8a1c"/><rect x="1" y="8" width="1" height="1" fill="#ff8a1c"/><rect x="2" y="8" width="1" height="1" fill="#ffd23f"/><rect x="3" y="8" width="1" height="1" fill="#ffd23f"/><rect x="4" y="8" width="1" height="1" fill="#ffd23f"/><rect x="5" y="8" width="1" height="1" fill="#ffd23f"/><rect x="6" y="8" width="1" height="1" fill="#ff8a1c"/><rect x="2" y="9" width="1" height="1" fill="#ff8a1c"/><rect x="3" y="9" width="1" height="1" fill="#ff8a1c"/><rect x="4" y="9" width="1" height="1" fill="#ff8a1c"/><rect x="5" y="9" width="1" height="1" fill="#ff8a1c"/></svg>';
   var SND_ON = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
   var SND_OFF = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M4 9h4l5-4v14l-5-4H4z"/><path d="m16.5 9.5 5 5m0-5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
   G.mountHud = function (bar) {
@@ -465,18 +466,52 @@
   }
 
   // ---------------------------------------------------------------- the player card on the home page
-  G.homeCard = function (nextHref, nextTitle) {
-    ensureDay();
-    var L = levelOf(g.xp), lo = xpFor(L), hi = xpFor(L + 1), pct = Math.round(100 * (g.xp - lo) / (hi - lo)), r = rankOf(L), st = CL.Progress.streak(), nr = nextRank(L);
-    var el = document.createElement("section");
-    el.className = "pcard";
-    el.innerHTML = '<div class="pl-id"><a class="pl-ring" href="#trophies" aria-label="Trophy Room"><svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="52" class="lu-bg"/><circle cx="60" cy="60" r="52" class="lu-fg" style="stroke-dasharray:326.7;stroke-dashoffset:' + (326.7 * (1 - pct / 100)).toFixed(1) + '"/></svg><b>' + L + "</b><span>level</span></a>" +
-      '<div class="pl-who"><div class="pl-k">Your rank</div><div class="pl-rank">' + esc(r[1]) + '</div><div class="pl-xp"><div class="xpbar"><i style="width:' + pct + '%"></i></div><span>' + (g.xp - lo).toLocaleString() + " / " + (hi - lo).toLocaleString() + " XP to level " + (L + 1) + "</span></div>" +
-      '<div class="pl-chips"><span class="chip fire">' + FLAME + " " + st + " day streak</span><span class=\"chip\">🏅 " + Object.keys(g.ach).length + " / " + ACH.length + " achievements</span>" + (g.best.combo ? '<span class="chip">🔥 best combo ' + g.best.combo + "</span>" : "") + (nr ? '<span class="chip">Next rank at level ' + nr[0] + ": " + esc(nr[1]) + "</span>" : "") + "</div></div></div>" +
-      '<div class="pl-q"><div class="pl-k">Today\'s quests <span class="muted">· reset at midnight</span></div><div data-quests>' + questListHtml() + "</div></div>" +
-      '<div class="pl-go btns">' + (nextHref ? '<a class="btn primary glow" href="' + nextHref + '">▶ ' + esc(nextTitle || "Continue") + "</a>" : "") + '<a class="btn arcade-btn" href="#arcade">🕹️ Arcade</a><a class="btn boss-btn" href="#boss">⚔️ Bosses</a><a class="btn" href="#collection">🃏 Cards</a><a class="btn" href="#train">⚡ Practice</a><a class="btn ghost" href="#trophies">🏆 Trophy Room</a></div>';
-    return el;
+  // ---------------------------------------------------------------- pixel icons: a grid of letters, one colour per letter
+  function pix(rows, pal, size) {
+    var w = rows[0].length, hgt = rows.length, out = "";
+    rows.forEach(function (row, y) {
+      for (var x = 0; x < w;) {
+        var c = row.charAt(x), n = 1;
+        while (x + n < w && row.charAt(x + n) === c) n++;
+        if (pal[c]) out += '<rect x="' + x + '" y="' + y + '" width="' + n + '" height="1" fill="' + pal[c] + '"/>';
+        x += n;
+      }
+    });
+    var px = size || 22;
+    return '<svg class="px-ic" viewBox="0 0 ' + w + " " + hgt + '" width="' + px + '" height="' + Math.round(px * hgt / w) + '" shape-rendering="crispEdges" aria-hidden="true">' + out + "</svg>";
+  }
+  G.pix = pix;
+  var IC = G.ICONS = {
+    flame: pix(["...o....", "...oo...", "..ooo.o.", ".ooooo..", ".ooyooo.", "oooyyooo", "ooyyyyoo", "ooyyyyoo", ".oyyyyo.", "..oooo.."], { o: "#ff8a1c", y: "#ffd23f" }),
+    bolt: pix(["....yyy.", "...yyy..", "..yyy...", ".yyyyyy.", "...yyy..", "..yyy...", ".yyy....", ".yy....."], { y: "#ffd23f" }),
+    book: pix([".bbbbbbb.", "bwwwbwwwb", "bwddbwddb", "bwwwbwwwb", "bwddbwddb", "bwwwbwwwb", "bbbbbbbbb", ".BBBBBBB."], { b: "#3d7bf2", B: "#1f4fb0", w: "#f1f2fb", d: "#9aa0c0" }),
+    term: pix(["lllllllll", "lkkkkkkkl", "lkgkkkkkl", "lkkgkkkkl", "lkgkkkkkl", "lkkkkgggl", "lkkkkkkkl", "lllllllll"], { l: "#8b91b6", k: "#0c0f20", g: "#5fd38d" }),
+    gem: pix(["..ttttt..", ".tTTtTTt.", "tTTtttTTt", ".tTTtTTt.", "..tTTTt..", "...tTt...", "....t...."], { t: "#2fb3a6", T: "#a6f0e8" }),
+    medal: pix([".rr...rr.", "..rr.rr..", "...rrr...", "..yyyyy..", ".yyYYYyy.", ".yYYyYYy.", ".yyYYYyy.", "..yyyyy.."], { r: "#ff6b6b", y: "#e0a91c", Y: "#ffd23f" }),
+    star: pix(["....y....", "...yyy...", "yyyyyyyyy", ".yyyyyyy.", "..yyyyy..", ".yyy.yyy.", "yy.....yy"], { y: "#ffd23f" }),
+    sword: pix([".......ww", "......ww.", ".....ww..", "y...ww...", ".y.ww....", "..yw.....", ".bby.....", "bb..y...."], { w: "#e4e6f6", y: "#e0a91c", b: "#8a5a32" })
   };
+
+  // ---------------------------------------------------------------- the home dashboard's side panel: you, your level, your numbers, today's quests
+  G.dashCard = function (o) {
+    ensureDay();
+    o = o || {};
+    var S = stats(), L = levelOf(g.xp), lo = xpFor(L), hi = xpFor(L + 1), pct = Math.round(100 * (g.xp - lo) / (hi - lo)), r = rankOf(L), streak = CL.Progress.streak();
+    var QS = CL.Quest ? CL.Quest.stats() : null;
+    var tiles = [[IC.flame, streak, streak === 1 ? "day streak" : "day streak"], [IC.bolt, g.xp.toLocaleString(), "total XP"], [IC.book, S.lessons + "/" + S.lessonTotal, "lessons"],
+      [IC.term, S.ex + "/" + S.exTotal, "exercises"], [IC.gem, QS ? QS.relics : 0, "relics"], [IC.medal, Object.keys(g.ach).length + "/" + ACH.length, "achievements"]];
+    var el = document.createElement("section");
+    el.className = "hm-card hm-me";
+    el.innerHTML = '<div class="hm-me-top"><a class="hm-av" href="#quest" aria-label="Your explorer">' + (o.avatar || "") + '</a><div class="hm-me-id"><b>' + esc(o.name || "Explorer") + '</b><span>Level ' + L + " · " + esc(r[1]) + "</span></div></div>" +
+      '<div class="hm-xp"><div class="xpbar"><i style="width:' + pct + '%"></i></div><span>' + (g.xp - lo).toLocaleString() + " / " + (hi - lo).toLocaleString() + " XP to level " + (L + 1) + "</span></div>" +
+      '<div class="hm-stats">' + tiles.map(function (t) { return '<div class="hm-stat">' + t[0] + "<b>" + t[1] + "</b><span>" + t[2] + "</span></div>"; }).join("") + "</div>" +
+      '<a class="btn small hm-trophy" href="#trophies">' + IC.star + " Trophy Room</a>";
+    var q = document.createElement("section");
+    q.className = "hm-card hm-quests";
+    q.innerHTML = '<h2 class="hm-h2">Today\'s quests</h2><p class="hm-sub">Reset at midnight. Finish them for bonus XP.</p><div data-quests>' + questListHtml() + "</div>";
+    return [el, q];
+  };
+
 
   // ---------------------------------------------------------------- XP over the last 14 days (a column chart with hover, focus and a table)
   function lastDays(n) {

@@ -112,7 +112,7 @@ window.__qsolve = async function () {
   if (T === "code") {
     const e = CODELAB_DATA.exercises.find(x => x.id === b.ex);
     const ta = card.querySelector(".ed-ta"); ta.value = e.solution; ta.dispatchEvent(new Event("input"));
-    click(card.querySelector('[data-a="run"]'));
+    click(card.querySelector('[data-a="submit"]'));
     for (let k = 0; k < 100 && !card.classList.contains("solved"); k++) await sleep(50);
     return "code";
   }

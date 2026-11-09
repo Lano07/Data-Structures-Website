@@ -136,7 +136,7 @@
       var tb = document.createElement("div");
       tb.className = "ed-bar";
       tb.innerHTML = '<button type="button" class="btn small ghost" data-tidy>Tidy indentation</button><details class="ed-help"><summary>Keyboard shortcuts</summary><table>' +
-        [["Ctrl + Enter", "Run"], ["Tab / Shift + Tab", "Indent or outdent the selected lines"], ["Ctrl + /", "Turn the selected lines into comments, or back"], ["Alt + ↑ / ↓", "Move the selected lines up or down"], ["Shift + Alt + F", "Tidy the indentation"], ["Tab (when suggestions show)", "Complete the word"], ["Ctrl + Z / Ctrl + Y", "Undo / redo"]]
+        [["Ctrl + Enter", "Run"]].concat(ed.opts.onSubmit ? [["Ctrl + Shift + Enter", "Submit: run every test"]] : []).concat([["Tab / Shift + Tab", "Indent or outdent the selected lines"], ["Ctrl + /", "Turn the selected lines into comments, or back"], ["Alt + ↑ / ↓", "Move the selected lines up or down"], ["Shift + Alt + F", "Tidy the indentation"], ["Tab (when suggestions show)", "Complete the word"], ["Ctrl + Z / Ctrl + Y", "Undo / redo"]])
           .map(function (r) { return "<tr><td><kbd>" + esc(r[0]).replace(/ \+ /g, "</kbd> + <kbd>").replace(/ \/ /g, "</kbd> / <kbd>") + "</kbd></td><td>" + esc(r[1]) + "</td></tr>"; }).join("") +
         '</table><p class="small muted">On a Mac, use Cmd for Ctrl and Option for Alt. Brackets and quotes close themselves; type the closing one to step over it.</p></details>';
       ed.el.parentNode.insertBefore(tb, ed.el.nextSibling);

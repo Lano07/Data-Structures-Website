@@ -1025,13 +1025,13 @@ def main():
                 t.pop("stdin", None)
 
     # ---- bundle
-    css_files = ["style.css", "neon.css", "ide.css", "quest.css", "pixel.css"]
+    css_files = ["style.css", "game.css", "ide.css", "quest.css", "home.css", "theme.css"]
     css = "\n".join(open(os.path.join(SRC, f)).read() for f in css_files if os.path.exists(os.path.join(SRC, f)))
     # the interpreter has its own <script id="cpp-core">: the runner builds its Web Worker from that element's text
     core_files = ["cpp_lex.js", "cpp_parse.js", "cpp_check.js", "cpp_run.js"]
     core = "\n".join(open(os.path.join(SRC, f)).read() for f in core_files)
-    js_files = ["editor.js", "editor_tools.js", "settings.js", "md.js", "tutor.js", "runner.js", "project.js", "terminal.js", "ide.js", "memviz.js", "visualizer.js", "debugger.js",
-                "lab_core.js", "lab_tree.js", "lab_avl.js", "lab_heap.js", "lab_hash.js", "lab_graph.js", "lab_sort.js", "lab_extra.js", "lab_race.js", "lab_mem.js", "trainer.js", "trainer2.js", "progress.js", "fx.js", "game.js", "arcade.js", "arcade_games.js", "boss.js", "hero.js", "learn.js", "pages_learn.js", "pages_ref.js", "pages_exam.js"]
+    js_files = ["editor.js", "editor_tools.js", "settings.js", "md.js", "tutor.js", "runner.js", "project.js", "terminal.js", "workspace.js", "ide.js", "memviz.js", "visualizer.js", "debugger.js",
+                "lab_core.js", "lab_tree.js", "lab_avl.js", "lab_heap.js", "lab_hash.js", "lab_graph.js", "lab_sort.js", "lab_extra.js", "lab_race.js", "lab_mem.js", "trainer.js", "trainer2.js", "progress.js", "fx.js", "game.js", "arcade.js", "arcade_games.js", "boss.js", "learn.js", "pages_learn.js", "pages_ref.js", "pages_exam.js"]
     js_files += [f for f in QUEST_JS if os.path.exists(os.path.join(SRC, f))]
     js = "\n".join(open(os.path.join(SRC, f)).read() for f in js_files)
     for f in core_files + js_files:

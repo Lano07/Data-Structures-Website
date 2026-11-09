@@ -9,18 +9,18 @@
 
   // ---------------------------------------------------------------- the bosses
   var BOSSES = [
-    { id: "cpp", topic: "cpp", name: "The Dangling Pointer", icon: "👻", color: "#a78bfa", hp: 6, lesson: "b6-deep-memory", lore: "It lives in freed memory and crashes anyone who follows it." },
-    { id: "lists", topic: "lists", name: "The Endless Chain", icon: "⛓️", color: "#22d3ee", hp: 6, lesson: "c6-deep-lists", lore: "A list whose last next was never set to NULL. It never ends." },
-    { id: "recursion", topic: "recursion", name: "The Stack Overflow", icon: "🌀", color: "#f472b6", hp: 6, lesson: "d4-deep-recursion", lore: "Born from a recursion with no base case, it grows until the stack runs out." },
-    { id: "stacks", topic: "stacks", name: "The Queue Keeper", icon: "🗝️", color: "#34d399", hp: 6, lesson: "e4-deep-stacks-queues", lore: "It guards the line: first in, first out, and woe to whoever forgets the tail." },
-    { id: "trees", topic: "trees", name: "The Rootless Tree", icon: "🌲", color: "#34d399", hp: 7, lesson: "f5-deep-trees", lore: "It scrambles traversals. Only preorder and inorder together can rebuild it." },
-    { id: "bst", topic: "bst", name: "The Degenerate", icon: "🐍", color: "#22d3ee", hp: 7, lesson: "g6-deep-bst", lore: "A BST fed sorted keys until it stretched into a list of height n − 1." },
-    { id: "heaps", topic: "heaps", name: "The Heap Titan", icon: "⛰️", color: "#f472b6", hp: 7, lesson: "h5-deep-heaps", lore: "It always keeps the biggest at the top. Heapify it, or be crushed." },
-    { id: "hashing", topic: "hashing", name: "The Collision", icon: "💥", color: "#fbbf24", hp: 7, lesson: "i4-deep-hashing", lore: "Every key it touches lands in the same location. Probe your way past it." },
-    { id: "graphs", topic: "graphs", name: "The Labyrinth", icon: "🕸️", color: "#a78bfa", hp: 8, lesson: "j6-deep-graphs", lore: "A maze of weighted edges. Only BFS, DFS and Dijkstra find the way out." },
-    { id: "sorting", topic: "sorting", name: "The Chaos Shuffler", icon: "🃏", color: "#60a5fa", hp: 8, lesson: "k5-deep-sorting", lore: "It deals arrays in the worst order for quick sort, and laughs." },
-    { id: "bigo", topic: "bigo", name: "The Exponential", icon: "📈", color: "#fbbf24", hp: 8, lesson: "l3-deep-big-o", lore: "It grows like 2ⁿ. Measure every operation, or it will outgrow you." },
-    { id: "final", topic: null, name: "The Final Exam", icon: "🎓", color: "#f43f5e", hp: 15, requires: 5, lore: "Every topic of the course, fifteen hits, no mercy. Defeat five bosses to unlock it." }
+    { id: "cpp", topic: "cpp", name: "The Dangling Pointer", icon: "👻", color: "#9d8cf0", hp: 6, lesson: "b6-deep-memory", lore: "It lives in freed memory and crashes anyone who follows it." },
+    { id: "lists", topic: "lists", name: "The Endless Chain", icon: "⛓️", color: "#57b8ff", hp: 6, lesson: "c6-deep-lists", lore: "A list whose last next was never set to NULL. It never ends." },
+    { id: "recursion", topic: "recursion", name: "The Stack Overflow", icon: "🌀", color: "#f78fb3", hp: 6, lesson: "d4-deep-recursion", lore: "Born from a recursion with no base case, it grows until the stack runs out." },
+    { id: "stacks", topic: "stacks", name: "The Queue Keeper", icon: "🗝️", color: "#5fd38d", hp: 6, lesson: "e4-deep-stacks-queues", lore: "It guards the line: first in, first out, and woe to whoever forgets the tail." },
+    { id: "trees", topic: "trees", name: "The Rootless Tree", icon: "🌲", color: "#5fd38d", hp: 7, lesson: "f5-deep-trees", lore: "It scrambles traversals. Only preorder and inorder together can rebuild it." },
+    { id: "bst", topic: "bst", name: "The Degenerate", icon: "🐍", color: "#57b8ff", hp: 7, lesson: "g6-deep-bst", lore: "A BST fed sorted keys until it stretched into a list of height n − 1." },
+    { id: "heaps", topic: "heaps", name: "The Heap Titan", icon: "⛰️", color: "#f78fb3", hp: 7, lesson: "h5-deep-heaps", lore: "It always keeps the biggest at the top. Heapify it, or be crushed." },
+    { id: "hashing", topic: "hashing", name: "The Collision", icon: "💥", color: "#ffd23f", hp: 7, lesson: "i4-deep-hashing", lore: "Every key it touches lands in the same location. Probe your way past it." },
+    { id: "graphs", topic: "graphs", name: "The Labyrinth", icon: "🕸️", color: "#9d8cf0", hp: 8, lesson: "j6-deep-graphs", lore: "A maze of weighted edges. Only BFS, DFS and Dijkstra find the way out." },
+    { id: "sorting", topic: "sorting", name: "The Chaos Shuffler", icon: "🃏", color: "#5b8ff5", hp: 8, lesson: "k5-deep-sorting", lore: "It deals arrays in the worst order for quick sort, and laughs." },
+    { id: "bigo", topic: "bigo", name: "The Exponential", icon: "📈", color: "#ffd23f", hp: 8, lesson: "l3-deep-big-o", lore: "It grows like 2ⁿ. Measure every operation, or it will outgrow you." },
+    { id: "final", topic: null, name: "The Final Exam", icon: "🎓", color: "#ff6b6b", hp: 15, requires: 5, lore: "Every topic of the course, fifteen hits, no mercy. Defeat five bosses to unlock it." }
   ];
   B.list = BOSSES;
   B.byId = {};

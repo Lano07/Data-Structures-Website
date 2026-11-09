@@ -107,6 +107,20 @@ var CL = typeof CL !== "undefined" ? CL : {};
     this.ta.addEventListener("blur", function () { self.el.classList.remove("focus"); });
     if (opts.readOnly) this.setReadOnly(true);
     this.setValue(opts.value || "");
+    watchSize(this);
+    // A click in the empty space below the last line (or anywhere the typing layer does not reach yet) still
+    // focuses the editor; below the code it puts the cursor at the end, as desktop editors do.
+    this.scroll.addEventListener("mousedown", function (e) {
+      if (e.target === self.ta || e.button !== 0) return;
+      if (e.target.closest && e.target.closest(".ed-gutter")) return;
+      self.fit();
+      e.preventDefault();
+      self.focus();
+      if (e.clientY >= self.ta.getBoundingClientRect().bottom - 4 && !self.ta.readOnly) {
+        var end = self.ta.value.length;
+        self.ta.setSelectionRange(end, end);
+      }
+    });
     if (CL.edInit) CL.edInit(this);
   }
   Editor.prototype.fire = function () {
@@ -139,17 +153,40 @@ var CL = typeof CL !== "undefined" ? CL : {};
     var h = n * lh() + 16;
     this.ta.style.height = h + "px";
     this.codeEl.style.height = h + "px";
-    var w = this.hl.parentNode.scrollWidth;
-    this.ta.style.width = Math.max(w, this.scroll.clientWidth - this.gutter.offsetWidth) + "px";
+    this.fit();
     this.drawMarks();
     if (this.afterRefresh) this.afterRefresh();
   };
+  // The typing layer (a transparent textarea) must cover the whole code area, or clicks land on the coloured copy
+  // underneath and the keyboard never reaches the editor. Its width comes from the page layout, which reads 0 while
+  // the editor is not on screen yet (pages build their editors before attaching them, and some sit in closed
+  // panels), so it is measured again whenever the editor's size changes. The stylesheet also keeps it at least as
+  // wide as the visible area.
+  Editor.prototype.fit = function () {
+    var vis = this.scroll.clientWidth - this.gutter.offsetWidth;
+    if (vis <= 0) return;
+    var w = Math.max(this.hl.parentNode.scrollWidth, vis);
+    if (Math.abs((this.fitW || 0) - w) < 1) return;
+    this.fitW = w;
+    this.ta.style.width = w + "px";
+  };
+  function watchSize(ed) {
+    if (!window.ResizeObserver) return;
+    var queued = false;
+    // one observer per editor, so a removed editor is garbage collected with its observer
+    new ResizeObserver(function () {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(function () { queued = false; ed.fit(); });
+    }).observe(ed.el);
+  }
   Editor.prototype.onKey = function (e) {
     var ta = this.ta;
     if (this.extKey && this.extKey(e)) return;
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
-      if (this.opts.onRun) this.opts.onRun();
+      if (e.shiftKey && this.opts.onSubmit) this.opts.onSubmit();
+      else if (this.opts.onRun) this.opts.onRun();
       return;
     }
     if (ta.readOnly) return;

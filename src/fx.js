@@ -1,11 +1,11 @@
-/* COMP 2611 Code Lab — effects: the animated background, synthesized sound, confetti, floating text and celebration overlays.
+/* COMP 2611 Code Lab — effects: synthesized sound, pixel confetti, floating text and celebration overlays.
    Everything here is decoration: it respects reduced motion, pauses when the tab is hidden, and never blocks the page. */
 (function (CL) {
   "use strict";
   var FX = CL.FX = {};
   var esc = CL.esc;
   function reduce() { return !!CL.reduceMotion; }
-  FX.PALETTE = ["#22d3ee", "#a78bfa", "#f472b6", "#34d399", "#fbbf24", "#60a5fa"];
+  FX.PALETTE = ["#ffd23f", "#5b8ff5", "#5fd38d", "#ff6b6b", "#f78fb3", "#4fd1c5"];
 
   // ---------------------------------------------------------------- where the last tap was (floating text starts there)
   var lastPt = { x: 0, y: 0, t: 0 };
@@ -100,11 +100,11 @@
       cx.save();
       cx.globalAlpha = Math.max(0, Math.min(1, p.life / 40));
       cx.translate(p.x, p.y);
-      cx.rotate(p.rot);
+      cx.rotate(Math.round(p.rot / (Math.PI / 2)) * (Math.PI / 2));
       cx.fillStyle = p.c;
-      if (p.shape === 0) cx.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2);
-      else if (p.shape === 1) { cx.beginPath(); cx.arc(0, 0, p.s / 3, 0, Math.PI * 2); cx.fill(); }
-      else { cx.beginPath(); cx.moveTo(0, -p.s / 2); cx.lineTo(p.s / 2, p.s / 2); cx.lineTo(-p.s / 2, p.s / 2); cx.closePath(); cx.fill(); }
+      // square pixels, two sizes
+      var z = p.shape === 0 ? 8 : 5;
+      cx.fillRect(-z / 2, -z / 2, z, z);
       cx.restore();
     });
     if (parts.length) raf = requestAnimationFrame(frame);
@@ -201,103 +201,4 @@
     requestAnimationFrame(step);
   };
 
-  // ---------------------------------------------------------------- shared SVG gradients (lab nodes, rings, the flame); colours come from CSS tokens
-  FX.defs = function () {
-    if (document.querySelector(".fx-defs")) return;
-    var v = function (id, a, b) { return '<linearGradient id="' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--' + a + ')"/><stop offset="1" style="stop-color:var(--' + b + ')"/></linearGradient>'; };
-    var d = document.createElement("div");
-    d.innerHTML = '<svg class="fx-defs" aria-hidden="true" focusable="false" width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden"><defs>' +
-      v("nGrad", "ng1", "ng2") + v("nGradHot", "ngh1", "ngh2") + v("nGradOn", "ngo1", "ngo2") + v("nGradOk", "ngk1", "ngk2") + v("nGradBad", "ngb1", "ngb2") +
-      '<linearGradient id="luG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22d3ee"/><stop offset=".5" stop-color="#a78bfa"/><stop offset="1" stop-color="#f472b6"/></linearGradient>' +
-      '<linearGradient id="hudG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22d3ee"/><stop offset=".55" stop-color="#a78bfa"/><stop offset="1" stop-color="#f472b6"/></linearGradient>' +
-      '<linearGradient id="flG" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#f97316"/><stop offset=".6" stop-color="#fbbf24"/><stop offset="1" stop-color="#fde68a"/></linearGradient>' +
-      "</defs></svg>";
-    document.body.appendChild(d.firstChild);
-  };
-
-  // ---------------------------------------------------------------- the living background: drifting data nodes joined by glowing edges
-  FX.startBackground = function () {
-    FX.defs();
-    if (document.querySelector(".fx-bg")) return;
-    var wrap = document.createElement("div");
-    wrap.className = "fx-bg";
-    wrap.setAttribute("aria-hidden", "true");
-    wrap.innerHTML = '<div class="fx-aurora a1"></div><div class="fx-aurora a2"></div><div class="fx-aurora a3"></div><div class="fx-grid"></div><canvas></canvas>';
-    document.body.insertBefore(wrap, document.body.firstChild);
-    var c = wrap.querySelector("canvas"), g = c.getContext("2d"), W = 0, H = 0, nodes = [], mouse = { x: -999, y: -999 }, run = 0, last = 0;
-    function light() { return document.documentElement.getAttribute("data-theme") === "light" || (!document.documentElement.getAttribute("data-theme") && window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches); }
-    function resize() {
-      var dpr = Math.min(window.devicePixelRatio || 1, 1.5);
-      W = window.innerWidth; H = window.innerHeight;
-      c.width = W * dpr; c.height = H * dpr;
-      c.style.width = W + "px"; c.style.height = H + "px";
-      g.setTransform(dpr, 0, 0, dpr, 0, 0);
-      var want = Math.round(Math.min(70, Math.max(22, W * H / 26000)));
-      while (nodes.length < want) nodes.push(mk());
-      nodes.length = want;
-      if (!run) draw(0);
-    }
-    function mk() {
-      return { x: Math.random() * (W || 1200), y: Math.random() * (H || 800), vx: (Math.random() - 0.5) * 0.22, vy: (Math.random() - 0.5) * 0.22,
-        r: 1.2 + Math.random() * 2.2, c: FX.PALETTE[Math.floor(Math.random() * 5)], p: Math.random() * Math.PI * 2 };
-    }
-    function draw(t) {
-      g.clearRect(0, 0, W, H);
-      var lt = light(), maxD = Math.min(170, Math.max(110, W / 9)), i, j;
-      for (i = 0; i < nodes.length; i++) {
-        var a = nodes[i];
-        for (j = i + 1; j < nodes.length; j++) {
-          var b = nodes[j], dx = a.x - b.x, dy = a.y - b.y, d = dx * dx + dy * dy;
-          if (d < maxD * maxD) {
-            var k = 1 - Math.sqrt(d) / maxD;
-            g.strokeStyle = lt ? "rgba(99,102,241," + (k * 0.16) + ")" : "rgba(140,160,255," + (k * 0.2) + ")";
-            g.lineWidth = k * 1.2;
-            g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke();
-          }
-        }
-        var mx = a.x - mouse.x, my = a.y - mouse.y, md = mx * mx + my * my;
-        if (md < 200 * 200) {
-          var mk2 = 1 - Math.sqrt(md) / 200;
-          g.strokeStyle = lt ? "rgba(168,85,247," + (mk2 * 0.35) + ")" : "rgba(34,211,238," + (mk2 * 0.45) + ")";
-          g.lineWidth = mk2 * 1.4;
-          g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(mouse.x, mouse.y); g.stroke();
-        }
-      }
-      for (i = 0; i < nodes.length; i++) {
-        var n = nodes[i], tw = 0.65 + 0.35 * Math.sin(t / 900 + n.p);
-        g.globalAlpha = (lt ? 0.5 : 0.85) * tw;
-        g.fillStyle = n.c;
-        g.shadowColor = n.c;
-        g.shadowBlur = lt ? 0 : 10;
-        g.beginPath(); g.arc(n.x, n.y, n.r, 0, Math.PI * 2); g.fill();
-      }
-      g.globalAlpha = 1;
-      g.shadowBlur = 0;
-    }
-    function tick(t) {
-      run = 0;
-      if (document.hidden || reduce()) return;
-      var dt = Math.min(48, t - (last || t));
-      last = t;
-      for (var i = 0; i < nodes.length; i++) {
-        var n = nodes[i];
-        n.x += n.vx * dt / 16; n.y += n.vy * dt / 16;
-        var mx = mouse.x - n.x, my = mouse.y - n.y, md = Math.sqrt(mx * mx + my * my);
-        if (md < 160 && md > 1) { n.x -= mx / md * 0.25; n.y -= my / md * 0.25; }
-        if (n.x < -20) n.x = W + 20; else if (n.x > W + 20) n.x = -20;
-        if (n.y < -20) n.y = H + 20; else if (n.y > H + 20) n.y = -20;
-      }
-      draw(t);
-      run = requestAnimationFrame(tick);
-    }
-    function start() { if (!run && !document.hidden && !reduce()) { last = 0; run = requestAnimationFrame(tick); } else if (reduce()) draw(0); }
-    window.addEventListener("resize", resize);
-    window.addEventListener("pointermove", function (e) { mouse.x = e.clientX; mouse.y = e.clientY; }, { passive: true });
-    document.addEventListener("pointerleave", function () { mouse.x = mouse.y = -999; });
-    document.addEventListener("visibilitychange", start);
-    // theme and motion settings change attributes on <html>: redraw (and start or stop) when they do
-    if (window.MutationObserver) new MutationObserver(function () { start(); draw(last || 0); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "class"] });
-    resize();
-    start();
-  };
 })(CL);

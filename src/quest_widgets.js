@@ -921,56 +921,43 @@
     if (!e) { host.appendChild(h("p", "muted", "This challenge is not available.")); ctx.ok(""); return; }
     var store = CL.store, st = store.ex[e.id] = store.ex[e.id] || {};
     var wrap = h("div", "qw qw-code");
-    var head = h("div", "qw-codeh", '<b>' + esc(e.title) + '</b><span class="small muted">A real coding challenge: write it, then run the tests. It counts in the Code Gym too.</span>');
+    var head = h("div", "qw-codeh", '<b>' + esc(e.title) + '</b><span class="small muted">A real coding challenge: write it, press ▶ Run to try it in the terminal, then ✓ Submit to run the tests. It counts in the Code Gym too.</span>');
     wrap.appendChild(head);
     var pr = h("div", "qw-codep");
     pr.appendChild(CL.renderMd(e.prompt));
     wrap.appendChild(pr);
-    var ed = new CL.Editor(wrap, { value: st.code || e.code, label: "Your code for " + e.title, tools: true, onRun: function () { run(); } });
-    ed.onChange(function (v) { st.code = v; CL.save(); });
-    var bar = h("div", "qw-row", '<button type="button" class="px-btn primary" data-a="run">▶ Run the tests</button><button type="button" class="px-btn small ghost" data-a="hint">Hint</button><button type="button" class="px-btn small ghost" data-a="sol" hidden>Show the model solution</button><a class="px-btn small ghost" href="#ex-' + esc(e.id) + '">Open in the Code Gym</a>');
-    wrap.appendChild(bar);
-    var res = h("div", "qw-tests");
-    wrap.appendChild(res);
     host.appendChild(wrap);
-    var runner = CL.Runner.create(), fails = 0, hints = 0;
-    ctx.onDestroy(function () { runner.destroy(); });
-    function norm2(s) { return String(s || "").replace(/\r/g, "").split("\n").map(function (l) { return l.replace(/\s+$/, ""); }).join("\n").replace(/\n+$/, ""); }
-    function run() {
-      var code = ed.getValue();
-      res.innerHTML = '<div class="small muted"><i class="t-spin"></i> Running ' + e.tests.length + " tests…</div>";
-      var jobs = e.tests.map(function (t) { return { src: CL.assemble(e, code, t), opts: { stdin: t.stdin || "", maxSteps: 2000000 } }; }), got = [];
-      runner.batch(jobs, {
-        onResult: function (i, r) { got[i] = r; if (i === 0 && !r.compiled) { runner.stop(true); show(); } },
-        onDone: show
-      });
-      function show() {
-        if (show.done) return;
-        show.done = true;
-        res.innerHTML = "";
-        if (got[0] && !got[0].compiled) { fails++; res.appendChild(h("div", "errbox", "<b>It does not compile" + (got[0].err.line ? " (line " + got[0].err.line + ")" : "") + ".</b> " + esc(got[0].err.msg) + (got[0].err.hint ? '<div class="hint">' + esc(got[0].err.hint) + "</div>" : ""))); if (got[0].err.line) ed.mark(got[0].err.line, "err", got[0].err.msg); ctx.miss("Fix the compile error first."); after(); return; }
-        var pass = 0;
-        e.tests.forEach(function (t, i) {
-          var r = got[i], ok = r && r.compiled && !r.err && norm2(r.out) === norm2(t.expect);
-          if (ok) pass++;
-          var row = h("div", "qw-test " + (ok ? "pass" : "fail"), (ok ? "✓ " : "✗ ") + esc(t.hidden ? "Hidden test: " + t.name : t.name));
-          if (!ok && !t.hidden) row.appendChild(h("div", "qw-test-d", "Expected <code>" + esc((t.expect || "").slice(0, 160)) + "</code>, got <code>" + esc(((r && r.out) || (r && r.err ? r.err.msg : "")).slice(0, 160)) + "</code>"));
-          res.appendChild(row);
-        });
-        if (pass === e.tests.length) {
-          if (!st.passed) { st.passed = true; CL.save(); CL.Progress.log("x"); }
+    var fails = 0, hints = 0;
+    // the same workspace as the Code Gym: ▶ Run tries your code in the terminal (free), ✓ Submit runs the tests
+    var ws = CL.Workspace(wrap, e, {
+      compact: true,
+      code: st.code || e.code,
+      onCode: function (v) { st.code = v; CL.save(); },
+      main: st.tryMain,
+      onMain: function (v) { st.tryMain = v; CL.save(); },
+      onReset: function () { delete st.code; CL.save(); },
+      onResults: function (info) {
+        st.tried = true;
+        if (info.compileErr) { fails++; ctx.miss("Fix the compile error first: the Tests tab shows the line."); after(); return; }
+        if (info.all) {
+          if (!st.passed) { st.passed = true; CL.Progress.log("x"); }
+          CL.save();
           bar.querySelector('[data-a="sol"]').hidden = false;
-          ctx.ok("All " + pass + " tests pass. " + (e.explain ? CL.inline(e.explain.split("\n")[0]) : ""));
-        } else { fails++; ctx.miss(pass + " of " + e.tests.length + " tests pass. Read the failing test, fix the code, and run again."); after(); }
+          ctx.ok("All " + info.pass + " tests pass. " + (e.explain ? CL.inline(e.explain.split("\n")[0]) : ""));
+        } else { CL.save(); fails++; ctx.miss(info.pass + " of " + info.total + " tests pass. Open a failing test (▶ Run this test shows it in the terminal), fix the code, and submit again."); after(); }
       }
-    }
+    });
+    ctx.onDestroy(function () { ws.destroy(); });
+    var bar = h("div", "qw-row", '<button type="button" class="px-btn small ghost" data-a="hint">Hint</button><button type="button" class="px-btn small ghost" data-a="sol" hidden>Show the model solution</button><a class="px-btn small ghost" href="#ex-' + esc(e.id) + '">Open in the Code Gym</a>');
+    wrap.appendChild(bar);
+    var hintsBox = h("div", "qw-hints");
+    wrap.appendChild(hintsBox);
     function after() { if (fails >= 2) bar.querySelector('[data-a="sol"]').hidden = false; }
     bar.addEventListener("click", function (ev) {
       var x = ev.target.closest("[data-a]");
       if (!x) return;
       var a = x.getAttribute("data-a");
-      if (a === "run") run();
-      if (a === "hint") { if (hints < e.hints.length) { var hb = h("div", "qw-hint"); hb.appendChild(CL.renderMd("**Hint " + (hints + 1) + ".** " + e.hints[hints])); res.parentNode.insertBefore(hb, res); hints++; } if (hints >= e.hints.length) x.disabled = true; }
+      if (a === "hint") { if (hints < e.hints.length) { var hb = h("div", "qw-hint"); hb.appendChild(CL.renderMd("**Hint " + (hints + 1) + ".** " + e.hints[hints])); hintsBox.appendChild(hb); hints++; } if (hints >= e.hints.length) x.disabled = true; }
       if (a === "sol") { var sb = h("div", "qw-sol"); sb.appendChild(h("div", "ql-h", "Model solution")); sb.appendChild(CL.codeBlock(e.solutionPart || e.solution)); wrap.appendChild(sb); x.hidden = true; if (!wrap.classList.contains("passed")) { wrap.classList.add("passed"); ctx.ok("Study the model solution, then try writing it again from memory in the Code Gym."); } }
     });
   };

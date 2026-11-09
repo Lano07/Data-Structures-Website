@@ -259,30 +259,33 @@
   }
 
   // ---------------------------------------------------------------- home
+  // the scene that goes with each part of the course (the Quest chapter on the same topic)
+  var PART_SCENE = { a: "office", b: "harbor", c: "andes", d: "chichen", e: "panama", f: "ceiba", g: "seville", h: "giza", i: "bletchley", j: "bridges", k: "census", l: "pitch", n: "vault", m: "night" };
   function pageHome() {
     var p = page("home-page");
     setTutor("home", "Home page", progressText);
     var nl = nextLesson();
     var started = Object.keys(store.done).length > 0;
     var nGames = CL.Arcade ? CL.Arcade.count : 0;
-    p.innerHTML = '<section class="nx-hero"><div class="nx-copy"><div class="eyebrow">COMP 2611 · Data Structures · C++</div>' +
-      '<h1 class="nx-h1"><span>Learn it.</span> <span>See it.</span> <span class="nx-g">Level up.</span></h1>' +
-      '<p class="nx-p">Every data structure in the course, alive on screen. Run real C++ in the page, watch every pointer move, predict each step in the labs, and race the clock in the Arcade. Everything follows the COMP 2611 lecture notes and course outline.</p>' +
-      '<div class="btns"><a class="btn primary glow nx-cta" href="#l-' + nl.id + '">' + (started ? "▶ Continue: " + esc(D.lessons[nl.id].title) : "▶ Start with lesson A1") + '</a><a class="btn arcade-btn" href="#arcade">🕹️ Play the Arcade</a><a class="btn" href="#lectures">Lecture by lecture</a></div>' +
-      '<div class="nx-stats">' + [[lessonList.length, "lessons"], [D.labs.length, "visual labs"], [nGames, "arcade games"], [D.exercises.length, "coding exercises"]].map(function (x) { return "<div><b>" + x[0] + "</b><span>" + x[1] + "</span></div>"; }).join("") + "</div></div>" +
-      '<div class="nx-morph" role="img" aria-label="Animation: fifteen values turning into a linked list, a binary search tree, a max-heap array, a graph, a hash table and a sorted array"></div></section>';
-    var morph = CL.HeroMorph ? CL.HeroMorph(p.querySelector(".nx-morph")) : null;
-    // the story campaign
-    if (CL.Quest && CL.QArt && CL.Quest.worlds().length) {
-      var qs = CL.Quest.stats(), qn = CL.Quest.nextLevel(), qc = h("section", "home-quest px-panel");
-      qc.innerHTML = '<img class="hq-scene" src="' + CL.QArt.scene("harbor") + '" alt="" aria-hidden="true"><div class="hq-in"><div class="hq-cast">' + ["you", "marco", "pip", "prof"].map(function (w) { return CL.QArt.img(w, { scale: 3, pal: w === "you" ? CL.QArt.youPal((store.quest || {}).look) : null }); }).join("") + "</div>" +
-        '<div class="hq-t"><span class="px-kicker">New · Quest mode</span><h2 class="px-h">The Lost Index</h2><p>A 16-bit adventure through the whole course: ' + CL.Quest.worlds().length + " chapters in real places in history, " + qs.total + " levels where you learn by doing: click the traversal, rewire the pointers, sift the heap, write the code.</p></div>" +
-        '<div class="hq-acts"><a class="px-btn primary big" href="' + (qn && qs.levels ? "#quest-" + qn.id : "#quest") + '">' + (qs.levels ? "Continue the quest ▶" : "Start the adventure ▶") + '</a><span class="small">' + qs.levels + " / " + qs.total + " levels · " + qs.relics + " relics</span></div></div>";
-      p.appendChild(qc);
-    }
-    if (CL.Game) p.appendChild(CL.Game.homeCard("#l-" + nl.id, started ? "Continue: " + D.lessons[nl.id].title : "Start lesson A1"));
+    var A = CL.QArt, Q = CL.Quest && A && CL.Quest.worlds().length ? CL.Quest : null;
+    var qs = Q ? Q.stats() : null, qn = Q ? Q.nextLevel() : null, me = Q ? Q.you() : { name: "Explorer" };
+    var lessonHref = "#l-" + nl.id, questHref = qn && qs.levels ? "#quest-" + qn.id : "#quest";
+
+    // the banner: a pixel night over the water, the course's name, and the ways in
+    var hero = h("section", "hm-hero");
+    hero.innerHTML = (A ? '<img class="hm-sky" src="' + A.panorama("night") + '" alt="" aria-hidden="true">' : "") +
+      '<div class="hm-hero-in"><div class="eyebrow">COMP 2611 · Data Structures · C++</div><h1 class="hm-h1">Code Lab</h1>' +
+      '<p class="hm-lede">Every data structure in the course, learned by doing: a story campaign through history, labs that take your own values, real C++ in a terminal, and exam practice that follows the COMP 2611 lecture notes and course outline.</p>' +
+      '<div class="btns">' + (Q ? '<a class="btn primary hm-cta" href="' + questHref + '">▶ ' + (qs.levels ? "Continue the quest" : "Start the adventure") + "</a>" : "") +
+      '<a class="btn blue hm-cta" href="' + lessonHref + '">' + (started ? "Continue lessons" : "Start lesson A1") + '</a><a class="btn hm-cta" href="#arcade">🕹️ Arcade</a></div></div>';
+    p.appendChild(hero);
+
+    var grid = h("div", "hm-grid"), main = h("div", "hm-main"), side = h("aside", "hm-side");
+    grid.appendChild(main);
+    grid.appendChild(side);
+    p.appendChild(grid);
     var demo = null;
-    current = { destroy: function () { if (demo) demo.destroy(); if (morph) morph.destroy(); } };
+    current = { destroy: function () { if (demo) demo.destroy(); } };
 
     // count calendar days in the viewer's own time zone; hide each card once its exam is over
     var now = new Date(), d0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -295,7 +298,7 @@
           var href = t.lesson ? "#l-" + t.lesson : "#l-" + D.parts.filter(function (pp) { return pp.id === t.part; })[0].lessons[0];
           return '<a href="' + href + '">' + esc(t.t) + " <span>" + t.n + " Q" + "</span></a>";
         }).join("") + "</div>";
-      p.appendChild(ex);
+      main.appendChild(ex);
     }
     var fx = LN.examDate(), fdays = daysTo(fx), goal = store.goal || {};
     if (fdays >= 0 && now - fx <= (goal.examMin || 120) * 60000) {
@@ -303,57 +306,78 @@
       fc.innerHTML = "<h2>Your final exam " + (fdays === 0 ? "is today" : fdays === 1 ? "is tomorrow" : "is in " + fdays + " days") + '</h2><div class="when">' + esc(fx.toLocaleDateString([], { weekday: "long", day: "numeric", month: "long" })) + " at " + esc(fx.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })) + ", " + Math.round((goal.examMin || 120) / 60 * 10) / 10 + " hours. It covers the whole course. " +
         '<a href="#progress">Change the date</a> if it moves.</div>' +
         '<div class="exam-topics"><a href="#path-final">Week-by-week revision plan</a><a href="#diag">Find your weak spots (diagnostic)</a><a href="#exam">Whole-course mock exam</a><a href="#written">Written answers</a><a href="#exam-review">Exam technique</a></div>';
-      p.appendChild(fc);
+      main.appendChild(fc);
     }
-    p.appendChild(todayCard());
+
+    // jump back in: the Quest chapter and the lesson you are on
+    main.appendChild(h("h2", "hm-h", "Jump back in"));
+    function jump(href, art, kicker, title, sub, done, total, btn, btnCls) {
+      var a = h("a", "hm-card hm-jump");
+      a.href = href;
+      a.innerHTML = (art ? '<img class="hm-jump-art" src="' + art + '" alt="" aria-hidden="true">' : "") + '<div class="hm-jump-t"><span class="hm-k">' + kicker + '</span><b class="hm-jump-h">' + esc(title) + '</b><span class="hm-jump-s">' + esc(sub) + "</span>" +
+        '<div class="hm-prog"><div class="xpbar"><i style="width:' + Math.round(100 * done / Math.max(1, total)) + '%"></i></div><span>' + done + " / " + total + '</span></div></div><span class="btn ' + btnCls + '">' + btn + "</span>";
+      return a;
+    }
+    if (Q) {
+      var ws = Q.worlds(), w = qn ? qn.world : ws[ws.length - 1], wp = Q.worldProgress(w);
+      main.appendChild(jump(questHref, A.scene(w.scene), "Quest · " + (w.index ? "Chapter " + w.index : "Prologue") + " · " + esc(w.place), qn ? qn.title : "The Lost Index is complete", w.title + (qn ? " · level " + (qn.index + 1) + " of " + w.levels.length : ""), wp.done, wp.total, qs.levels ? "Continue" : "Start", "primary"));
+    }
+    var part = nl.part, pr = partProgress(part);
+    main.appendChild(jump(lessonHref, A ? A.scene(PART_SCENE[part.id] || "office") : "", "Lessons · Part " + part.id.toUpperCase() + " · " + esc(part.lectures), nl.num + " " + D.lessons[nl.id].title, part.title, pr.done, pr.total, started ? "Continue" : "Start", "blue"));
+    main.appendChild(todayCard());
     var tm = TR.topics.map(function (t) { return { t: t, m: trainMastery(t.id) }; }).filter(function (x) { return x.m && x.m.recent >= 3; });
     if (tm.length || store.exams.length) {
       tm.sort(function (a, b2) { return a.m.pct - b2.m.pct; });
       var lastEx = store.exams[0], pc = h("section", "home-prac");
       pc.innerHTML = '<div><div class="pl">Your practice</div>' + (lastEx ? "<div>Last mock exam: <b>" + lastEx.score + "/" + lastEx.max + "</b> (" + Math.round(100 * lastEx.score / lastEx.max) + "%) on " + esc(lastEx.title) + "</div>" : "") +
         (tm.length ? "<div>Weakest topic right now: <b>" + esc(tm[0].t.title) + "</b> (" + tm[0].m.pct + "% of your last " + tm[0].m.recent + ")" + (tm.length > 1 ? ". Strongest: " + esc(tm[tm.length - 1].t.title) + " (" + tm[tm.length - 1].m.pct + "%)" : "") + "</div>" : "") +
-        "" + '</div><div class="btns">' +
-        (tm.length ? '<a class="btn primary" href="#train" data-weak="' + tm[0].t.id + '">Practise ' + esc(lcTitle(tm[0].t.title)) + "</a>" : "") + '<a class="btn" href="#exam">Mock exams</a></div>';
+        '</div><div class="btns">' + (tm.length ? '<a class="btn primary" href="#train" data-weak="' + tm[0].t.id + '">Practise ' + esc(lcTitle(tm[0].t.title)) + "</a>" : "") + '<a class="btn" href="#exam">Mock exams</a></div>';
       var wl = pc.querySelector("[data-weak]");
       if (wl) wl.addEventListener("click", function () { store.trainPref.mode = wl.getAttribute("data-weak"); save(); });
-      p.appendChild(pc);
+      main.appendChild(pc);
     }
+
+    // ways to learn
+    main.appendChild(h("h2", "hm-h", "Ways to learn and practise"));
+    var modes = [["#quest", "⚔️", "Quest", "A story campaign through history: every level teaches by doing, from pointers to graphs."],
+      ["#learn", "📘", "Lessons", lessonList.length + " lessons with code you can run, edit and step through, plus quick checks and puzzles."],
+      ["#lab", "🔬", "Visual Labs", "Type your own values and watch trees, heaps, hash tables, graphs and sorts change step by step."],
+      ["#gym", "💻", "Code Gym", D.exercises.length + " exercises: write the functions the exams ask for, run them in a terminal, then submit."],
+      ["#arcade", "🕹️", "Arcade", nGames + " timed games: big-O, traversals, BST insertion, heapify, hashing, Dijkstra and spanning trees."],
+      ["#boss", "🐉", "Boss Battles", "One boss per topic, fought with fresh exam-style questions, then the Final Exam."],
+      ["#train", "⚡", "Practice", "Unlimited exam-style questions with worked solutions, flashcards and timed mock exams."],
+      ["#play", "🖥️", "Playground", "A real C++ editor with projects, files from your computer, and a terminal."]];
+    main.appendChild(h("div", "hm-modes", modes.map(function (m) { return '<a class="hm-card hm-mode" href="' + m[0] + '"><i aria-hidden="true">' + m[1] + "</i><b>" + m[2] + "</b><span>" + m[3] + "</span></a>"; }).join("") +
+      '<a class="hm-card hm-mode tutor-only" href="#home" data-tutor><i aria-hidden="true">🤖</i><b>Your tutor</b><span>Ask Claude about any page, step or error, and get hints on exercises.</span></a>'));
+    var tl = main.querySelector("[data-tutor]");
+    if (tl) tl.addEventListener("click", function (e) { e.preventDefault(); if (Tu) Tu.open(); });
+
     // the memory visualizer, stepping through a real program
-    var feat = h("section", "nx-feature");
-    feat.innerHTML = '<div class="nx-fcopy"><div class="eyebrow">Memory visualizer</div><h2>See what your code <em>does to memory</em>.</h2><p>Step through real C++ one line at a time. Local variables live on the stack, objects made with <code>new</code> live on the heap, and every pointer is an arrow you can follow.</p><div class="btns"><a class="btn" href="#lab-memory">Open the Memory Visualizer</a><a class="btn ghost" href="#play">Write your own in the Playground</a></div></div><div class="hero-demo"></div>';
-    p.appendChild(feat);
+    var feat = h("section", "hm-card hm-feature");
+    feat.innerHTML = '<div class="hm-fcopy"><div class="eyebrow">Memory visualizer</div><h2>See what your code does to memory.</h2><p>Step through real C++ one line at a time. Local variables live on the stack, objects made with <code>new</code> live on the heap, and every pointer is an arrow you can follow.</p><div class="btns"><a class="btn blue" href="#lab-memory">Open the Memory Visualizer</a><a class="btn ghost" href="#play">Write your own in the Playground</a></div></div><div class="hero-demo"></div>';
+    main.appendChild(feat);
     demo = new CL.Visualizer(feat.querySelector(".hero-demo"), { compact: true });
     demo.load(D.heroCode);
     var firstCall = 0;
     demo.snaps.forEach(function (s, i) { if (!firstCall && s.kind === "step" && s.heap.length >= 3) firstCall = i; });
     if (firstCall) demo.go(firstCall);
 
-    p.appendChild(h("div", "sec-h", "<h2>Ways to learn and practise</h2>"));
-    p.appendChild(h("div", "how nx-modes", '<a href="#learn" style="--gc:#22d3ee"><i aria-hidden="true">📘</i><b>Learn</b><span>Short lessons with code you can run, edit and step through, plus quick checks, puzzles and predictions.</span></a>' +
-      '<a href="#lab" style="--gc:#a78bfa"><i aria-hidden="true">🔬</i><b>Visual Labs</b><span>Type your own values and watch trees, heaps, hash tables, graphs, matrices and sorts change step by step. Switch to <em>Your turn</em> to predict each step.</span></a>' +
-      '<a href="#arcade" style="--gc:#f472b6"><i aria-hidden="true">🕹️</i><b>Arcade</b><span>' + nGames + ' timed games: big-O, traversals, BST insertion, heapify, hashing, Dijkstra and spanning trees. Beat your best.</span></a>' +
-      '<a href="#boss" style="--gc:#f43f5e"><i aria-hidden="true">⚔️</i><b>Boss Battles</b><span>One boss per topic, fought with fresh exam-style questions. Win to unlock holographic Algorithm Cards, then face the Final Exam.</span></a>' +
-      '<a href="#train" style="--gc:#fbbf24"><i aria-hidden="true">⚡</i><b>Practice</b><span>Unlimited exam-style questions with worked solutions, flashcards, written answers and timed mock exams marked by topic.</span></a>' +
-      '<a href="#gym" style="--gc:#34d399"><i aria-hidden="true">💻</i><b>Code Gym</b><span>Write the functions the exams ask for. Tests tell you exactly what is wrong.</span></a>' +
-      '<a href="#trophies" style="--gc:#60a5fa"><i aria-hidden="true">🏆</i><b>Trophy Room</b><span>Your level, rank, daily quests and achievements. Every answer on the site earns XP.</span></a>' +
-      '<a href="#home" class="tutor-only" data-tutor style="--gc:#a78bfa"><i aria-hidden="true">🤖</i><b>Your tutor</b><span>Ask Claude about any page, step or error. Get hints on exercises and feedback on your own explanations.</span></a>'));
-    var tl = p.querySelector("[data-tutor]");
-    if (tl) tl.addEventListener("click", function (e) { e.preventDefault(); if (Tu) Tu.open(); });
-
-    var sh = h("div", "sec-h", "<h2>Your quest map</h2><span class='muted small'>" + lessonList.length + " lessons · " + D.exercises.length + " exercise" + (D.exercises.length === 1 ? "" : "s") + " · " + D.labs.length + " labs</span>");
-    p.appendChild(sh);
-    var map = h("div", "map quest-map");
-    var nextPart = nl.part ? nl.part.id : "";
-    D.parts.forEach(function (pt, ix) {
-      var pr = partProgress(pt);
-      if (!pr.total) return;
-      var pct = Math.round(100 * pr.done / pr.total), a = h("a", "part" + (pct === 100 ? " cleared" : "") + (pt.id === nextPart ? " now" : "") + (pt.supp ? " supp" : ""));
+    // the course, part by part
+    main.appendChild(h("div", "sec-h", "<h2 class='hm-h'>The course, part by part</h2><span class='muted small'>" + lessonList.length + " lessons · " + D.exercises.length + " exercises · " + D.labs.length + " labs</span>"));
+    var map = h("div", "hm-map"), nextPart = nl.part ? nl.part.id : "";
+    D.parts.forEach(function (pt) {
+      var r = partProgress(pt);
+      if (!r.total) return;
+      var pct = Math.round(100 * r.done / r.total), a = h("a", "hm-card hm-part" + (pct === 100 ? " cleared" : "") + (pt.id === nextPart ? " now" : ""));
       a.href = "#l-" + pt.lessons[0];
-      a.style.setProperty("--p", pct);
-      a.innerHTML = '<div class="pq-ring" aria-hidden="true"><b>' + pt.id.toUpperCase() + '</b></div><div class="pq-body"><div class="pl"><b>Part ' + pt.id.toUpperCase() + "</b><span>" + esc(pt.lectures) + "</span>" + (pct === 100 ? '<span class="chip ok">cleared</span>' : pt.id === nextPart ? '<span class="chip acc">you are here</span>' : "") + "</div><h3>" + esc(pt.title) + "</h3><p>" + esc(pt.blurb) + '</p><div class="small muted">' + pr.done + " of " + pr.total + " lessons · " + pct + "%</div></div>";
+      a.innerHTML = '<span class="hm-part-id" aria-hidden="true">' + pt.id.toUpperCase() + '</span><div class="hm-part-b"><div class="hm-part-k">Part ' + pt.id.toUpperCase() + " · " + esc(pt.lectures) + (pct === 100 ? ' · <span class="ok">cleared</span>' : pt.id === nextPart ? ' · <span class="now">you are here</span>' : "") + "</div><b>" + esc(pt.title) + "</b><p>" + esc(pt.blurb) + '</p><div class="hm-prog"><div class="xpbar"><i style="width:' + pct + '%"></i></div><span>' + r.done + " / " + r.total + "</span></div></div>";
       map.appendChild(a);
     });
-    p.appendChild(map);
+    main.appendChild(map);
+
+    // the side panel: you, your numbers, today's quests, more to play
+    if (CL.Game) CL.Game.dashCard({ name: me.name, avatar: A ? A.img("you", { scale: 3, pal: me.pal }) : "" }).forEach(function (el) { side.appendChild(el); });
+    side.appendChild(h("section", "hm-card hm-links", '<h2 class="hm-h2">More to play</h2><a href="#boss"><span aria-hidden="true">🐉</span>Boss Battles</a><a href="#collection"><span aria-hidden="true">🃏</span>Algorithm Cards</a><a href="#exam"><span aria-hidden="true">📝</span>Mock exams</a><a href="#journal"><span aria-hidden="true">📔</span>Quest journal</a><a href="#lectures"><span aria-hidden="true">🗂️</span>Lecture by lecture</a>'));
   }
 
   // ---------------------------------------------------------------- learn index
@@ -991,8 +1015,7 @@
     function seg(name, opts, cur) { return '<div class="seg" role="group" aria-label="' + esc(name) + '">' + opts.map(function (o) { return '<button type="button" data-pref="' + name + '" data-v="' + o[0] + '"' + (String(cur) === String(o[0]) ? ' class="on" aria-pressed="true"' : ' aria-pressed="false"') + ">" + esc(o[1]) + "</button>"; }).join("") + "</div>"; }
     var look = h("section", "pf-sec");
     look.innerHTML = "<h2>Appearance</h2>" +
-      '<div class="pf-row"><div><b>Style</b><div class="small muted">16-bit pixel art, or the glowing neon look.</div></div>' + seg("skin", [["pixel", "16-bit"], ["neon", "Neon"]], P.skin || "pixel") + "</div>" +
-      '<div class="pf-row"><div><b>Theme</b><div class="small muted">System follows your device. In 16-bit style, light is parchment.</div></div>' + seg("theme", [["system", "System"], ["light", "Light"], ["dark", "Dark"]], P.theme) + "</div>" +
+      '<div class="pf-row"><div><b>Theme</b><div class="small muted">System follows your device. Dark is a pixel night; light is daylight.</div></div>' + seg("theme", [["system", "System"], ["light", "Light"], ["dark", "Dark"]], P.theme) + "</div>" +
       '<div class="pf-row"><div><b>Text size</b><div class="small muted">Code, lessons and labs all scale together.</div></div>' + seg("size", CL.TEXT_SIZES.map(function (v, i) { return [v, ["Small", "Normal", "Large", "Larger", "Largest"][i]]; }), P.size) + "</div>" +
       '<div class="pf-row"><div><b>Motion</b><div class="small muted">Reduce turns off animations and smooth scrolling.</div></div>' + seg("motion", [["system", "System"], ["reduce", "Reduce"]], P.motion) + "</div>";
     p.appendChild(look);
@@ -2190,199 +2213,38 @@
       ex2.appendChild(CL.renderMd(e.explain, mdHooks({ noRun: true })));
       left.appendChild(ex2);
     }
+    // the workspace: your code, ▶ Run (in the terminal, with main.cpp), ✓ Submit (every test), and the console
     var right = h("div", "ex-work");
-    var ed = new CL.Editor(right, { value: st.code || e.code, label: "Your code for " + e.title, tools: true, onRun: function () { runTests(); } });
-    ed.onChange(function (v) { var s = store.ex[id] = store.ex[id] || {}; s.code = v; save(); });
-    var bar = h("div", "btns");
-    bar.innerHTML = '<button type="button" class="btn primary" data-a="run">Run the tests</button><span class="small muted">or press Ctrl + Enter</span><button type="button" class="btn ghost small" data-a="reset" style="margin-left:auto">Start again</button>';
-    right.appendChild(bar);
-    var results = h("div", "tests");
-    right.appendChild(results);
-    var runBtn = bar.querySelector('[data-a="run"]');
-    bar.addEventListener("click", function (ev) {
-      var b = ev.target.closest("button");
-      if (!b) return;
-      if (b.getAttribute("data-a") === "run") runTests();
-      if (b.getAttribute("data-a") === "reset") {
-        if (b.dataset.armed) { ed.setValue(e.code); ed.clearMarks(); results.innerHTML = ""; delete b.dataset.armed; b.textContent = "Start again"; var s = store.ex[id] || {}; delete s.code; save(); }
-        else { b.dataset.armed = "1"; b.textContent = "Click again to erase your code"; }
-      }
-    });
-    // the tests run in the background (a worker), one after another, so the page stays responsive; Stop ends them
-    var gymRunner = CL.Runner.create(), running = false;
-    function runTests() {
-      var code = ed.getValue();
-      if (running) gymRunner.stop(true);
-      ed.clearMarks();
-      results.innerHTML = "";
-      var userLines = code.replace(/\s+$/, "").split("\n").length;
-      var jobs = [], plan = [];
-      e.tests.forEach(function (t) {
-        plan.push({ t: t, at: jobs.length });
-        jobs.push({ src: CL.assemble(e, code, t), opts: { stdin: t.stdin || "", maxSteps: 2000000 } });
-      });
-      // random tests: new values every run; the expected output comes from the model solution on the same values
-      if (e.random && e.solution) {
-        e.random.forEach(function (rt) {
-          for (var k = 0; k < 2; k++) {
-            var tt = { name: "Random: " + rt.name, main: CL.expandRandom(rt.tpl), random: true };
-            plan.push({ t: tt, at: jobs.length + 1, ref: jobs.length });
-            jobs.push({ src: CL.assemble(e, e.solution, tt), opts: { maxSteps: 2000000 } });
-            jobs.push({ src: CL.assemble(e, code, tt), opts: { maxSteps: 2000000 } });
-          }
-        });
-      }
-      var got = new Array(jobs.length), nTests = plan.length;
-      var prog = h("div", "gym-prog", '<div class="gym-prog-t"><i class="t-spin" aria-hidden="true"></i> <span>Running test 1 of ' + nTests + '…</span></div><div class="xpbar"><i style="width:0%"></i></div><button type="button" class="btn small ghost" data-stop>Stop</button>');
-      results.appendChild(prog);
-      prog.querySelector("[data-stop]").addEventListener("click", function () { gymRunner.stop(true); running = false; prog.innerHTML = '<span class="muted">Stopped. Press Run the tests to try again.</span>'; });
-      running = true;
-      runBtn.disabled = false;
-      gymRunner.batch(jobs, {
-        onResult: function (i, r) {
-          got[i] = r;
-          // a compile error makes every test fail the same way: stop at the first one
-          if (i === 0 && !r.compiled) { gymRunner.stop(true); finish(); return; }
-          var doneTests = plan.filter(function (x) { return got[x.at]; }).length;
-          prog.querySelector(".gym-prog-t span").textContent = doneTests >= nTests ? "Checking…" : "Running test " + (doneTests + 1) + " of " + nTests + "…";
-          prog.querySelector(".xpbar i").style.width = Math.round(100 * doneTests / nTests) + "%";
-        },
-        onDone: function () { finish(); }
-      });
-      function finish() {
-        if (!running) return;
-        running = false;
-        prog.remove();
-        var pass = 0, compileErr = got[0] && !got[0].compiled ? got[0].err : null, cards = [];
-        if (!compileErr) plan.forEach(function (x) {
-          var r = got[x.at];
-          if (!r) return;
-          var t = x.t;
-          if (x.ref !== undefined) {
-            var ref = got[x.ref];
-            if (!ref || !ref.compiled || ref.err) return;
-            t.expect = ref.out;
-          }
-          var ok = r.compiled && !r.err && norm(r.out) === norm(t.expect);
-          if (ok) pass++;
-          cards.push({ t: t, r: r, ok: ok, src: jobs[x.at].src });
-        });
-        showResults(code, userLines, pass, compileErr, cards);
-      }
-    }
-    function showResults(code, userLines, pass, compileErr, cards) {
-      if (compileErr) {
-        lastResults = "Last test run: the code did not compile" + (compileErr.line ? " (line " + compileErr.line + ")" : "") + ": " + compileErr.msg;
-        var inUser = compileErr.line && compileErr.line <= userLines;
-        results.appendChild(h("div", "errbox", "<b>Your code does not compile" + (inUser ? " (line " + compileErr.line + ")" : "") + ".</b> " + esc(compileErr.msg) + (compileErr.hint ? '<div class="hint">' + esc(compileErr.hint) + "</div>" : "") + (inUser ? "" : '<div class="hint">The problem shows up in the test code, so check that your function has the exact name and parameters the exercise asks for.</div>')));
-        if (inUser) { ed.mark(compileErr.line, "err", compileErr.msg); ed.revealLine(compileErr.line); }
-        if (inUser) { var cr = explainErrorRow(code, compileErr, "compile error"); if (cr) results.appendChild(cr); }
-        var s0 = store.ex[id] = store.ex[id] || {}; s0.tried = true; save();
-        return;
-      }
-      var all = pass === cards.length && cards.length > 0;
-      lastResults = "Last test run: " + pass + " of " + cards.length + " tests pass.\n" + cards.map(function (c) {
-        return (c.ok ? "PASS " : "FAIL ") + c.t.name + (c.ok ? "" : ": expected output " + JSON.stringify(Tu.clip(c.t.expect || "", 300)) + ", the student's output " + JSON.stringify(Tu.clip(c.r.out || "", 300)) +
-          (c.r.err ? ", stopped with " + (c.r.err.kind === "limit" ? "a limit" : "a runtime error") + (c.r.err.line && c.r.err.line <= userLines ? " on line " + c.r.err.line : "") + ": " + c.r.err.msg : ""));
-      }).join("\n");
-      results.appendChild(h("div", "summary" + (all ? " allok" : ""), all ? "All " + pass + " tests pass. Well done." : pass + " of " + cards.length + " tests pass"));
-      if (Tu) {
-        var trow = h("div", "tutor-row");
-        if (!all) trow.appendChild(Tu.button("Ask the tutor for a hint", function () {
-          Tu.ask("Give me a hint about the tests I'm failing.", { content: "I ran the tests on my current code.\n" + lastResults + "\n\nGive me one helpful hint toward fixing my code. Do NOT write the full solution. Point me at the specific case or line that fails and explain why it fails that test." });
-        }));
-        else trow.appendChild(Tu.button("Ask the tutor to review my solution", function () {
-          Tu.ask("All my tests pass. Can you review my solution?", { content: "All the tests pass on my current code. Review it: is it correct in every case (including cases the tests may not cover), is it efficient, and how would I write it on paper in an exam? Suggest style improvements only if they matter." });
-        }));
-        results.appendChild(trow);
-      }
-      cards.forEach(function (c) {
-        var el = h("div", "test " + (c.ok ? "pass" : "fail"));
-        el.innerHTML = '<div class="test-h"><span class="r">' + (c.ok ? "✓ Pass" : "✗ Fail") + '</span><span class="nm">' + esc(c.t.name) + (c.t.hidden ? ' <span class="chip">hidden test</span>' : "") + '</span><span class="tm">' + (c.r.ms !== undefined ? CL.fmtMs(c.r.ms) : "") + "</span></div>";
-        if (!c.ok) {
-          var b = h("div", "test-b");
-          if (c.t.hidden) {
-            // say what the hidden test is about, and let the student choose to see it
-            var hid = h("div", "test-hid small", "This hidden test checks a case the other tests do not show: <b>" + esc(c.t.name) + "</b>. Think about what your code does there before you look. ");
-            var rv = h("button", "btn small ghost", "Show this test");
-            rv.type = "button";
-            hid.appendChild(rv);
-            el.appendChild(hid);
-            b.hidden = true;
-            rv.addEventListener("click", function () { b.hidden = false; hid.remove(); });
-          }
-          if (c.t.random) { var tp = h("pre", "out test-src"); tp.textContent = c.t.main; b.appendChild(h("div", "out-h", "This random test ran")); b.appendChild(tp); }
-          if (c.r.err) {
-            var inU = c.r.err.line && c.r.err.line <= userLines;
-            b.appendChild(h("div", "errbox", "<b>" + (c.r.err.kind === "limit" ? "Stopped" : "Runtime error") + (inU ? " on line " + c.r.err.line : "") + ".</b> " + esc(c.r.err.msg) + (c.r.err.hint ? '<div class="hint">' + esc(c.r.err.hint) + "</div>" : "")));
-            if (inU) ed.mark(c.r.err.line, "err", c.r.err.msg);
-          }
-          var cmp = h("div", "cmp");
-          var exp = h("div"); exp.appendChild(h("div", "out-h", "Expected output")); var p1 = h("pre", "out"); p1.textContent = c.t.expect || "(nothing)"; exp.appendChild(p1);
-          var gotEl = h("div"); gotEl.appendChild(h("div", "out-h", "Your output")); var p2 = h("pre", "out" + (c.r.out ? "" : " empty")); p2.textContent = c.r.out || "(nothing was printed)"; gotEl.appendChild(p2);
-          cmp.appendChild(exp); cmp.appendChild(gotEl);
-          b.appendChild(cmp);
-          var vrow = h("div", "btns");
-          var vb = h("button", "btn small");
-          vb.type = "button";
-          vb.textContent = "Step through this test";
-          vb.addEventListener("click", function () { openViz(c.src, { stdin: c.t.stdin || "", title: "Test: " + c.t.name }); });
-          vrow.appendChild(vb);
-          var tb = h("button", "btn small ghost");
-          tb.type = "button";
-          tb.textContent = "Try this test's values below";
-          tb.addEventListener("click", function () { tryEd.setValue(c.t.main); tryBox.open = true; tryBox.scrollIntoView({ behavior: "smooth", block: "start" }); });
-          vrow.appendChild(tb);
-          b.appendChild(vrow);
-          el.appendChild(b);
+    var ws = CL.Workspace(right, e, {
+      code: st.code || e.code,
+      onCode: function (v) { var s = store.ex[id] = store.ex[id] || {}; s.code = v; save(); },
+      main: st.tryMain,
+      onMain: function (v) { var s2 = store.ex[id] = store.ex[id] || {}; s2.tryMain = v; save(); },
+      onReset: function () { var s = store.ex[id] || {}; delete s.code; save(); },
+      onResults: function (info) {
+        lastResults = ws.lastResults;
+        var s = store.ex[id] = store.ex[id] || {};
+        s.tried = true;
+        if (!info.compileErr && Tu) {
+          var trow = h("div", "tutor-row");
+          if (!info.all) trow.appendChild(Tu.button("Ask the tutor for a hint", function () {
+            Tu.ask("Give me a hint about the tests I'm failing.", { content: "I ran the tests on my current code.\n" + lastResults + "\n\nGive me one helpful hint toward fixing my code. Do NOT write the full solution. Point me at the specific case or line that fails and explain why it fails that test." });
+          }));
+          else trow.appendChild(Tu.button("Ask the tutor to review my solution", function () {
+            Tu.ask("All my tests pass. Can you review my solution?", { content: "All the tests pass on my current code. Review it: is it correct in every case (including cases the tests may not cover), is it efficient, and how would I write it on paper in an exam? Suggest style improvements only if they matter." });
+          }));
+          info.el.insertBefore(trow, info.summaryEl.nextSibling);
         }
-        results.appendChild(el);
-      });
-      var s = store.ex[id] = store.ex[id] || {};
-      s.tried = true;
-      if (all && !s.passed) {
-        s.passed = true; CL.Progress.log("x"); toast("Exercise passed");
-        var seenC = {};
-        (e.lessons || []).forEach(function (lid) { var c = LN.forLesson(lid); if (c && !seenC[c]) { seenC[c] = 1; LN.record(c, true, 1); } });
+        if (info.all && !s.passed) {
+          s.passed = true; CL.Progress.log("x"); toast("Exercise passed");
+          var seenC = {};
+          (e.lessons || []).forEach(function (lid) { var c = LN.forLesson(lid); if (c && !seenC[c]) { seenC[c] = 1; LN.record(c, true, 1); } });
+        }
+        save();
       }
-      save();
-    }
-    // your own values: write any main() body that calls your function, and run it in a terminal (cin works too)
-    var tryBox = h("details", "ex-try");
-    tryBox.open = !!st.tryOpen;
-    tryBox.innerHTML = '<summary><b>Try it with your own values</b><span class="small muted"> · write your own main() and run it in a terminal</span></summary>';
-    var tryIn = h("div", "ex-try-in");
-    tryBox.appendChild(tryIn);
-    tryIn.appendChild(h("p", "small muted", "This code becomes the body of <code>main()</code>, after your function" + (e.harness ? " and the test helpers (" + esc((e.harness.match(/\b(__\w+)\s*\(/g) || []).map(function (x) { return x.replace(/\s*\($/, ""); }).filter(function (x, i, a) { return a.indexOf(x) === i; }).slice(0, 6).join(", ")) + ")" : "") + ". Change the values, add <code>cout</code> lines, or read values with <code>cin</code>."));
-    var firstTest = e.tests.filter(function (t) { return !t.hidden; })[0] || e.tests[0];
-    var tryEd = new CL.Editor(tryIn, { value: st.tryMain || (firstTest ? firstTest.main : "cout << \"hello\" << endl;"), label: "Your own main() body", tools: true, minLines: 4, onRun: function () { runTry(); } });
-    tryEd.onChange(function (v) { var s2 = store.ex[id] = store.ex[id] || {}; s2.tryMain = v; save(); });
-    var tryBar = h("div", "btns", '<button type="button" class="btn primary small" data-try>▶ Run my main()</button><button type="button" class="btn ghost small" data-tryreset>Reset to the first test</button>');
-    tryIn.appendChild(tryBar);
-    var tryOut = h("div", "run");
-    tryIn.appendChild(tryOut);
-    var tryTerm = null;
-    function runTry() {
-      var body = tryEd.getValue();
-      var src = CL.assemble(e, ed.getValue(), { main: body });
-      // errors in your function are marked in the main editor; errors in your main() body, in this one
-      var mainStart = src.split("\n").indexOf("int main() {") + 2, nBody = body.split("\n").length;
-      function edFor(line) { return line <= userLinesNow() ? { ed: ed, line: line } : line >= mainStart && line < mainStart + nBody ? { ed: tryEd, line: line - mainStart + 1 } : null; }
-      var fake = { getValue: function () { return src; },
-        clearMarks: function (c) { ed.clearMarks(c); tryEd.clearMarks(c); },
-        mark: function (line, cls, msg) { var x = edFor(line); if (x) x.ed.mark(x.line, cls, msg); },
-        revealLine: function (line) { var x = edFor(line); if (x) x.ed.revealLine(x.line); },
-        focus: function () { tryEd.focus(); } };
-      runInTerminal(tryOut, fake, { title: "Your main()", getTerm: function () { return tryTerm; }, setTerm: function (t) { tryTerm = t; } });
-    }
-    function userLinesNow() { return ed.getValue().replace(/\s+$/, "").split("\n").length; }
-    tryBar.addEventListener("click", function (ev) {
-      if (ev.target.closest("[data-try]")) runTry();
-      if (ev.target.closest("[data-tryreset]") && firstTest) tryEd.setValue(firstTest.main);
     });
-    tryBox.addEventListener("toggle", function () { var s3 = store.ex[id] = store.ex[id] || {}; s3.tryOpen = tryBox.open; save(); if (tryBox.open) tryEd.refresh(); });
-    right.appendChild(tryBox);
-    current = { destroy: function () { gymRunner.destroy(); if (tryTerm) tryTerm.destroy(); } };
+    var ed = ws.ed;
+    current = { destroy: function () { ws.destroy(); } };
     grid.appendChild(left);
     grid.appendChild(right);
     p.appendChild(grid);
@@ -2424,7 +2286,6 @@
     route: route, setCurrent: function (c) { current = c; }, gymTopic: function (t) { gymFilter.topic = t || ""; }, lessonLink: lessonLink, wireSectionLinks: wireSectionLinks, mdHooks: mdHooks,
     trainConcept: function (cid) { store.trainPref.mode = "c:" + cid; save(); location.hash = "#train"; },
     trainReview: function () { store.trainPref.mode = "review"; save(); location.hash = "#train"; } };
-  if (CL.FX) CL.FX.startBackground();
   if (CL.Game) { CL.Game.init(store); CL.Game.mountHud(app.querySelector(".top-in")); }
   route();
   // merge the copy kept on the viewer's account, then keep it up to date
