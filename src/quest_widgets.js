@@ -15,9 +15,16 @@
   QW.norm = norm;
 
   // ---------------------------------------------------------------- multiple choice
+  // a picture for a question: a tree, a graph or an array (not clickable)
+  function figure(wrap, b) {
+    if (b.tree || b.level || b.keys) { var st0 = h("div", "qt-stage qfig"); st0.innerHTML = drawTreeSvg(CL.tagTree(treeFrom(b)), {}).svg; wrap.appendChild(st0); }
+    else if (b.spec) { var g0 = h("div", "qg-stage stage qfig"); g0.innerHTML = CL.drawGraph(graphOf(b), { label: function () { return ""; } }); wrap.appendChild(g0); }
+    else if (b.values) { var a0 = h("div", "qa-stage qfig"); a0.innerHTML = cells(nums(b.values), { base: b.base === undefined ? 0 : +b.base }); wrap.appendChild(a0); }
+  }
   QW.quiz = function (host, b, ctx) {
     var wrap = h("div", "qw qw-quiz");
     wrap.appendChild(h("div", "qw-q", CL.inline(b.q || "")));
+    figure(wrap, b);
     if (b.code) wrap.appendChild(CL.codeBlock(b.code));
     var opts = h("div", "qw-opts");
     var order = b.keepOrder ? b.opts.map(function (_, i) { return i; }) : shuffle(b.opts.map(function (_, i) { return i; }));
@@ -59,6 +66,7 @@
   QW.type = function (host, b, ctx) {
     var wrap = h("div", "qw qw-type");
     wrap.appendChild(h("div", "qw-q", CL.inline(b.q || "")));
+    figure(wrap, b);
     if (b.code) wrap.appendChild(CL.codeBlock(b.code));
     var row = h("div", "qw-row", '<input type="text" class="qw-in" spellcheck="false" autocomplete="off" aria-label="Your answer"><button type="button" class="px-btn primary">Check</button>');
     wrap.appendChild(row);
@@ -179,7 +187,7 @@
     var wrap = h("div", "qw qw-fill");
     wrap.appendChild(h("div", "qw-q", CL.inline(b.q || "Fill in the blanks.")));
     var pre = h("pre", "code qw-fillcode");
-    var blanks = [], re = /\[\[([^\]]+)\]\]/g, last = 0, m, src = b.code, html = "";
+    var blanks = [], re = /\[\[(.+?)\]\](?!\])/g, last = 0, m, src = b.code, html = "";
     while ((m = re.exec(src))) {
       html += CL.highlight(src.slice(last, m.index));
       var alts = m[1].split("|").map(function (x) { return x.trim(); });
@@ -763,11 +771,12 @@
   QW.listsim = function (host, b, ctx) {
     var wrap = h("div", "qw qw-list");
     wrap.appendChild(h("div", "qw-q", CL.inline(b.q || "")));
+    var HEAD = b.head || "top";
     var init = function () {
       var st = { nodes: {}, vars: {}, nid: 0, freed: {} };
       var prev = null;
-      nums(b.list).forEach(function (v) { var id = "n" + (st.nid++); st.nodes[id] = { v: v, next: null }; if (prev) st.nodes[prev].next = id; else st.vars.top = id; prev = id; });
-      if (!st.vars.top) st.vars.top = null;
+      nums(b.list).forEach(function (v) { var id = "n" + (st.nid++); st.nodes[id] = { v: v, next: null }; if (prev) st.nodes[prev].next = id; else st.vars[HEAD] = id; prev = id; });
+      if (!st.vars[HEAD]) st.vars[HEAD] = null;
       String(b.vars || "").split(/\s+/).filter(Boolean).forEach(function (pair) {
         var m = /^(\w+)=(\S+)$/.exec(pair);
         if (!m) return;
@@ -788,7 +797,7 @@
     wrap.appendChild(pal);
     wrap.appendChild(bar);
     host.appendChild(wrap);
-    var lines = (b.palette || []).slice();
+    var lines = (b.palette || []).filter(function (x, i, a) { return a.indexOf(x) === i; });
     var order = shuffle(lines);
     order.forEach(function (ln) { var bt = h("button", "qw-chip ql-stmt", '<code>' + esc(ln) + "</code>"); bt.type = "button"; bt._ln = ln; pal.appendChild(bt); });
     function reach(st) {
@@ -796,11 +805,11 @@
       Object.keys(st.vars).forEach(function (k) { var x = st.vars[k], guard = 0; while (x && !seen[x] && guard++ < 50) { seen[x] = 1; x = st.freed[x] ? null : st.nodes[x].next; } });
       return seen;
     }
-    function listFromTop(st) { var out = [], x = st.vars.top, guard = 0; while (x && guard++ < 30) { if (st.freed[x]) { out.push("✗"); break; } out.push(st.nodes[x].v); x = st.nodes[x].next; } return out; }
+    function listFromTop(st) { var out = [], x = st.vars[HEAD], guard = 0; while (x && guard++ < 30) { if (st.freed[x]) { out.push("✗"); break; } out.push(st.nodes[x].v); x = st.nodes[x].next; } return out; }
     function draw(lostIds) {
       var r = reach(S), ids = Object.keys(S.nodes).filter(function (k) { return !S.freed[k]; });
       // lay the nodes out in list order from top, then the others
-      var order2 = [], x = S.vars.top, guard = 0;
+      var order2 = [], x = S.vars[HEAD], guard = 0;
       while (x && order2.indexOf(x) < 0 && guard++ < 30) { if (!S.freed[x]) order2.push(x); x = S.freed[x] ? null : S.nodes[x].next; }
       ids.forEach(function (k) { if (order2.indexOf(k) < 0) order2.push(k); });
       var W2 = 92, pos = {};
@@ -822,7 +831,7 @@
         var t = S.vars[vname];
         if (!t || !pos[t]) return;
         var p = pos[t], n = stack[t] = (stack[t] || 0) + 1;
-        svg += '<g class="ql-var' + (vname === "top" ? " top" : "") + '"><text x="' + (p.x + 20) + '" y="' + (p.y - 32 + (n - 1) * -14 + 8) + '">' + esc(vname) + '</text><path class="ql-arrow v" d="M' + (p.x + 20) + "," + (p.y - 18) + " L" + (p.x + 20) + "," + (p.y - 3) + '" marker-end="url(#qlA)"/></g>';
+        svg += '<g class="ql-var' + (vname === HEAD ? " top" : "") + '"><text x="' + (p.x + 20) + '" y="' + (p.y - 32 + (n - 1) * -14 + 8) + '">' + esc(vname) + '</text><path class="ql-arrow v" d="M' + (p.x + 20) + "," + (p.y - 18) + " L" + (p.x + 20) + "," + (p.y - 3) + '" marker-end="url(#qlA)"/></g>';
       });
       svg += "</svg>";
       var nulls = Object.keys(S.vars).filter(function (k) { return S.vars[k] === null; });
@@ -871,7 +880,14 @@
         ctx.miss("A node is lost: nothing points to " + lost.map(function (k) { return S.nodes[k].v; }).join(", ") + " any more, so it can never be reached (or deleted): a memory leak, and the rest of the list after it is gone too. Undo and change the order of the statements.");
         return;
       }
-      if (got === want && (!b.freed || Object.keys(S.freed).length >= +b.freed)) { pal.querySelectorAll("button").forEach(function (x) { x.disabled = true; }); wrap.classList.add("solved"); ctx.ok("The list is now <b>" + got.split(" ").join(" → ") + "</b>." + (b.expl ? " " + CL.inline(b.expl) : "")); }
+      // optional: where pointers must end up, like at="curr=30 prev=20" (NULL allowed)
+      var atOk = String(b.at || "").split(/\s+/).filter(Boolean).every(function (pair) {
+        var m2 = /^(\w+)=(\S+)$/.exec(pair);
+        if (!m2) return true;
+        var id2 = S.vars[m2[1]];
+        return m2[2] === "NULL" ? id2 === null || id2 === undefined : id2 && !S.freed[id2] && String(S.nodes[id2].v) === m2[2];
+      });
+      if (got === want && atOk && (!b.freed || Object.keys(S.freed).length >= +b.freed)) { pal.querySelectorAll("button").forEach(function (x) { x.disabled = true; }); wrap.classList.add("solved"); ctx.ok("The list is now <b>" + got.split(" ").join(" → ") + "</b>." + (b.expl ? " " + CL.inline(b.expl) : "")); }
     }
     pal.addEventListener("click", function (e) {
       var bt = e.target.closest(".ql-stmt");
