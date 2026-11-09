@@ -77,9 +77,26 @@
     M.wr = byKey(L.wr, R.wr, newer);
     if (L.examLast || R.examLast) M.examLast = ((R.examLast && R.examLast.date) || 0) > ((L.examLast && L.examLast.date) || 0) ? clone(R.examLast) : clone(L.examLast);
     if (L.g || R.g) M.g = mergeGame(L.g, R.g);
+    if (L.quest || R.quest) M.quest = mergeQuest(L.quest, R.quest);
     ["play", "examNow", "trainPref", "goal", "path"].forEach(function (k) { M[k] = L[k] !== undefined && L[k] !== null ? clone(L[k]) : clone(R[k]); });
     return M;
   };
+  // the Quest: a level is finished if it was finished on either device, with the better stars; relics and key fragments
+  // are kept from both; the explorer's name and look come from this device unless it has none yet
+  function mergeQuest(a, b) {
+    a = a || {}; b = b || {};
+    var m = Object.assign({}, clone(b), clone(a));
+    m.lv = byKey(a.lv, b.lv, function (x, y) {
+      x = x || {}; y = y || {};
+      return { done: !!(x.done || y.done), stars: Math.max(x.stars || 0, y.stars || 0), n: Math.max(x.n || 0, y.n || 0), t: Math.max(x.t || 0, y.t || 0), notes: x.notes || y.notes };
+    });
+    var earliest = function (x, y) { return Math.min(x || Infinity, y || Infinity); };
+    m.relics = byKey(a.relics, b.relics, earliest);
+    m.frag = byKey(a.frag, b.frag, earliest);
+    m.bonus = byKey(a.bonus, b.bonus, function (x, y) { return x || y; });
+    if (!a.name && b.name) { m.name = b.name; m.look = clone(b.look); }
+    return m;
+  }
   function sameData(a, b) { try { return JSON.stringify(a) === JSON.stringify(b); } catch (e) { return false; } }
   // copy a merged object into the live store object, which the rest of the app holds a reference to
   function adopt(M) {

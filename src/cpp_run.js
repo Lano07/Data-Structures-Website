@@ -17,6 +17,10 @@
     this.width = 0; this.prec = 6; this.fixed = false; this.sci = false; this.left = false; this.fill = " "; this.boolalpha = false; this.showpoint = false;
   }
   function ExitSignal(code) { this.code = code; }
+  // thrown when an interactive run needs a line of keyboard input that has not been typed yet: the run stops here,
+  // the terminal asks for the line, and the program is run again from the start with one more line (a replay)
+  function NeedInput() { }
+  CPP.NeedInput = NeedInput;
 
   function clone(v) {
     if (v === null || typeof v !== "object" || v instanceof Ptr || v instanceof Stream) return v;
@@ -184,6 +188,15 @@
     this.cin = new Stream("cin", "cin");
     this.cin.buf = opts.stdin || "";
     this.cin.isOpen = true;
+    // interactive input: stdinLines are the lines typed so far; each is released to cin only when the program needs it,
+    // and where in the output that happened is recorded, so a terminal can show the typed line at that point
+    this.pendingIn = Array.isArray(opts.stdinLines) ? opts.stdinLines.slice() : null;
+    if (this.pendingIn) this.cin.buf = "";
+    this.inputEOF = !!opts.stdinEOF;
+    this.echoes = [];
+    this.errRanges = [];
+    this.tick = typeof opts.tick === "function" ? opts.tick : null;
+    this.maxLive = opts.maxLive || 4000000;
     this.cout = new Stream("cout", "cout");
     this.cout.isOpen = true;
     this.cerr = new Stream("cout", "cerr");
@@ -695,15 +708,20 @@
         for (var j = 0; j < e.init.length; j++) a[j] = this.conv(this.ev(e.init[j]), e.init[j].ty, ty);
       }
       o.v = a;
-      this.heap.push(o);
-      this.liveHeap++;
+      this.addHeap(o, e);
       return new Ptr(o, [0]);
     }
     if (e.init && e.init.length) o.v = this.conv(this.ev(e.init[0]), e.init[0].ty, ty);
     else o.v = this.defVal(ty, e.zero);
-    this.heap.push(o);
-    this.liveHeap++;
+    this.addHeap(o, e);
     return new Ptr(o, []);
+  };
+  R.addHeap = function (o, e) {
+    if (this.trace) this.heap.push(o);
+    if (++this.liveHeap > this.maxLive) {
+      throw this.err("The program made more than " + this.maxLive.toLocaleString("en-US") + " objects with new and never deleted them, so it ran out of memory.", e,
+        "This usually means new is inside a loop that never ends, or nodes are never deleted.", "limit");
+    }
   };
   R.evDelete = function (e) {
     var v = this.ev(e.e);
@@ -861,6 +879,7 @@
     this.line = node.line;
     if (this.frame) this.frame.line = node.line;
     if (this.trace && this.started) this.snap("step", node.line);
+    if (this.tick !== null && (this.steps & 8191) === 0) this.tick(this);
   };
   R.exec = function (s) {
     switch (s.k) {
@@ -1103,6 +1122,11 @@
   // ---------------------------------------------------------------- streams
   R.emit = function (s, text) {
     if (s.kind === "cout") {
+      if (s === this.cerr && text.length) {
+        var last = this.errRanges[this.errRanges.length - 1];
+        if (last && last[1] === this.outLen) last[1] += text.length;
+        else this.errRanges.push([this.outLen, this.outLen + text.length]);
+      }
       this.outParts.push(text);
       this.outLen += text.length;
       if (this.outLen > this.maxOut) throw this.err("The program printed too much output (more than " + this.maxOut.toLocaleString("en-US") + " characters), so it was stopped.", null, "This usually means a loop that never ends.", "limit");
@@ -1170,10 +1194,24 @@
     }
   };
   function isWs(c) { return c === 32 || (c >= 9 && c <= 13); }
+  // cin has run out of characters: release the next typed line (interactive runs), ask for one, or report end of input
+  R.more = function (s) {
+    if (s !== this.cin || !this.pendingIn) return false;
+    if (this.pendingIn.length) {
+      var line = String(this.pendingIn.shift());
+      this.echoes.push({ at: this.outLen, text: line });
+      s.buf += line + "\n";
+      return true;
+    }
+    if (this.inputEOF) return false;
+    throw new NeedInput();
+  };
   R.skipWs = function (s) {
-    while (s.pos < s.buf.length && isWs(s.buf.charCodeAt(s.pos))) s.pos++;
-    if (s.pos >= s.buf.length) { s.eof = true; s.fail = true; return false; }
-    return true;
+    for (;;) {
+      while (s.pos < s.buf.length && isWs(s.buf.charCodeAt(s.pos))) s.pos++;
+      if (s.pos < s.buf.length) return true;
+      if (!this.more(s)) { s.eof = true; s.fail = true; return false; }
+    }
   };
   R.read = function (s, l, ty, node) {
     if (s.kind === "cout" || (!s.isOpen && s.kind !== "cin")) { s.fail = true; return; }
@@ -1223,6 +1261,7 @@
   };
   R.getline = function (s, l, delim, node) {
     if (s.kind === "cout" || s.fail || s.eof || s.bad || (!s.isOpen && s.kind !== "cin")) { s.fail = true; return s; }
+    while (s.pos >= s.buf.length || s.buf.indexOf(delim, s.pos) < 0) { if (!this.more(s)) break; }
     var buf = s.buf;
     if (s.pos >= buf.length) { s.eof = true; s.fail = true; this.store(l, "", TY.string, node); return s; }
     var j = buf.indexOf(delim, s.pos);
@@ -1331,7 +1370,7 @@
           var n = A.length ? num(0) : 1, delim = A.length > 1 ? num(1) : -1;
           if (st.fail || st.eof) { st.fail = true; return st; }
           for (var k = 0; k < n; k++) {
-            if (st.pos >= st.buf.length) { st.eof = true; break; }
+            if (st.pos >= st.buf.length && !this.more(st)) { st.eof = true; break; }
             var c = st.buf.charCodeAt(st.pos++);
             if (c === delim) break;
           }
@@ -1339,14 +1378,14 @@
         }
         case "get": {
           if (st.fail || st.eof) { st.fail = true; return A.length ? st : -1; }
-          if (st.pos >= st.buf.length) { st.eof = true; st.fail = true; return A.length ? st : -1; }
+          if (st.pos >= st.buf.length && !this.more(st)) { st.eof = true; st.fail = true; return A.length ? st : -1; }
           var ch = st.buf.charCodeAt(st.pos++);
           if (A.length) { this.store(this.lv(A[0]), (ch << 24) >> 24, TY.char, e); return st; }
           return ch;
         }
         case "peek": {
           if (st.fail || st.eof) return -1;
-          if (st.pos >= st.buf.length) { st.eof = true; return -1; }
+          if (st.pos >= st.buf.length && !this.more(st)) { st.eof = true; return -1; }
           return st.buf.charCodeAt(st.pos);
         }
         case "unget": if (st.pos > 0) st.pos--; st.eof = false; return st;
@@ -1357,6 +1396,7 @@
         case "getline": {
           var dst = this.ev(A[0]), max = num(1), dl = A.length > 2 ? num(2) : 10;
           if (st.fail || st.eof) { st.fail = true; return st; }
+          while (st.buf.indexOf(String.fromCharCode(dl), st.pos) < 0) { if (!this.more(st)) break; }
           var j = st.buf.indexOf(String.fromCharCode(dl), st.pos), txt;
           if (j < 0) { txt = st.buf.slice(st.pos); st.pos = st.buf.length; st.eof = true; if (!txt.length) st.fail = true; }
           else { txt = st.buf.slice(st.pos, j); st.pos = j + 1; }
@@ -1412,7 +1452,7 @@
       }
       case "rand": return this.rng.next();
       case "srand": this.rng.seed(num(0)); return undefined;
-      case "time": if (A.length) this.ev(A[0]); return Math.floor(Date.now() / 1000);
+      case "time": if (A.length) this.ev(A[0]); return this.opts.now !== undefined ? this.opts.now : Math.floor(Date.now() / 1000);
       case "exit": throw new ExitSignal(num(0));
       case "abort": throw this.err("The program called abort().", e);
       case "system": return 0;
@@ -1574,7 +1614,9 @@
       res.exitCode = ret | 0;
       if (this.trace) this.snap("end", main.body.endLine);
     } catch (ex) {
-      if (ex instanceof ExitSignal) {
+      if (ex instanceof NeedInput) {
+        res.needInput = true;
+      } else if (ex instanceof ExitSignal) {
         res.exitCode = ex.code;
         if (this.trace) this.snap("end", this.line, { exit: ex.code });
       } else {
@@ -1593,8 +1635,11 @@
     this.streams.forEach(function (s) { if (s.kind === "ofile" && s.isOpen) self.files[s.file] = s.buf; });
     res.out = this.outParts.join("");
     res.steps = this.steps;
-    res.leaks = this.heap.filter(function (o) { return o.alive; }).length;
+    res.leaks = this.trace ? this.heap.filter(function (o) { return o.alive; }).length : this.liveHeap;
     res.files = this.files;
+    res.echoes = this.echoes;
+    res.errRanges = this.errRanges;
+    res.line = this.line;
     if (this.trace) {
       res.snaps = this.snaps; res.calls = this.calls; res.snapLimit = this.snapLimit;
       res.structs = {};

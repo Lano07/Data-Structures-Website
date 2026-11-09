@@ -126,14 +126,49 @@
   CL.Labs.traversal = function (host, preset) {
     var ctl = document.createElement("div");
     ctl.className = "lab-ctl";
-    ctl.appendChild(CL.opGroup("Tree", '<select id="tv-tree">' + TRAV_TREES.map(function (t, i) { return '<option value="' + i + '">' + esc(t.name) + "</option>"; }).join("") + '<option value="bst">BST from my keys</option>' + (preset && preset.spec ? '<option value="custom">From the Trace Trainer</option>' : "") + "</select>"));
+    ctl.appendChild(CL.opGroup("Tree", '<select id="tv-tree">' + TRAV_TREES.map(function (t, i) { return '<option value="' + i + '">' + esc(t.name) + "</option>"; }).join("") + '<option value="bst">BST from my keys</option><option value="own">✎ My own tree</option>' + (preset && preset.spec ? '<option value="custom">From the Trace Trainer</option>' : "") + "</select>"));
     var keysG = CL.opGroup("Keys (inserted in order)", '<input type="text" id="tv-keys" class="wide" value="50 30 70 20 40 60 80">');
     keysG.hidden = true;
     ctl.appendChild(keysG);
+    var own = document.createElement("div");
+    own.className = "lab-custom tv-own";
+    own.hidden = true;
+    var TVS = "comp2611-tree-custom", tsaved = {};
+    try { tsaved = JSON.parse(localStorage.getItem(TVS) || "{}") || {}; } catch (e) { tsaved = {}; }
+    own.innerHTML = '<div class="lc-h"><b>My own tree</b><span class="small muted">Build any binary tree (it does not have to be a BST), then pick a traversal.</span></div>' +
+      '<div class="seg tv-mode" role="group" aria-label="How to type the tree"><button type="button" data-m="level">Level order</button><button type="button" data-m="spec">Brackets</button><button type="button" data-m="prein">Preorder + inorder</button><button type="button" data-m="postin">Postorder + inorder</button></div>' +
+      '<div class="tv-m" data-mm="level"><input type="text" class="wide" id="tv-level" aria-label="Level order, root first" placeholder="50 30 70 20 - 60 80"><p class="small muted">Root first, then each level left to right, like a heap array: the value at position i has children at 2i + 1 and 2i + 2. Write <code>-</code> for an empty spot.</p></div>' +
+      '<div class="tv-m" data-mm="spec" hidden><input type="text" class="wide" id="tv-spec" aria-label="Bracket notation" placeholder="10(40(30),25(50,20))"><p class="small muted"><code>root(left,right)</code>, nested. <code>5(,7)</code> means 5 has only a right child 7; <code>5(3)</code> means only a left child 3.</p></div>' +
+      '<div class="tv-m" data-mm="prein" hidden><input type="text" class="wide" id="tv-pre" aria-label="Preorder" placeholder="Preorder: 10 40 30 25 50 20"><input type="text" class="wide" id="tv-in1" aria-label="Inorder" placeholder="Inorder: 30 40 10 50 25 20"><p class="small muted">The first preorder key is the root; in the inorder sequence everything left of it is the left subtree. Keys must all be different.</p></div>' +
+      '<div class="tv-m" data-mm="postin" hidden><input type="text" class="wide" id="tv-post" aria-label="Postorder" placeholder="Postorder: 30 40 50 20 25 10"><input type="text" class="wide" id="tv-in2" aria-label="Inorder" placeholder="Inorder: 30 40 10 50 25 20"><p class="small muted">The last postorder key is the root. Keys must all be different.</p></div>' +
+      '<div class="btns"><button type="button" class="btn small primary" id="tv-build">Build and run</button><button type="button" class="btn small ghost" id="tv-copy">Copy the tree shown</button></div><div class="lc-msg small" aria-live="polite"></div>';
+    var ownMode = tsaved.mode || "level";
+    ["level", "spec", "pre", "in1", "post", "in2"].forEach(function (k) { if (tsaved[k]) own.querySelector("#tv-" + k).value = tsaved[k]; });
+    if (!tsaved.level) own.querySelector("#tv-level").value = "50 30 70 20 - 60 80 - 25";
+    function setMode(m) { ownMode = m; own.querySelectorAll(".tv-mode [data-m]").forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-m") === m); }); own.querySelectorAll(".tv-m").forEach(function (x) { x.hidden = x.getAttribute("data-mm") !== m; }); }
+    setMode(ownMode);
+    own.querySelector(".tv-mode").addEventListener("click", function (e) { var b = e.target.closest("[data-m]"); if (b) setMode(b.getAttribute("data-m")); });
+    function ownTree() {
+      var v = function (k) { return own.querySelector("#tv-" + k).value; }, r;
+      if (ownMode === "level") r = CL.treeFromLevel(v("level"));
+      else if (ownMode === "spec") r = v("spec").trim() ? { root: CL.parseTreeSpec(v("spec")) } : { err: "Type the tree, like 10(40(30),25(50,20))." };
+      else if (ownMode === "prein") r = CL.treeFromTraversals(v("pre"), v("in1"), "pre");
+      else r = CL.treeFromTraversals(v("post"), v("in2"), "post");
+      var msg = own.querySelector(".lc-msg");
+      if (r.err || !r.root) { msg.innerHTML = '<span class="bad">' + esc(r.err || "Could not read that tree.") + "</span>"; return null; }
+      var cnt = CL.treeNodes(r.root).length;
+      if (cnt > 40) { msg.innerHTML = '<span class="bad">Up to 40 nodes, please.</span>'; return null; }
+      msg.textContent = cnt + " nodes. Level order: " + CL.treeToLevel(r.root);
+      var sv = { mode: ownMode };
+      ["level", "spec", "pre", "in1", "post", "in2"].forEach(function (k) { sv[k] = v(k); });
+      try { localStorage.setItem(TVS, JSON.stringify(sv)); } catch (e) { /* ignore */ }
+      return r.root;
+    }
     ctl.appendChild(CL.opGroup("Traversal", '<select id="tv-kind"><option value="pre">Preorder</option><option value="in">Inorder</option><option value="post">Postorder</option><option value="level">Level order</option></select>'));
     ctl.appendChild(CL.opGroup("Options", '<label class="small"><input type="checkbox" id="tv-null" checked> Show calls on NULL</label>'));
     ctl.appendChild(CL.opGroup("", '<button type="button" class="btn primary" id="tv-go">Run</button>'));
     host.appendChild(ctl);
+    host.appendChild(own);
     var root;
     var player = new CL.Player(host, {
       render: function (f) {
@@ -156,17 +191,31 @@
       var tv = host.querySelector("#tv-tree").value;
       var kind = host.querySelector("#tv-kind").value;
       keysG.hidden = tv !== "bst";
-      root = tv === "bst" ? CL.bstFrom(CL.parseNums(host.querySelector("#tv-keys").value, 31)) : tv === "custom" ? CL.parseTreeSpec(preset.spec) : CL.parseTreeSpec(TRAV_TREES[+tv].spec);
+      own.hidden = tv !== "own";
+      if (tv === "own") { var t = ownTree(); if (!t) return; root = t; }
+      else root = tv === "bst" ? CL.bstFrom(CL.parseNums(host.querySelector("#tv-keys").value, 31)) : tv === "custom" ? CL.parseTreeSpec(preset.spec) : CL.parseTreeSpec(TRAV_TREES[+tv].spec);
       CL.tagTree(root);
       var code = kind === "level" ? LEVEL : REC[kind];
       player.setCode(kind === "level" ? "Level order (uses a queue)" : FN[kind] + " (recursive)", code.code);
       player.load(addPrintAsks(travFrames(root, kind, host.querySelector("#tv-null").checked), root, kind));
     }
     host.querySelector("#tv-go").addEventListener("click", go);
+    own.querySelector("#tv-build").addEventListener("click", go);
+    own.querySelectorAll("input").forEach(function (inp) { inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); go(); } }); });
+    own.querySelector("#tv-copy").addEventListener("click", function () {
+      if (!root) return;
+      own.querySelector("#tv-level").value = CL.treeToLevel(root);
+      own.querySelector("#tv-spec").value = CL.treeToSpec(root);
+      var pre = CL.travSeq(root, "pre").join(" "), ino = CL.travSeq(root, "in").join(" "), post = CL.travSeq(root, "post").join(" ");
+      own.querySelector("#tv-pre").value = pre; own.querySelector("#tv-in1").value = ino; own.querySelector("#tv-post").value = post; own.querySelector("#tv-in2").value = ino;
+      own.querySelector(".lc-msg").textContent = "Copied: edit it in any of the four forms.";
+    });
     host.querySelector("#tv-tree").addEventListener("change", go);
     host.querySelector("#tv-kind").addEventListener("change", go);
     host.querySelector("#tv-null").addEventListener("change", go);
     if (preset && preset.spec) { host.querySelector("#tv-tree").value = "custom"; if (preset.kind) host.querySelector("#tv-kind").value = preset.kind; }
+    if (preset && preset.level) { host.querySelector("#tv-tree").value = "own"; own.querySelector("#tv-level").value = preset.level; setMode("level"); if (preset.kind) host.querySelector("#tv-kind").value = preset.kind; }
+    if (preset && preset.pre && preset["in"]) { host.querySelector("#tv-tree").value = "own"; own.querySelector("#tv-pre").value = preset.pre; own.querySelector("#tv-in1").value = preset["in"]; setMode("prein"); if (preset.kind) host.querySelector("#tv-kind").value = preset.kind; }
     go();
     return player;
   };

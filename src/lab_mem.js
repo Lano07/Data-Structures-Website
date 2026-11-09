@@ -129,7 +129,7 @@
     box.appendChild(about);
     var bar = document.createElement("div");
     bar.className = "btns";
-    bar.innerHTML = '<button type="button" class="btn small" data-a="edit">Edit this program</button><button type="button" class="btn small ghost" data-a="play">Open in Playground</button>';
+    bar.innerHTML = '<button type="button" class="btn small" data-a="edit">✎ Change the values (edit this program)</button><button type="button" class="btn small ghost" data-a="play">Open in Playground</button>';
     box.appendChild(bar);
     var edHost = document.createElement("div");
     edHost.hidden = true;
@@ -160,11 +160,10 @@
           b2.children[1].addEventListener("click", function () { ed.setValue(prog.code); load(prog.code); });
           edHost.appendChild(b2);
         }
-        b.textContent = edHost.hidden ? "Edit this program" : "Hide the editor";
+        b.textContent = edHost.hidden ? "✎ Change the values (edit this program)" : "Hide the editor";
       }
       if (b.getAttribute("data-a") === "play") {
-        try { var st = JSON.parse(localStorage.getItem("comp2611-codelab-v1") || "{}"); st.play = { code: ed ? ed.getValue() : prog.code, stdin: prog.stdin || "", files: {} }; localStorage.setItem("comp2611-codelab-v1", JSON.stringify(st)); } catch (er) { /* ignore */ }
-        location.hash = "#play";
+        CL.toPlayground(ed ? ed.getValue() : prog.code, prog.stdin || "", {}, title || prog.title || "lab program");
       }
     });
     return { viz: viz, destroy: function () { viz.destroy(); } };

@@ -46,8 +46,14 @@
     ctl.className = "lab-ctl";
     ctl.appendChild(CL.opGroup("Matrix", '<select id="mx-kind"><option value="lower">Lower triangular</option><option value="upper">Upper triangular</option><option value="sym">Symmetric</option><option value="band">Tridiagonal (band)</option><option value="sparse">Sparse (triplets)</option></select>'));
     ctl.appendChild(CL.opGroup("Size n", '<select id="mx-n"><option>3</option><option>4</option><option selected>5</option><option>6</option><option>7</option><option>8</option></select>'));
-    ctl.appendChild(CL.opGroup("", '<button type="button" class="btn primary" id="mx-go">Pack it</button><button type="button" class="btn" id="mx-new">New values</button>'));
+    ctl.appendChild(CL.opGroup("", '<button type="button" class="btn primary" id="mx-go">Pack it</button><button type="button" class="btn" id="mx-new">New values</button><button type="button" class="btn ghost" id="mx-own">✎ My own matrix</button>'));
     host.appendChild(ctl);
+    var own = document.createElement("div");
+    own.className = "lab-custom";
+    own.hidden = true;
+    own.innerHTML = '<div class="lc-h"><b>My own matrix</b><span class="small muted">One row per line, numbers separated by spaces. Entries outside the pattern of the chosen kind must be 0 (the lab tells you if one is not). Up to 10 × 10.</span></div>' +
+      '<div class="lc-row"><textarea id="mx-text" rows="6" spellcheck="false" aria-label="Your matrix, one row per line"></textarea><div class="lc-opts"><div class="btns"><button type="button" class="btn small primary" id="mx-use">Use this matrix</button><button type="button" class="btn small ghost" id="mx-cur">Copy the current matrix</button></div></div></div><div class="lc-msg small" aria-live="polite"></div>';
+    host.appendChild(own);
     var kind = "lower", n = 5, M = matrixOf("lower", 5), pick = null;
     var player = new CL.Player(host, {
       render: function (f) { draw(f); },
@@ -133,6 +139,28 @@
     host.querySelector("#mx-kind").addEventListener("change", function () { M = matrixOf(host.querySelector("#mx-kind").value, +host.querySelector("#mx-n").value); run(); });
     host.querySelector("#mx-n").addEventListener("change", function () { M = matrixOf(host.querySelector("#mx-kind").value, +host.querySelector("#mx-n").value); run(); });
     host.querySelector("#mx-new").addEventListener("click", function () { M = matrixOf(host.querySelector("#mx-kind").value, +host.querySelector("#mx-n").value); run(); });
+    var mxText = own.querySelector("#mx-text"), mxMsg = own.querySelector(".lc-msg");
+    function curText() { return M.map(function (r) { return r.join(" "); }).join("\n"); }
+    host.querySelector("#mx-own").addEventListener("click", function () { own.hidden = !own.hidden; if (!own.hidden) { if (!mxText.value) mxText.value = curText(); mxText.focus(); } });
+    own.querySelector("#mx-cur").addEventListener("click", function () { mxText.value = curText(); });
+    own.querySelector("#mx-use").addEventListener("click", function () {
+      var rows = mxText.value.trim().split(/\n+/).map(function (r) { return r.trim().split(/[\s,;]+/).filter(Boolean).map(Number); });
+      var nn = rows.length, k2 = host.querySelector("#mx-kind").value;
+      if (!nn || nn > 10) { mxMsg.innerHTML = '<span class="bad">Type between 1 and 10 rows.</span>'; return; }
+      if (rows.some(function (r) { return r.length !== nn || r.some(function (x) { return !isFinite(x); }); })) { mxMsg.innerHTML = '<span class="bad">The matrix must be square: ' + nn + " rows, so every row needs " + nn + " numbers.</span>"; return; }
+      var bad = [];
+      for (var i = 0; i < nn; i++) for (var j = 0; j < nn; j++) {
+        if (k2 === "sym" && rows[i][j] !== rows[j][i] && j > i) bad.push("M[" + i + "][" + j + "] = " + rows[i][j] + " but M[" + j + "][" + i + "] = " + rows[j][i]);
+        else if (k2 !== "sym" && k2 !== "sparse" && !MX[k2].stores(i, j) && rows[i][j] !== 0) bad.push("M[" + i + "][" + j + "] = " + rows[i][j] + " should be 0");
+      }
+      if (bad.length) { mxMsg.innerHTML = '<span class="bad">This is not a ' + esc(MX[k2].name.toLowerCase()) + " matrix: " + esc(bad.slice(0, 3).join("; ")) + (bad.length > 3 ? "; …" : "") + ". Fix those entries or choose another kind.</span>"; return; }
+      mxMsg.textContent = "Using your " + nn + " × " + nn + " matrix.";
+      var nSel = host.querySelector("#mx-n");
+      if (![].some.call(nSel.options, function (o) { return +o.value === nn; })) { var op = document.createElement("option"); op.textContent = String(nn); nSel.appendChild(op); }
+      nSel.value = String(nn);
+      M = rows;
+      run();
+    });
     run();
     return player;
   };
@@ -157,9 +185,29 @@
   CL.Labs.floyd = function (host) {
     var ctl = document.createElement("div");
     ctl.className = "lab-ctl";
-    ctl.appendChild(CL.opGroup("Graph", '<select id="fl-g">' + FGRAPHS.map(function (g, i) { return '<option value="' + i + '">' + esc(g.name) + "</option>"; }).join("") + "</select>"));
+    ctl.appendChild(CL.opGroup("Graph", '<select id="fl-g">' + FGRAPHS.map(function (g, i) { return '<option value="' + i + '">' + esc(g.name) + "</option>"; }).join("") + '<option value="own">✎ My own graph</option></select>'));
     ctl.appendChild(CL.opGroup("", '<button type="button" class="btn primary" id="fl-go">Run Floyd</button>'));
     host.appendChild(ctl);
+    var FLS = "comp2611-floyd-custom", fsaved = {};
+    try { fsaved = JSON.parse(localStorage.getItem(FLS) || "{}") || {}; } catch (e) { fsaved = {}; }
+    var own = document.createElement("div");
+    own.className = "lab-custom";
+    own.hidden = true;
+    own.innerHTML = '<div class="lc-h"><b>My own graph</b><span class="small muted">One edge per line with its weight: <code>A-&gt;B 4</code> for a one-way edge, <code>A B 4</code> for both ways. Up to 8 vertices keeps the matrix readable.</span></div>' +
+      '<div class="lc-row"><textarea id="fl-spec" rows="6" spellcheck="false" aria-label="Edges of your graph"></textarea><div class="lc-opts"><div class="btns"><button type="button" class="btn small primary" id="fl-use">Run Floyd on it</button><button type="button" class="btn small" id="fl-rand">Random graph</button></div></div></div><div class="lc-msg small" aria-live="polite"></div>';
+    host.appendChild(own);
+    var flSpec = own.querySelector("#fl-spec"), flMsg = own.querySelector(".lc-msg");
+    flSpec.value = fsaved.spec || "A->B 3\nA->D 7\nB->A 8\nB->C 2\nC->A 5\nC->D 1\nD->A 2";
+    function ownGraph() {
+      var g = CL.parseGraphSpec(flSpec.value, { weighted: true });
+      if (!g.V.length) { flMsg.innerHTML = '<span class="bad">Type at least one edge, like  A->B 4.</span>'; return null; }
+      if (g.V.length > 10) { flMsg.innerHTML = '<span class="bad">Up to 10 vertices, please: the matrix gets too big to read.</span>'; return null; }
+      var E = [];
+      g.E.forEach(function (e) { E.push(e); if (!g.directed) E.push([e[1], e[0], e[2]]); });
+      flMsg.innerHTML = (g.errors.length ? '<span class="bad">' + g.errors.slice(0, 3).map(esc).join("<br>") + "</span><br>" : "") + g.V.length + " vertices, " + E.length + " directed edges." + (E.some(function (e) { return e[2] < 0; }) ? " Negative weights are fine for Floyd, as long as there is no negative cycle." : "");
+      try { localStorage.setItem(FLS, JSON.stringify({ spec: flSpec.value })); } catch (e) { /* ignore */ }
+      return { name: "My own graph", V: g.V, pos: g.pos, E: E };
+    }
     var G;
     var player = new CL.Player(host, {
       render: function (f) {
@@ -199,8 +247,10 @@
       return s + "</svg>";
     }
     function run() {
-      var gi = +host.querySelector("#fl-g").value;
-      G = FGRAPHS[gi].random ? randomFloydGraph() : FGRAPHS[gi];
+      var gv = host.querySelector("#fl-g").value;
+      own.hidden = gv !== "own";
+      if (gv === "own") { var og = ownGraph(); if (!og) return; G = og; }
+      else G = FGRAPHS[+gv].random ? randomFloydGraph() : FGRAPHS[+gv];
       var V = G.V, n = V.length, at = {}, d = [], C = FCODE.L, frames = [], ups = 0;
       V.forEach(function (v, i) { at[v] = i; });
       for (var i = 0; i < n; i++) { d.push([]); for (var j = 0; j < n; j++) d[i].push(i === j ? 0 : INF); }
@@ -233,6 +283,8 @@
     }
     host.querySelector("#fl-go").addEventListener("click", run);
     host.querySelector("#fl-g").addEventListener("change", run);
+    own.querySelector("#fl-use").addEventListener("click", run);
+    own.querySelector("#fl-rand").addEventListener("click", function () { flSpec.value = CL.randomGraphSpec(5, true, true); run(); });
     run();
     return player;
   };
@@ -245,7 +297,7 @@
   CL.Labs.isort = function (host) {
     var ctl = document.createElement("div");
     ctl.className = "lab-ctl";
-    ctl.appendChild(CL.opGroup("Algorithm", '<select id="is-alg"><option value="count">Counting sort (keys 0..9)</option><option value="radix">Radix sort (LSD, base 10)</option></select>'));
+    ctl.appendChild(CL.opGroup("Algorithm", '<select id="is-alg"><option value="count">Counting sort (keys 0 to k)</option><option value="radix">Radix sort (LSD, base 10)</option></select>'));
     ctl.appendChild(CL.opGroup("Keys", '<input type="text" id="is-v" class="wide" aria-label="Keys"><button type="button" class="btn primary" id="is-go">Sort</button><button type="button" class="btn" id="is-rand">Random keys</button>'));
     host.appendChild(ctl);
     var alg = "count";
@@ -262,17 +314,19 @@
     player.lab = "isort";
     function run() {
       alg = host.querySelector("#is-alg").value;
-      var A = CL.parseNums(host.querySelector("#is-v").value, 14).map(function (x) { return Math.abs(x); });
+      var A = CL.parseNums(host.querySelector("#is-v").value, 16).map(function (x) { return Math.abs(x); });
       if (!A.length) A = alg === "count" ? [2, 5, 3, 0, 2, 3, 0, 3] : [56, 34, 38, 71, 28, 10, 91, 18, 22, 75];
-      if (alg === "count") A = A.map(function (x) { return x % 10; });
+      // counting sort makes one counter per possible key, so keep k (the largest key) small enough to draw
+      if (alg === "count") A = A.map(function (x) { return Math.min(x, 25); });
+      if (alg === "radix") A = A.map(function (x) { return Math.min(x, 99999); });
       host.querySelector("#is-v").value = A.join(" ");
       var frames = [], n = A.length;
       if (alg === "count") {
-        var L = ICODE.count.L, k = 9, Cc = [], B = [], j;
+        var L = ICODE.count.L, k = Math.max(9, Math.max.apply(null, A)), Cc = [], B = [], j;
         for (j = 0; j <= k; j++) Cc.push(0);
         for (j = 0; j < n; j++) B.push(null);
         player.setCode("Counting sort", ICODE.count.code);
-        frames.push({ text: "Counting sort for keys 0 to " + k + ": first count how many times each key appears.", line: L.count, A: A.slice(), C: Cc.slice() });
+        frames.push({ text: "Counting sort for keys 0 to k = " + k + " (k is at least the largest key, so C has k + 1 = " + (k + 1) + " counters): first count how many times each key appears.", line: L.count, A: A.slice(), C: Cc.slice() });
         A.forEach(function (v, i) { Cc[v]++; frames.push({ text: "A[" + i + "] = " + v + ": C[" + v + "] becomes " + Cc[v] + ".", line: L.count, A: A.slice(), C: Cc.slice(), ai: i, ci: v }); });
         for (j = 1; j <= k; j++) {
           var before = Cc[j];
