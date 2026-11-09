@@ -2,7 +2,7 @@
 (function (CL) {
   "use strict";
   var KEY = "comp2611-prefs-v1";
-  var P = { theme: "dark", size: 100, motion: "system", tutorMode: "guide", skin: "pixel" };
+  var P = { theme: "dark", size: 100, motion: "system", tutorMode: "guide" };
   try { var s = localStorage.getItem(KEY); if (s) Object.assign(P, JSON.parse(s)); } catch (e) { /* storage unavailable */ }
   var SIZES = [90, 100, 112.5, 125, 137.5];
   if (SIZES.indexOf(+P.size) < 0) P.size = 100;
@@ -13,7 +13,6 @@
     if (P.theme === "light" || P.theme === "dark") root.setAttribute("data-theme", P.theme);
     else root.removeAttribute("data-theme");
     root.style.fontSize = P.size + "%";
-    root.classList.toggle("skin-pixel", P.skin !== "neon");
     var reduce = P.motion === "reduce" || (P.motion === "system" && mq && mq.matches);
     root.classList.toggle("reduce-motion", !!reduce);
     CL.reduceMotion = !!reduce;

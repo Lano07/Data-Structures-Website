@@ -1,0 +1,98 @@
+/* ======================================================================
+   COMP 2611 Code Lab — the home dashboard: a pixel-night banner, "Jump back in" cards, your stats and today's quests
+   at the side, the ways to learn, and the course part by part.
+   ====================================================================== */
+.home-page { padding-top: 18px; }
+.px-ic { flex: none; vertical-align: middle; image-rendering: pixelated; }
+
+/* ---------- the banner: always night, so its text is always light */
+.hm-hero { position: relative; overflow: hidden; display: flex; align-items: flex-end; min-height: clamp(260px, 34vw, 380px); margin-bottom: 22px; border-radius: var(--r); border: 1px solid var(--line); background: #05071a; }
+.hm-sky { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 70%; image-rendering: pixelated; }
+.hm-hero-in { position: relative; width: 100%; padding: 28px 28px 26px; background: linear-gradient(90deg, rgba(5, 7, 26, .82) 0%, rgba(5, 7, 26, .55) 45%, rgba(5, 7, 26, 0) 80%); }
+.hm-hero .eyebrow { color: #ffd23f; }
+.hm-h1 { font-family: var(--f-display); font-weight: 700; font-size: clamp(2.6rem, 7vw, 4.4rem); line-height: 1; letter-spacing: .01em; color: #f1f2fb; margin: 6px 0 12px; text-shadow: 3px 3px 0 rgba(0, 0, 0, .45); }
+.hm-lede { color: #e4e6f6; font-size: 1.06rem; max-width: 58ch; margin: 0 0 18px; text-shadow: 1px 1px 0 rgba(0, 0, 0, .5); }
+.hm-cta { min-height: 44px; padding: 9px 18px; font-size: 1rem; }
+.hm-hero .btn:not(.primary):not(.blue) { background: rgba(18, 21, 41, .85); border-color: #3b4273; color: #f1f2fb; --e: #05060f; }
+@media (max-width: 640px) { .hm-hero-in { padding: 20px 16px 18px; background: rgba(5, 7, 26, .62); } }
+
+/* ---------- the dashboard grid: the main column and a side panel */
+.hm-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 22px; align-items: start; }
+.hm-main { display: grid; gap: 14px; align-content: start; min-width: 0; }
+.hm-side { display: grid; gap: 14px; position: sticky; top: 76px; min-width: 0; }
+@media (max-width: 1020px) { .hm-grid { grid-template-columns: minmax(0, 1fr); } .hm-side { position: static; order: -1; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); } }
+.hm-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); }
+.hm-h { font-family: var(--f-display); font-weight: 700; font-size: 1.4rem; margin: 10px 0 -2px; }
+.hm-main > .hm-h:first-child, .hm-main > .exam-card + .hm-h { margin-top: 0; }
+.hm-main .sec-h { margin: 14px 0 -2px; }
+.hm-main .sec-h .hm-h { margin: 0; }
+.hm-h2 { font-family: var(--f-display); font-weight: 700; font-size: 1.15rem; margin: 0 0 2px; }
+.hm-sub { margin: 0 0 10px; font-size: .82rem; color: var(--muted); }
+.hm-k { font-family: var(--f-pixel); font-size: .5rem; letter-spacing: .08em; text-transform: uppercase; color: var(--eyebrow); line-height: 1.9; }
+
+/* ---------- jump back in: a scene, where you are, how far, and Continue */
+.hm-jump { display: grid; grid-template-columns: 176px minmax(0, 1fr) auto; gap: 18px; align-items: center; padding: 12px 16px 12px 12px; text-decoration: none; color: var(--ink); transition: border-color .15s, transform .15s; }
+.hm-jump:hover { border-color: var(--line-hi); transform: translateY(-2px); }
+.hm-jump-art { width: 100%; aspect-ratio: 2 / 1; display: block; image-rendering: pixelated; border-radius: 6px; border: 1px solid var(--line); }
+.hm-jump-t { display: grid; gap: 2px; min-width: 0; }
+.hm-jump-h { font-family: var(--f-display); font-weight: 700; font-size: 1.28rem; line-height: 1.2; }
+.hm-jump-s { color: var(--muted); font-size: .9rem; }
+.hm-jump .btn { pointer-events: none; min-width: 110px; }
+.hm-prog { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+.hm-prog .xpbar { flex: 1; max-width: 380px; margin: 0; }
+.hm-prog span { font-size: .78rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+@media (max-width: 640px) { .hm-jump { grid-template-columns: 104px minmax(0, 1fr); gap: 12px; } .hm-jump .btn { grid-column: 1 / -1; width: 100%; } .hm-jump-h { font-size: 1.1rem; } }
+
+/* ---------- the side panel: you and your numbers */
+.hm-me { padding: 16px; display: grid; gap: 12px; }
+.hm-me-top { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.hm-av { display: inline-flex; flex: none; padding: 3px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); }
+.hm-av .px-spr { display: block; }
+.hm-me-id { display: grid; min-width: 0; }
+.hm-me-id b { font-family: var(--f-display); font-size: 1.25rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hm-me-id span { color: var(--muted); font-size: .86rem; }
+.hm-xp .xpbar { margin-bottom: 4px; }
+.hm-xp span { font-size: .78rem; color: var(--muted); }
+.hm-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.hm-stat { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 10px; align-items: center; padding: 9px 10px; border-radius: 8px; background: var(--sunk); border: 1px solid var(--line-2); min-width: 0; }
+.hm-stat .px-ic { grid-row: 1 / 3; }
+.hm-stat b { font-family: var(--f-display); font-size: 1.15rem; line-height: 1.1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hm-stat span { font-size: .74rem; color: var(--muted); }
+.hm-trophy { justify-self: start; }
+.hm-quests { padding: 14px 16px; }
+.hm-quests .quests li { background: var(--sunk); }
+.hm-links { padding: 14px 16px; display: grid; gap: 2px; align-content: start; }
+.hm-links .hm-h2 { margin-bottom: 6px; }
+.hm-links a { display: flex; gap: 10px; align-items: center; padding: 7px 8px; border-radius: 6px; text-decoration: none; color: var(--ink); font-weight: 500; }
+.hm-links a:hover { background: var(--surface-2); }
+
+/* ---------- ways to learn */
+.hm-modes { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+.hm-mode { display: grid; gap: 4px; align-content: start; padding: 14px 16px; text-decoration: none; color: var(--ink); transition: border-color .15s, transform .15s; }
+.hm-mode:hover { border-color: var(--line-hi); transform: translateY(-2px); }
+.hm-mode i { font-style: normal; font-size: 1.35rem; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); box-shadow: 0 3px 0 var(--edge); margin-bottom: 6px; }
+.hm-mode b { font-family: var(--f-display); font-size: 1.12rem; }
+.hm-mode span { font-size: .86rem; color: var(--ink-2); }
+
+/* ---------- the memory visualizer feature */
+.hm-feature { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: 22px; align-items: start; padding: 18px; margin-top: 8px; }
+.hm-fcopy { position: sticky; top: 80px; padding-top: 6px; }
+@media (max-width: 960px) { .hm-fcopy { position: static; } }
+.hm-feature h2 { font-size: clamp(1.4rem, 2.6vw, 1.9rem); line-height: 1.15; margin: 6px 0 10px; }
+.hm-feature p { color: var(--ink-2); }
+@media (max-width: 960px) { .hm-feature { grid-template-columns: minmax(0, 1fr); padding: 14px; } }
+
+/* ---------- the course, part by part */
+.hm-map { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+.hm-part { display: grid; grid-template-columns: 46px minmax(0, 1fr); gap: 14px; align-items: start; padding: 14px; text-decoration: none; color: var(--ink); transition: border-color .15s, transform .15s; }
+.hm-part:hover { border-color: var(--line-hi); transform: translateY(-2px); }
+.hm-part.now { border-color: var(--y-edge); }
+.hm-part-id { width: 46px; height: 46px; display: grid; place-items: center; font-family: var(--f-pixel); font-size: .9rem; color: var(--ink); border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); box-shadow: 0 3px 0 var(--edge); }
+.hm-part.cleared .hm-part-id { background: var(--g); color: var(--g-ink); border-color: var(--g-edge); box-shadow: 0 3px 0 var(--g-edge); }
+.hm-part.now .hm-part-id { background: var(--y); color: var(--y-ink); border-color: var(--y-edge); box-shadow: 0 3px 0 var(--y-edge); }
+.hm-part-b { display: grid; gap: 3px; min-width: 0; }
+.hm-part-k { font-size: .76rem; color: var(--muted); }
+.hm-part-k .ok { color: var(--ok); font-weight: 600; }
+.hm-part-k .now { color: var(--eyebrow); font-weight: 600; }
+.hm-part b { font-family: var(--f-display); font-size: 1.08rem; }
+.hm-part p { margin: 0; font-size: .86rem; color: var(--ink-2); }

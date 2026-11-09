@@ -45,7 +45,7 @@
     this.score = 0; this.combo = 0; this.bestCombo = 0; this.hits = 0; this.misses = 0; this.round = 1;
     this.lives = game.lives || 0; this.time = game.time || 0; this.timeLeft = this.time; this.over = false; this.timers = [];
     this.review = [];
-    host.innerHTML = '<div class="arc-shell" style="--gc:' + (game.color || "#a78bfa") + '">' +
+    host.innerHTML = '<div class="arc-shell" style="--gc:' + (game.color || "#9d8cf0") + '">' +
       '<div class="arc-top"><a class="btn small ghost" href="#arcade">← Arcade</a><div class="arc-title"><span aria-hidden="true">' + game.icon + "</span>" + esc(game.title) + "</div>" +
       '<div class="arc-stats"><div class="arc-st"><i>score</i><b class="as-score">0</b></div><div class="arc-st"><i>combo</i><b class="as-combo">×1</b></div>' +
       (this.lives ? '<div class="arc-st"><i>lives</i><b class="as-lives"></b></div>' : "") + (game.rounds !== false ? '<div class="arc-st"><i>round</i><b class="as-round">1</b></div>' : "") + "</div></div>" +
@@ -206,7 +206,7 @@
       '<a class="boss-banner" href="#boss"><span class="bb-ic" aria-hidden="true">⚔️</span><span><b>Boss Battles</b><i>One boss per topic, fought with real exam questions. Defeat five to face the Final Exam.</i></span><span class="bb-go">Fight ▶</span></a>' +
       '<div class="arc-grid">' + A.games.map(function (g) {
         var best = CL.Game ? CL.Game.arcadeBest(g.id) : 0, plays = CL.Game ? CL.Game.arcadePlays(g.id) : 0;
-        return '<a class="arc-card' + (g.id === feat ? " feat" : "") + '" href="#arcade-' + g.id + '" style="--gc:' + (g.color || "#a78bfa") + '">' + (g.id === feat ? '<span class="arc-feat">Game of the day · ×2 XP</span>' : "") +
+        return '<a class="arc-card' + (g.id === feat ? " feat" : "") + '" href="#arcade-' + g.id + '" style="--gc:' + (g.color || "#9d8cf0") + '">' + (g.id === feat ? '<span class="arc-feat">Game of the day · ×2 XP</span>' : "") +
           '<span class="arc-ic" aria-hidden="true">' + g.icon + '</span><b>' + esc(g.title) + '</b><span class="arc-tag">' + esc(g.tag) + '</span><span class="arc-d">' + esc(g.desc) + '</span>' +
           '<span class="arc-foot"><span>' + (best ? "Best <b>" + best.toLocaleString() + "</b>" : "Not played yet") + (plays ? " · " + plays + " play" + (plays > 1 ? "s" : "") : "") + '</span><span class="arc-play">Play ▶</span></span></a>';
       }).join("") + "</div>";
@@ -220,7 +220,7 @@
     var best = CL.Game ? CL.Game.arcadeBest(g.id) : 0, feat = A.featured() === g.id;
     function intro() {
       if (live) { live.destroy(); live = null; }
-      p.innerHTML = '<div class="arc-intro" style="--gc:' + (g.color || "#a78bfa") + '"><div class="crumbs"><a href="#arcade">Arcade</a><span>/</span><span>' + esc(g.title) + '</span></div><div class="arc-intro-ic" aria-hidden="true">' + g.icon + '</div><h1 class="title">' + esc(g.title) + '</h1><div class="arc-tag">' + esc(g.tag) + (feat ? " · <b>Game of the day: ×2 XP</b>" : "") + "</div>" +
+      p.innerHTML = '<div class="arc-intro" style="--gc:' + (g.color || "#9d8cf0") + '"><div class="crumbs"><a href="#arcade">Arcade</a><span>/</span><span>' + esc(g.title) + '</span></div><div class="arc-intro-ic" aria-hidden="true">' + g.icon + '</div><h1 class="title">' + esc(g.title) + '</h1><div class="arc-tag">' + esc(g.tag) + (feat ? " · <b>Game of the day: ×2 XP</b>" : "") + "</div>" +
         '<div class="arc-how">' + g.how + "</div>" + '<div class="arc-meta">' + (g.time ? "⏱ " + g.time + " seconds" : "") + (g.lives ? "♥ " + g.lives + " lives" : "") + " · 🔥 combos multiply your points" + (best ? " · ★ your best: <b>" + best.toLocaleString() + "</b>" : "") + "</div>" +
         '<div class="btns"><button type="button" class="btn primary glow arc-go">▶ Start</button><a class="btn" href="#arcade">All games</a>' + (g.lesson ? '<a class="btn ghost" href="#l-' + g.lesson + '">Review the lesson first</a>' : "") + "</div></div>";
       var go = p.querySelector(".arc-go");
@@ -294,7 +294,7 @@
   ];
   var FAM = { n: ["O(1)", "O(log n)", "O(n)", "O(n log n)", "O(n²)"], g: ["O(1)", "O(V)", "O(V + E)", "O(V²)", "O(V³)", "O(E log E)"], h: ["O(1)", "O(h)", "O(n²)", "O(h²)"], k: ["O(n)", "O(n + k)", "O(n log n)", "O(k²)"] };
   A.add({
-    id: "bigo", title: "Big-O Blitz", icon: "⚡", color: "#fbbf24", tag: "Lectures 11, 14, 21 · performance", time: 60, penalty: 4, rounds: false,
+    id: "bigo", title: "Big-O Blitz", icon: "⚡", color: "#ffd23f", tag: "Lectures 11, 14, 21 · performance", time: 60, penalty: 4, rounds: false,
     desc: "60 seconds of rapid-fire: what does each operation cost?",
     how: "<p>An operation appears. Pick its running time before the clock runs out. Answer fast for a speed bonus.</p><p>Right answers build your combo; a wrong answer costs <b>4 seconds</b>. Use the keys <kbd>1</kbd>–<kbd>4</kbd>.</p>",
     learn: "the big-O table from Lectures 11, 14 and 21, plus graphs and the course-outline topics.",
@@ -376,7 +376,7 @@
     level: { name: "Level order", rule: "Level by level, left to right (a queue)", f: function (r) { var o = [], q = [r]; while (q.length) { var n = q.shift(); o.push(n); if (n.l) q.push(n.l); if (n.r) q.push(n.r); } return o; } }
   };
   A.add({
-    id: "trav", title: "Traversal Sprint", icon: "🌳", color: "#34d399", tag: "Lectures 5, 6, 10 · traversals", lives: 3,
+    id: "trav", title: "Traversal Sprint", icon: "🌳", color: "#5fd38d", tag: "Lectures 5, 6, 10 · traversals", lives: 3,
     desc: "Tap the nodes in preorder, inorder, postorder or level order, against the clock.",
     how: "<p>A binary tree appears with a traversal to perform. Tap the nodes <b>in the order they are visited</b>.</p><p>Finish fast for a time bonus. Each wrong tap costs a life, and the trees grow every round.</p>",
     learn: "the four traversals from Lectures 5, 6 and 10 (preorder, inorder, postorder and level order with a queue).",
@@ -440,7 +440,7 @@
   function ins(n, k, d, p) { if (!n) return { k: k, l: null, r: null, d: d, p: p }; if (k < n.k) n.l = ins(n.l, k, d + 1, 2 * p); else if (k > n.k) n.r = ins(n.r, k, d + 1, 2 * p + 1); return n; }
   function height(n) { return n ? 1 + Math.max(height(n.l), height(n.r)) : 0; }
   A.add({
-    id: "bst", title: "BST Builder", icon: "🏗️", color: "#22d3ee", tag: "Lectures 7, 8 · insertBST", lives: 3,
+    id: "bst", title: "BST Builder", icon: "🏗️", color: "#57b8ff", tag: "Lectures 7, 8 · insertBST", lives: 3,
     desc: "Keys arrive one by one: tap the empty spot where insertBST puts each one.",
     how: "<p>Each new key must go where <code>insertBST</code> would put it: go <b>left if smaller</b>, <b>right if bigger</b>, until you reach an empty spot.</p><p>Tap the dashed spot. Wrong spots cost a life.</p>",
     learn: "insertBST from Lecture 7: compare at each node, go left or right, and connect the new node to its parent.",

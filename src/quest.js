@@ -44,6 +44,8 @@
     return { done: done, total: w.levels.length, stars: w.levels.reduce(function (s, l) { return s + starsOf(l.id); }, 0) };
   }
   Q.worldProgress = worldProgress;
+  // the player's name and colours (for the home page)
+  Q.you = function () { return { name: youName(), pal: youPal(), named: !!st().name }; };
   function nextLevel() {
     init();
     var last = st().last && LV[st().last];
@@ -100,7 +102,7 @@
     ui.setTutor("home", "Quest: The Lost Index", function () { var s = Q.stats(); return "The student is on the Quest map (a story campaign through the course). Levels finished: " + s.levels + " of " + s.total + ". " + ui.progressText(); });
     var s = st(), stats = Q.stats(), nx = nextLevel();
     var head = h("section", "qh-hero px-panel");
-    head.innerHTML = '<img class="qh-scene" src="' + A.scene("vault") + '" alt="" aria-hidden="true"><div class="qh-in">' +
+    head.innerHTML = '<img class="qh-scene" src="' + A.panorama("night") + '" alt="" aria-hidden="true"><div class="qh-in">' +
       '<div class="px-kicker">Quest · a 16-bit story through COMP 2611</div><h1 class="px-title">The Lost Index</h1>' +
       '<p class="qh-lede">Professor Ramdeen has vanished, and her field journal points to a treasure hidden by the record-keepers of history. Every chapter is a real place and a data structure. You do not read about them: you <b>use</b> them to get through.</p>' +
       '<div class="qh-me"><span class="qh-av">' + A.img("you", { scale: 4, pal: youPal() }) + '</span><div><b>' + esc(youName()) + '</b><div class="small">' + stats.levels + " of " + stats.total + " levels · " + stats.stars + " ★ · " + stats.relics + " relics · " + stats.worlds + " of " + stats.worldTotal + ' key fragments</div></div><button type="button" class="px-btn small ghost" data-setup>Change explorer</button></div>' +

@@ -74,18 +74,44 @@
 @keyframes tspin { to { transform: rotate(360deg); } }
 @keyframes tblink { 50% { opacity: 0; } }
 
-/* ---------- the Code Gym: progress and "your own values" */
-.gym-prog { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-s); background: var(--surface); margin: 6px 0 10px; }
+/* ---------- the coding workspace (Code Gym, Quest code challenges): code, ▶ Run, ✓ Submit, then a console with tabs */
+.ws { border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); overflow: hidden; display: flex; flex-direction: column; min-width: 0; }
+.ws-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 10px 8px 12px; border-bottom: 1px solid var(--line); background: var(--sunk); }
+.ws-file { display: inline-flex; align-items: center; gap: 8px; font-family: var(--f-code); font-size: .84rem; font-weight: 600; color: var(--ink); }
+.ws-ic { font-style: normal; font-family: var(--f-code); font-size: .6rem; font-weight: 700; line-height: 1; padding: 3px 4px; border-radius: 3px; background: #3c6fd8; color: #fff; letter-spacing: .02em; }
+.ws-acts { margin-left: auto; display: inline-flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.ws-ed .ed { border: 0; border-radius: 0; }
+.ws .ws-ed .ed-scroll { min-height: 240px; max-height: 520px; }
+.ws-compact .ws-ed .ed-scroll { min-height: 200px; max-height: 420px; }
+.ws-ed .ed-bar { padding: 4px 10px; border-top: 1px solid var(--line-2); margin: 0; }
+.ws-con { border-top: 1px solid var(--line); }
+.ws-tabs { display: flex; align-items: stretch; gap: 2px; padding: 0 8px; background: var(--sunk); border-bottom: 1px solid var(--line); overflow-x: auto; }
+.ws-tabs [role=tab] { font: inherit; font-size: .82rem; font-weight: 600; color: var(--muted); background: none; border: 0; border-bottom: 2px solid transparent; padding: 9px 12px 7px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.ws-tabs [role=tab]:hover { color: var(--ink); }
+.ws-tabs [role=tab][aria-selected=true] { color: var(--ink); border-bottom-color: var(--accent); }
+.ws-tdot { width: 8px; height: 8px; border-radius: 50%; background: var(--term-ok); }
+.ws-keys { margin-left: auto; align-self: center; font-size: .74rem; color: var(--muted); white-space: nowrap; padding-left: 10px; }
+.ws-badge { font-size: .7rem; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: var(--line); color: var(--ink); }
+.ws-badge.ok { background: var(--ok-soft); color: var(--ok); }
+.ws-badge.bad { background: var(--bad-soft); color: var(--bad); }
+.ws-badge.run { background: transparent; color: var(--muted); }
+.ws-pane { padding: 12px; }
+.ws-pane.ws-p-term { padding: 0; }
+.ws-p-term .term { border: 0; border-radius: 0; }
+.ws-p-term .term-body { height: 240px; }
+.ws-compact .ws-p-term .term-body { height: 200px; }
+.ws-p-main { display: grid; gap: 10px; }
+.ws .ws-p-main .ed-scroll { min-height: 0; max-height: 320px; }
+.ws-note { margin: 0; font-size: .86rem; color: var(--ink-2); }
+.ws-pick { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: .86rem; }
+.ws-pick select { margin-left: 6px; }
+.ws-mainbar { display: flex; gap: 8px; flex-wrap: wrap; }
+.ws-results { display: grid; gap: 8px; }
+@media (pointer: coarse), (max-width: 640px) { .ws-keys { display: none; } }
+.gym-prog { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-s); background: var(--surface); margin: 0; }
 .gym-prog-t { display: inline-flex; align-items: center; gap: 8px; font-weight: 500; color: var(--accent); }
 .gym-prog .xpbar { flex: 1; min-width: 120px; }
 .test-h .tm { margin-left: auto; color: var(--muted); font-size: .76rem; font-family: var(--f-code); }
-.ex-try { margin-top: 18px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
-.ex-try > summary { cursor: pointer; padding: 12px 14px; list-style: none; }
-.ex-try > summary::-webkit-details-marker { display: none; }
-.ex-try > summary::before { content: "▸ "; color: var(--accent); }
-.ex-try[open] > summary::before { content: "▾ "; }
-.ex-try-in { padding: 0 14px 14px; display: grid; gap: 10px; }
-.ex-try-in > p { margin: 0; }
 
 /* ---------- the IDE */
 .page.ide-page { max-width: none; padding: 14px var(--side-r) 30px var(--side); }

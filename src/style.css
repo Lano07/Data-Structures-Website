@@ -150,7 +150,7 @@ pre.code .ln.hl { background: var(--hl-soft); }
 .ed-code { position: relative; flex: 1; min-width: 0; }
 .ed-hl, .ed-ta { font-family: var(--f-code); font-size: .84rem; line-height: var(--ed-lh, 20px); tab-size: 4; -moz-tab-size: 4; padding: 8px 14px; margin: 0; white-space: pre; letter-spacing: 0; font-variant-ligatures: none; }
 .ed-hl { position: relative; z-index: 1; pointer-events: none; color: var(--ink); min-width: max-content; }
-.ed-ta { position: absolute; inset: 0; z-index: 2; border: 0; outline: 0; resize: none; overflow: hidden; background: transparent; color: transparent; caret-color: var(--ink); -webkit-text-fill-color: transparent; }
+.ed-ta { position: absolute; inset: 0; min-width: 100%; z-index: 2; border: 0; outline: 0; resize: none; overflow: hidden; background: transparent; color: transparent; caret-color: var(--ink); -webkit-text-fill-color: transparent; }
 .ed-ta::selection { background: color-mix(in srgb, var(--accent) 28%, transparent); -webkit-text-fill-color: transparent; }
 .ed.ro .ed-ta { caret-color: transparent; }
 .ed-marks { position: absolute; inset: 0; z-index: 0; pointer-events: none; }

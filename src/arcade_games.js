@@ -7,7 +7,7 @@
 
   // ================================================================ GAME 4: Heap Hero
   A.add({
-    id: "heap", title: "Heap Hero", icon: "⛰️", color: "#f472b6", tag: "Lectures 12, 13 · maxHeapify", lives: 3,
+    id: "heap", title: "Heap Hero", icon: "⛰️", color: "#f78fb3", tag: "Lectures 12, 13 · maxHeapify", lives: 3,
     desc: "Run buildMaxHeap and deleteMaxHeap by hand: pick every swap maxHeapify makes.",
     how: "<p>You are <code>maxHeapify</code>. At the glowing node, compare it with its children: tap the <b>larger child</b> to swap, or tap <b>No swap</b> if the node is already the largest.</p><p>First build the max-heap (i from size/2 down to 1), then delete the maximum a few times. Wrong choices cost a life.</p>",
     learn: "maxHeapify, buildMaxHeap (i from heap->size / 2 down to 1) and deleteMaxHeap from Lectures 12 and 13.",
@@ -153,7 +153,7 @@
     return { loc: loc, path: path, step: step };
   }
   A.add({
-    id: "hash", title: "Hash Dash", icon: "#️⃣", color: "#a78bfa", tag: "Lectures 14, 15 · hashing", lives: 3,
+    id: "hash", title: "Hash Dash", icon: "#️⃣", color: "#9d8cf0", tag: "Lectures 14, 15 · hashing", lives: 3,
     desc: "Where does each key land? Linear, quadratic, double hashing and chaining.",
     how: "<p>A key arrives. Work out <code>h = key % N + 1</code>, follow the collision rule, and tap the location where the key <b>ends up</b>.</p><p>Each round uses a different method from Lectures 14 and 15. More collisions = more points. Wrong taps cost a life.</p>",
     learn: "h = key % 12 + 1 from Lecture 14, and linear probing, quadratic probing (x + x²), double hashing and chaining from Lecture 15.",
@@ -288,7 +288,7 @@
 
   // ================================================================ GAME 6: Dijkstra Dash
   A.add({
-    id: "dijkstra", title: "Dijkstra Dash", icon: "🧭", color: "#22d3ee", tag: "Lecture 17 · shortest paths", lives: 3,
+    id: "dijkstra", title: "Dijkstra Dash", icon: "🧭", color: "#57b8ff", tag: "Lecture 17 · shortest paths", lives: 3,
     desc: "You are the min-priority queue: pick the vertex Dijkstra takes off next.",
     how: "<p>Dijkstra takes the vertex with the <b>smallest current cost</b> off the min-priority queue, then relaxes the edges leaving it. Tap that vertex each time; the costs update automatically.</p><p>Round 1 is the graph from Lecture 17. Finish with the cost question for a bonus.</p>",
     learn: "Dijkstra's algorithm from Lecture 17: the cost and parent table, the min-priority queue and edge relaxation.",
@@ -391,7 +391,7 @@
 
   // ================================================================ GAME 7: MST Rush (Kruskal and Prim)
   A.add({
-    id: "mst", title: "MST Rush", icon: "🕸️", color: "#34d399", tag: "Lecture 19 · Kruskal and Prim", lives: 3,
+    id: "mst", title: "MST Rush", icon: "🕸️", color: "#5fd38d", tag: "Lecture 19 · Kruskal and Prim", lives: 3,
     desc: "Build minimum-cost spanning trees edge by edge with Kruskal's and Prim's algorithms.",
     how: "<p><b>Kruskal</b>: always take the cheapest edge that joins two different trees (skip edges that make a cycle).</p><p><b>Prim</b>: start at A and always take the cheapest edge from a used vertex to an unused one.</p><p>Tap the edges in the order the algorithm takes them. Rounds 1 and 2 use the graphs from Lecture 19.</p>",
     learn: "Kruskal's and Prim's minimum-cost spanning tree algorithms from Lecture 19 (n − 1 edges, no cycles, minimum total weight).",
@@ -477,7 +477,7 @@
   }
   var SORT_NAMES = { selection: "selection sort", insertion: "insertion sort", bubble: "bubble sort" };
   A.add({
-    id: "sort", title: "Sort Showdown", icon: "📊", color: "#60a5fa", tag: "Lectures 19–21 · partition and passes", lives: 3,
+    id: "sort", title: "Sort Showdown", icon: "📊", color: "#5b8ff5", tag: "Lectures 19–21 · partition and passes", lives: 3,
     desc: "Run quick sort's partition step by step, and predict the array after a pass of each simple sort.",
     how: "<p><b>Partition</b> (Lecture 21): the pivot is x = A[r]. For each j from p to r − 1, decide: is A[j] ≤ x (then i goes up by one and A[i] swaps with A[j]) or not (move on)?</p><p><b>Passes</b>: pick the array after one pass of selection, insertion or bubble sort. Wrong answers cost a life.</p>",
     learn: "partition from Lecture 21 (pivot A[r], i and j) and the passes of selection, insertion and bubble sort from Lectures 19 and 20.",

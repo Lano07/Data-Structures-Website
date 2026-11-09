@@ -347,15 +347,23 @@
       px: function (a, b, col) { x.fillStyle = col; x.fillRect(Math.round(a), Math.round(b), 1, 1); }
     };
   }
-  // sky in bands, dithered where two bands meet
-  function sky(p, cols) {
-    var band = H / cols.length;
-    cols.forEach(function (col, i) { p.rect(0, i * band, W, band + 1, col); });
-    for (var i = 1; i < cols.length; i++) {
-      var y0 = Math.round(i * band);
-      for (var x = 0; x < W; x += 2) { p.px(x + (i % 2), y0 - 1, cols[i]); p.px(x + 1 - (i % 2), y0, cols[i - 1]); }
+  // colour helpers: lighten (amt > 0) or darken (amt < 0) a #rrggbb colour
+  function shade(hex, amt) {
+    var n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+    function f(c) { return Math.max(0, Math.min(255, Math.round(amt > 0 ? c + (255 - c) * amt : c * (1 + amt)))); }
+    return "#" + ((1 << 24) | (f(r) << 16) | (f(g) << 8) | f(b)).toString(16).slice(1);
+  }
+  // ordered dithering (a 4 x 4 Bayer pattern) blends one colour into the next, the pixel-art way
+  var BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+  function gradient(p, x0, y0, w, h, cols) {
+    var n = cols.length - 1;
+    for (var y = 0; y < h; y++) {
+      var t = n ? y / Math.max(1, h - 1) * n : 0, i = Math.min(Math.max(0, n - 1), Math.floor(t)), f = t - i;
+      if (f <= 0.02 || n === 0) { p.rect(x0, y0 + y, w, 1, cols[i]); continue; }
+      for (var x = 0; x < w; x++) p.px(x0 + x, y0 + y, f * 16 > BAYER[(y & 3) * 4 + (x & 3)] + 0.5 ? cols[i + 1] : cols[i]);
     }
   }
+  function sky(p, cols) { gradient(p, 0, 0, W, H, cols); }
   function disc(p, cx, cy, r, col) { for (var y = -r; y <= r; y++) for (var x = -r; x <= r; x++) if (x * x + y * y <= r * r + r * 0.6) p.px(cx + x, cy + y, col); }
   function stars(p, n, col, seed, maxY) { var R = rng(seed); for (var i = 0; i < n; i++) p.px(Math.floor(R() * W), Math.floor(R() * (maxY || 50)), col); }
   function ridge(p, base, peaks, col, snow) {
@@ -399,7 +407,47 @@
     var R = rng(seed || x + 1);
     for (var yy = y + 3; yy < y + h - 3; yy += 5) for (var xx = x + 2; xx < x + w - 2; xx += 4) if (R() > 0.35) p.rect(xx, yy, 2, 2, win);
   }
-  function cloud(p, x, y, col) { p.rect(x, y, 16, 3, col); p.rect(x + 3, y - 2, 9, 2, col); p.rect(x + 6, y - 3, 4, 1, col); }
+  // a disc cut off below maxY (clouds have flat bellies)
+  function discCut(p, cx, cy, r, col, maxY) { for (var y = -r; y <= r; y++) { if (cy + y > maxY) break; for (var x = -r; x <= r; x++) if (x * x + y * y <= r * r + r * 0.6) p.px(cx + x, cy + y, col); } }
+  // a bank of pixel clouds: round puffs with a bright rim on top, a darker belly, and a flat base
+  function cloudBank(p, x, y, w, col, seed, hiCol, loCol) {
+    var R = rng(seed || 5), puffs = [], hi = hiCol || shade(col, 0.35), lo = loCol || shade(col, -0.28), base = y + 3;
+    for (var cx = x; cx < x + w; cx += 5 + Math.floor(R() * 6)) {
+      var edge = Math.min(cx - x, x + w - cx) / (w / 2);
+      puffs.push([cx, y - Math.round(edge * 4 + R() * 3), 3 + Math.round(edge * 4 + R() * 2)]);
+    }
+    puffs.forEach(function (q) { discCut(p, q[0] + 1, q[1] + 1, q[2], lo, base + 1); });
+    puffs.forEach(function (q) { discCut(p, q[0] - 1, q[1] - 1, q[2], hi, base); });
+    puffs.forEach(function (q) { discCut(p, q[0], q[1], q[2] - 1, col, base); });
+    p.rect(x - 1, base, w + 2, 1, lo);
+  }
+  function cloud(p, x, y, col) { cloudBank(p, x + 2, y, 14, col, x * 7 + y); }
+  // stars: most are single pixels, a few are bright little crosses
+  function starfield(p, w, maxY, n, seed, bright, dim) {
+    var R = rng(seed);
+    for (var i = 0; i < n; i++) {
+      var x = Math.floor(R() * w), y = Math.floor(R() * maxY), k = R();
+      if (k > 0.95) { p.px(x, y, bright); p.px(x - 1, y, dim); p.px(x + 1, y, dim); p.px(x, y - 1, dim); p.px(x, y + 1, dim); }
+      else p.px(x, y, k > 0.55 ? bright : dim);
+    }
+  }
+  function moon(p, cx, cy, r, col) {
+    disc(p, cx, cy, r, shade(col, -0.12));
+    disc(p, cx - 1, cy - 1, r - 1, col);
+    [[-2, -1, 1], [2, 2, 1], [1, -3, 0], [-3, 2, 0]].forEach(function (c) { if (Math.abs(c[0]) < r - 1 && Math.abs(c[1]) < r - 1) { p.px(cx + c[0], cy + c[1], shade(col, -0.2)); if (c[2]) p.px(cx + c[0] + 1, cy + c[1], shade(col, -0.2)); } });
+  }
+  // calm water: a dark gradient with broken lines of light, and the moon's path across it
+  function water(p, y0, w, h, cols, line, seed) {
+    gradient(p, 0, y0, w, h, cols);
+    var R = rng(seed || 9);
+    for (var yy = y0 + 1; yy < y0 + h; yy += 2) for (var x = Math.floor(R() * 8); x < w; x += 7 + Math.floor(R() * 16)) p.rect(x, yy, 2 + Math.floor(R() * 5), 1, line);
+  }
+  function moonPath(p, cx, y0, h, col, seed) {
+    var R = rng(seed || 4);
+    for (var yy = y0 + 1; yy < y0 + h; yy += 2) { var ww = Math.max(2, Math.round(12 - (yy - y0) * 0.35 + R() * 4)); p.rect(cx - ww / 2 + Math.round(R() * 2 - 1), yy, ww, 1, col); }
+  }
+  function pine(p, x, base, hgt, col) { for (var i = 0; i < hgt; i++) { var ww = Math.max(1, Math.round((hgt - i) * 0.45)); if (i % 3 === 2) ww = Math.max(1, ww - 1); p.rect(x - ww, base - i, ww * 2 + 1, 1, col); } p.rect(x, base, 1, 2, col); }
+
   function ship(p, x, y, hull, sail) {
     p.rect(x, y, 22, 3, hull); p.rect(x + 2, y + 3, 18, 2, hull);
     p.rect(x + 10, y - 16, 1, 16, "#4a2b12");
@@ -442,13 +490,15 @@
       p.rect(130, 64, 16, 6, "#e6e6ee"); p.rect(150, 62, 10, 8, "#9d1c27"); p.rect(118, 66, 6, 4, "#ffd23f");
     },
     harbor: function (p) {
-      sky(p, ["#1d1a4a", "#4b2a6b", "#a2456e", "#f08a5d", "#f9c74f"]);
+      sky(p, ["#141238", "#2b2160", "#5a2e70", "#a2456e", "#f08a5d", "#f9c74f"]);
+      starfield(p, W, 22, 26, 31, "#fff4d6", "#9b86c9");
       disc(p, 150, 58, 10, "#ffe08a");
       sea(p, 62, "#1e5f8c", "#4fa3d1", 3);
       for (var i = 0; i < 6; i++) building(p, 6 + i * 16, 50 + (i % 3) * 3, 12, 26, i % 2 ? "#8c6a4f" : "#a48262", "#3a2a1a", i);
       p.rect(0, 70, 100, 2, "#123a57");
       ship(p, 120, 64, "#5a3b22", "#f1e9d0");
-      cloud(p, 20, 14, "#f3a6b8"); cloud(p, 92, 22, "#f6b98f");
+      moonPath(p, 150, 62, 34, "#f9c74f", 12);
+      cloudBank(p, 14, 18, 30, "#c46b8f", 3); cloudBank(p, 86, 28, 26, "#e08a7a", 8);
     },
     andes: function (p) {
       sky(p, ["#3a7bd5", "#5b9be0", "#8cc0ec", "#c3e3f7"]);
@@ -477,8 +527,9 @@
       for (var m = 0; m < 3; m++) { p.rect(10 + m * 18, 52, 8, 5, "#e0c070"); p.rect(10 + m * 18, 57, 2, 2, "#1a1423"); p.rect(16 + m * 18, 57, 2, 2, "#1a1423"); }
     },
     ceiba: function (p) {
-      sky(p, ["#0f2a3d", "#1d4e5f", "#2f7a6a", "#5aa37a"]);
-      stars(p, 24, "#d7f5e8", 4, 30);
+      sky(p, ["#0a1a2c", "#0f2a3d", "#1d4e5f", "#2f7a6a", "#5aa37a"]);
+      starfield(p, W, 34, 34, 4, "#d7f5e8", "#5f9a92");
+      cloudBank(p, 130, 16, 34, "#2f6f6a", 7, "#5fa89a", "#1d4a50");
       ground(p, 82, "#2b4a2a", "#1f3a1e", 11);
       ceiba(p, 96, 84, "#7a6a5a", "#2f7a3e", "#43aa5b");
       p.rect(20, 64, 26, 20, "#3a3a46"); p.rect(26, 70, 14, 14, "#141414");
@@ -504,9 +555,10 @@
       for (var c = 0; c < 4; c++) { p.rect(20 + c * 9, 70, 6, 3, "#8a6a3a"); p.rect(23 + c * 9, 67, 2, 3, "#8a6a3a"); }
     },
     bletchley: function (p) {
-      sky(p, ["#0b1026", "#141a3a", "#1f2752", "#2b3466"]);
-      stars(p, 40, "#e6e6ff", 21, 46);
-      disc(p, 34, 18, 7, "#f5f3ce"); disc(p, 37, 16, 6, "#141a3a");
+      sky(p, ["#070a1c", "#0f1634", "#1a2350", "#2b3466", "#3a4a7a"]);
+      starfield(p, W, 46, 50, 21, "#e6e6ff", "#6f78b0");
+      disc(p, 34, 18, 7, "#f5f3ce"); disc(p, 37, 16, 6, "#121a3e");
+      cloudBank(p, 120, 22, 36, "#2b3a6a", 5, "#4a5f96", "#1a2550");
       ground(p, 78, "#24402a", "#1b3220", 17);
       p.rect(70, 36, 80, 42, "#7a5a4a"); p.rect(70, 30, 80, 6, "#4a3a3a"); p.rect(100, 22, 20, 14, "#7a5a4a"); p.rect(106, 16, 8, 8, "#4a3a3a");
       for (var x = 76; x < 146; x += 10) for (var y = 42; y < 72; y += 12) p.rect(x, y, 5, 7, (x + y) % 3 ? "#ffd166" : "#3a2a2a");
@@ -531,7 +583,9 @@
       p.rect(0, 76, W, 20, "#4a3a2a"); for (var k = 0; k < 8; k++) p.rect(10 + k * 22, 70, 14, 6, "#e6e6ee");
     },
     pitch: function (p) {
-      sky(p, ["#2d1b4e", "#5a2a5e", "#a8445e", "#e9805a", "#f6b26b"]);
+      sky(p, ["#1a1238", "#2d1b4e", "#5a2a5e", "#a8445e", "#e9805a", "#f6b26b"]);
+      starfield(p, W, 20, 22, 17, "#ffe9d0", "#8a6aa0");
+      cloudBank(p, 22, 26, 34, "#8a3f6a", 11); cloudBank(p, 134, 20, 30, "#a85a6a", 13);
       disc(p, 96, 60, 14, "#ffcf70");
       p.rect(0, 62, W, 34, "#1b1b22");
       for (var x = 0; x < W; x += 5) p.rect(x, 64 + (x % 4) * 6, 3, 1, "#3a3a4a");
@@ -539,12 +593,58 @@
       palm(p, 14, 62, 22, "#4a2b12", "#1f4a2a"); palm(p, 178, 62, 26, "#4a2b12", "#1f4a2a");
       p.rect(84, 76, 24, 16, "#b08d57"); p.rect(88, 80, 16, 12, "#4a2b12"); disc(p, 96, 86, 3, "#ffd23f");
     },
+    night: function (p) {
+      paintNight(p, W, H, 0);
+    },
     vault: function (p) {
       p.rect(0, 0, W, H, "#141221");
       for (var y = 0; y < H; y += 8) for (var x = (y / 8) % 2 ? 0 : 8; x < W; x += 16) p.rect(x, y, 15, 7, "#1e1a33");
       disc(p, 96, 48, 30, "#b08d57"); disc(p, 96, 48, 24, "#8a6a3a"); disc(p, 96, 48, 6, "#ffd23f");
       for (var i = 0; i < 8; i++) { var t = i * Math.PI / 4; p.rect(96 + Math.round(Math.cos(t) * 16) - 1, 48 + Math.round(Math.sin(t) * 16) - 1, 3, 3, "#ffd23f"); }
     }
+  };
+  // a still night over the water: deep sky, stars, the moon, teal clouds, far mountains, a lit harbour town, a
+  // lighthouse, and the moon's path on the water. Painted at any size (the home banner uses a wide one).
+  function paintNight(p, w, h, seed) {
+    var hz = Math.round(h * 0.7);
+    gradient(p, 0, 0, w, hz, ["#05071a", "#0b1030", "#141c48", "#1f2c60", "#2e3f78", "#4a4f86", "#7a5a8a"]);
+    starfield(p, w, Math.round(hz * 0.62), Math.round(w * h / 140), 7 + seed, "#f4f2ff", "#7d86c0");
+    moon(p, Math.round(w * 0.8), Math.round(h * 0.2), Math.max(5, Math.round(h * 0.085)), "#fff1c2");
+    cloudBank(p, Math.round(w * 0.05), Math.round(h * 0.3), Math.round(w * 0.22), "#2a6f78", 3 + seed, "#4fb3a6", "#1b4560");
+    cloudBank(p, Math.round(w * 0.42), Math.round(h * 0.2), Math.round(w * 0.18), "#256672", 9 + seed, "#46a59a", "#183f58");
+    cloudBank(p, Math.round(w * 0.66), Math.round(h * 0.42), Math.round(w * 0.26), "#2f7a80", 15 + seed, "#5cc0b0", "#1d4a62");
+    var mBase = hz;
+    for (var x = 0; x < w; x++) {
+      var t = x / w, mh = Math.round(h * (0.13 + 0.09 * Math.sin(t * 9 + 1) + 0.05 * Math.sin(t * 23 + seed)));
+      p.rect(x, mBase - mh, 1, mh, "#1a2150");
+      if (Math.sin(t * 9 + 1) > 0.55) p.px(x, mBase - mh, "#3a4580");
+    }
+    for (var x2 = 0; x2 < w; x2++) { var hh = Math.round(h * (0.05 + 0.025 * Math.sin(x2 / w * 31 + 2))); p.rect(x2, mBase - hh, 1, hh, "#10142e"); }
+    var R = rng(41 + seed);
+    for (var px = Math.round(w * 0.04); px < w * 0.3; px += 4 + Math.floor(R() * 6)) pine(p, px, mBase - 1, 5 + Math.floor(R() * 6), "#0b0e22");
+    for (var b = 0; b < 7; b++) {
+      var bx = Math.round(w * 0.36) + b * Math.round(w * 0.035), bh = 5 + Math.floor(R() * 7), bw = Math.round(w * 0.028);
+      p.rect(bx, mBase - bh, bw, bh, "#0d1128");
+      p.rect(bx, mBase - bh - 1, bw, 1, "#141a3a");
+      for (var wy = mBase - bh + 2; wy < mBase - 1; wy += 3) for (var wx = bx + 1; wx < bx + bw - 1; wx += 2) if (R() > 0.55) p.px(wx, wy, "#ffcf6b");
+    }
+    var lx = Math.round(w * 0.9), lb = mBase;
+    p.rect(lx - 3, lb - 2, 7, 2, "#0d1128");
+    for (var i = 0; i < 16; i++) p.rect(lx - 2 + Math.floor(i / 8), lb - 2 - i, 5 - Math.floor(i / 8) * 2 + (i < 8 ? 0 : 0), 1, i % 4 < 2 ? "#e4e6f6" : "#c0392b");
+    p.rect(lx - 2, lb - 21, 5, 3, "#ffd23f"); p.rect(lx - 3, lb - 22, 7, 1, "#0d1128"); p.rect(lx - 1, lb - 24, 3, 2, "#0d1128");
+    water(p, hz, w, h - hz, ["#24305f", "#141a3c", "#0a0d22"], "#3a4a86", 5 + seed);
+    moonPath(p, Math.round(w * 0.8), hz, h - hz, "#d9c88a", 6 + seed);
+    for (var r2 = 0; r2 < 6; r2++) { var rx = Math.round(w * 0.36) + Math.floor(R() * w * 0.25); p.rect(rx, hz + 2 + r2 * 2, 2, 1, "#ffcf6b"); }
+  }
+  var panoCache = {};
+  // a wide scene for banners (the home page): 336 x 112 pixels, shown with image-rendering: pixelated
+  A.panorama = function (id) {
+    if (panoCache[id]) return panoCache[id];
+    var c = document.createElement("canvas");
+    c.width = 336; c.height = 112;
+    paintNight(P(c), 336, 112, 1);
+    try { panoCache[id] = c.toDataURL(); } catch (e) { panoCache[id] = ""; }
+    return panoCache[id];
   };
   A.SCENES = Object.keys(SCENES);
   var sceneCache = {};
