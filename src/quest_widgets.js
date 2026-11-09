@@ -237,7 +237,9 @@
       var bt = e.target.closest(".qw-chip");
       if (!bt || bt.classList.contains("right")) return;
       if (!pick || pick.dataset.side === bt.dataset.side) { if (pick) pick.classList.remove("on"); pick = bt; bt.classList.add("on"); return; }
-      if (pick.dataset.i === bt.dataset.i) {
+      // a pair matches when the meaning's TEXT is right: two terms can share the same meaning (two things can both be O(1))
+      var li = pick.dataset.side === "l" ? +pick.dataset.i : +bt.dataset.i, ri = pick.dataset.side === "r" ? +pick.dataset.i : +bt.dataset.i;
+      if (b.pairs[li][1] === b.pairs[ri][1]) {
         pick.classList.remove("on"); pick.classList.add("right"); bt.classList.add("right"); pick.disabled = bt.disabled = true;
         done++;
         pick = null;
