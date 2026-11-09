@@ -678,6 +678,9 @@ def q_beat(kind, head, body, where):
     b = {"t": kind}
     b.update({k: v for k, v in attrs.items() if k not in ("t",)})
     text, codes = q_split_fence(body)
+    for l in text:
+        if re.match(r"^\s*\w+=(\"[^\"]*\"|'[^']*')\s*$", l):
+            err("%s: the attribute line %r must be on the @%s line itself" % (where, l.strip(), kind))
     expl = " ".join(l[2:].strip() for l in text if l.startswith(">>"))
     plain = [l for l in text if not l.startswith(">>")]
     if expl:
@@ -837,7 +840,7 @@ def load_quest(lessons, ex_ids):
                     if b["t"] == "predict":
                         jobs.append((where, b, b["code"]))
                     if b["t"] == "fill" and re.search(r"\bint\s+main\s*\(", b["code"]):
-                        sol = re.sub(r"\[\[([^\]]+)\]\]", lambda m: m.group(1).split("|")[0].strip(), b["code"])
+                        sol = re.sub(r"\[\[(.+?)\]\](?!\])", lambda m: m.group(1).split("|")[0].strip(), b["code"])
                         jobs.append((where + " (solution)", None, sol))
                     if b["t"] == "code" and b.get("ex") not in ex_ids:
                         err("%s: unknown exercise %s" % (where, b.get("ex")))

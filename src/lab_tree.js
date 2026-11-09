@@ -215,6 +215,7 @@
     host.querySelector("#tv-null").addEventListener("change", go);
     if (preset && preset.spec) { host.querySelector("#tv-tree").value = "custom"; if (preset.kind) host.querySelector("#tv-kind").value = preset.kind; }
     if (preset && preset.level) { host.querySelector("#tv-tree").value = "own"; own.querySelector("#tv-level").value = preset.level; setMode("level"); if (preset.kind) host.querySelector("#tv-kind").value = preset.kind; }
+    if (preset && preset.pre && preset["in"]) { host.querySelector("#tv-tree").value = "own"; own.querySelector("#tv-pre").value = preset.pre; own.querySelector("#tv-in1").value = preset["in"]; setMode("prein"); if (preset.kind) host.querySelector("#tv-kind").value = preset.kind; }
     go();
     return player;
   };
