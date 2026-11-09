@@ -290,6 +290,8 @@
     if (st.k === "gym") { var D = window.CODELAB_DATA; return D.exercises.filter(function (e) { return e.topic === st.topic && s.ex && s.ex[e.id] && s.ex[e.id].passed; }).length >= (st.n || 1); }
     if (st.k === "diag") return (s.diag || []).length > 0;
     if (st.k === "written") return Object.keys(s.wr || {}).filter(function (k) { return s.wr[k] && s.wr[k].done; }).length >= (st.n || 1);
+    if (st.k === "wq") { var w = (s.wr || {})[st.id]; return !!(w && w.done); }
+    if (st.k === "cw2") { var a = ((s.cw2 || {}).att || {})[st.paper]; return !!a && (!st.min || a.best / 40 >= st.min); }
     return false;
   };
   var PART_TOPIC = { b: "cpp", c: "lists", d: "recursion", e: "stacks", f: "trees", g: "bst", h: "heaps", i: "hashing", j: "graphs", k: "sorting", l: "bigo" };
@@ -306,13 +308,26 @@
     var D = window.CODELAB_DATA, parts = (D.parts || []).map(function (p) { return p.id; });
     var beginner = { id: "beginner", title: "Learn the course from the start", sub: "For a first pass through everything", desc: "Every lesson in order, each part followed by practice on its concepts and two Code Gym exercises. Steps tick themselves off as you work.",
       groups: parts.filter(function (p) { return lessonsOfPart(p).length; }).map(function (p) { var part = D.parts.filter(function (x) { return x.id === p; })[0]; return { title: "Part " + p.toUpperCase() + ": " + (part ? part.title : ""), steps: partSteps(p) }; }) };
-    var cw2 = { id: "cw2", title: "Coursework 2 and quiz preparation", sub: "The second half of the course", desc: "Lectures 14 to 21: hashing, graphs and sorting, with stacks and queues revisited. Its dates and exact topics were not in the notes, so check them against what your lecturer announces.",
-      groups: [
-        { title: "Hashing (Lectures 14–15)", steps: partSteps("i").concat([{ k: "lab", id: "hash", n: 8 }]) },
-        { title: "Graphs (Lectures 15–19)", steps: partSteps("j").concat([{ k: "lab", id: "graph", n: 8 }]) },
-        { title: "Sorting (Lectures 19–21)", steps: partSteps("k").concat([{ k: "lab", id: "sort", n: 8 }]) },
-        { title: "Check yourself", steps: [{ k: "cards", deck: "hashing", n: 8 }, { k: "cards", deck: "graphs", n: 8 }, { k: "cards", deck: "sorting", n: 6 }, { k: "exam", paper: "second" }, { k: "exam", paper: "second", min: 0.7 }] }
-      ] };
+    // Coursework Exam #2 (Tuesday 17 November 2026, 9:00 am): one area a day, weighted by its marks, then the mock papers
+    var W = function (id) { return { k: "wq", id: id }; };
+    var cwDays = [
+      ["Linked lists", "Question 1 is about 9 marks on linked lists, stacks and queues. Write each list function on paper first, then check it.", ["c2-traversal", "c3-insertion", "c4-deletion", "c5-more-ops"], ["lists"], [W("w-ll-count"), W("w-ll-delete"), { k: "gym", topic: "linked-lists", n: 2 }]],
+      ["Stacks and queues: using them", "You will not have to write a stack or a queue, but you may have to use one: a queue in a level-order traversal, a stack to reverse values or check brackets. The online lab today (Week 11) reviews past-paper questions.", ["e1-stacks", "e2-queues", "e3-applications"], ["stacks"], [W("w-sq-brackets"), { k: "lab", id: "stackqueue", n: 5 }]],
+      ["Binary trees", "Question 2 is about 11 marks on binary trees and BSTs: the terms, the traversals, level order with a queue, rebuilding a tree from two traversals, and recursive tree functions.", ["f1-terminology", "f2-traversals", "f3-tree-code", "f4-level-order-types"], ["trees"], [W("w-bt-terms"), W("w-bt-rebuild"), W("w-bt-height"), W("w-bt-leaves"), { k: "lab", id: "traversal", n: 8 }]],
+      ["Binary search trees", "Insert, search, delete in all three cases, the inorder successor with parent pointers, and why a degenerate tree is slow.", ["g1-bst-property", "g2-insert-search", "g3-parent-successor", "g4-deletion", "g5-performance"], ["bst"], [W("w-bst-delete"), W("w-bst-succ"), W("w-bst-perf"), { k: "lab", id: "bst", n: 8 }]],
+      ["Heaps and priority queues", "Question 3 is about 10 marks: the array layout, maxHeapify, buildMaxHeap, extract, insert, increase key, heap sort and the priority-queue operations with their running times.", ["h1-heap-arrays", "h2-heapify-build", "h3-delete-heapsort", "h4-insert-priority"], ["heaps"], [W("w-heap-build"), W("w-heap-extract"), W("w-heap-why"), { k: "lab", id: "heap", n: 8 }]],
+      ["Hashing, graphs and performance", "Question 4: about 7 marks on hashing and graphs and 3 on performance. Probe sequences, BFS and DFS orders, Dijkstra's table, and big-O with a reason.", ["i1-hash-tables", "i2-probing", "i3-chaining-strings", "j1-graph-basics", "j3-bfs-dfs", "j4-dijkstra", "l1-performance"], ["hashing", "graphs", "bigo"], [W("w-hash-linear"), W("w-graph-bfs"), W("w-graph-dijkstra"), W("w-bigo-loops"), { k: "exam", paper: "cw2drill" }]],
+      ["Mock papers under exam conditions", "Sit a paper in 90 minutes, mark it honestly against its scheme, then go back to the area where you lost the most marks.", [], [], [{ k: "cw2", paper: "A" }, { k: "cw2", paper: "B" }]],
+      ["The last paper, then rest", "The exam is tomorrow, 9:00 to 10:30 am, in the JFK Auditorium. Sit the last paper in the morning, look again at what you got wrong, and get a good night's sleep.", [], [], [{ k: "cw2", paper: "C" }, { k: "cards", deck: "trees", n: 8 }, { k: "cards", deck: "heaps", n: 8 }]]
+    ];
+    var cwStart = new Date(2026, 10, 9);
+    var cw2 = { id: "cw2", title: "Coursework Exam #2 in eight days", sub: "Tuesday 17 November, 9:00 am, JFK Auditorium", desc: "A day-by-day plan for the second coursework exam (4 short-answer questions, 40 marks): one area of the course outline a day, weighted by its marks, then the three mock papers in the exam's format.",
+      groups: cwDays.map(function (d, i) {
+        var from = new Date(cwStart.getFullYear(), cwStart.getMonth(), cwStart.getDate() + i), to = new Date(from.getFullYear(), from.getMonth(), from.getDate() + 1);
+        var steps = d[2].filter(function (id) { return D.lessons[id]; }).map(function (id) { return { k: "lesson", id: id }; });
+        d[3].forEach(function (t) { L.topicConcepts(t).filter(L.practiseable).forEach(function (c) { steps.push({ k: "practice", c: c, n: 5, s: 0.65 }); }); });
+        return { title: from.toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" }) + ": " + d[0], note: d[1], steps: steps.concat(d[4]), from: from.getTime(), to: to.getTime(), nowLabel: "today" };
+      }) };
     var ex = L.examDate(), weeks = [];
     var plan = [
       ["Diagnose, then fix the foundations", [{ k: "diag" }, { k: "practice", c: "cpp.ptr" }, { k: "practice", c: "list.trav" }, { k: "practice", c: "list.insert" }, { k: "practice", c: "rec.basics" }, { k: "practice", c: "sq.stack" }, { k: "cards", deck: "cpp", n: 10 }, { k: "cards", deck: "lists", n: 8 }]],
@@ -332,7 +347,9 @@
         { title: "Hard practice", steps: [{ k: "gym", topic: "bst", n: 4 }, { k: "gym", topic: "heaps", n: 3 }, { k: "gym", topic: "graphs", n: 3 }, { k: "gym", topic: "sorting", n: 3 }, { k: "written", n: 5 }, { k: "exam", paper: "paperD", min: 0.8 }] }
       ].filter(function (g) { return g.steps.length; }) };
     // steps that need a page this build does not have are left out rather than shown as impossible
-    [fin, cw2, beginner, adv].forEach(function (p) { p.groups.forEach(function (g) { g.steps = g.steps.filter(function (s) { return s.k !== "written" || (CL.pages && CL.pages.written); }); }); });
+    var wids = {};
+    (D.written || []).forEach(function (q) { wids[q.id] = 1; });
+    [fin, cw2, beginner, adv].forEach(function (p) { p.groups.forEach(function (g) { g.steps = g.steps.filter(function (s) { return (s.k !== "written" && s.k !== "wq") || (CL.pages && CL.pages.written && (s.k !== "wq" || wids[s.id])); }); }); });
     return [fin, cw2, beginner, adv];
   };
 

@@ -534,7 +534,10 @@ WRITTEN_TOPICS = ("cpp", "lists", "recursion", "stacks", "trees", "bst", "heaps"
 WRITTEN_TYPES = ("code", "trace", "explain", "complexity", "proof", "design")
 def load_written(lessons):
     """Written-answer practice: original questions with marking schemes. Code answers are compiled with g++ and run by the interpreter."""
-    path = os.path.join(CONTENT, "written.md")
+    return parse_written(os.path.join(CONTENT, "written.md"), lessons)
+
+def parse_written(path, lessons, extra=()):
+    """Reads a file of written-answer blocks (=== id, key: value lines, then --- sections) and checks each one."""
     if not os.path.exists(path):
         return []
     text = "\n".join(l for l in open(path).read().split("\n") if not l.startswith("# "))
@@ -590,12 +593,57 @@ def load_written(lessons):
                     "q": secs.get("question", ""), "rubric": rubric, "answer": secs.get("answer", ""), "given": secs.get("given", ""),
                     "mistakes": [l[2:].strip() for l in secs.get("mistakes", "").split("\n") if l.startswith("- ")], "format": secs.get("format", ""),
                     "check": secs.get("check", ""), "expect": secs.get("expect", "")})
+        for k in extra:
+            out[-1]["qn" if k == "q" else k] = q.get(k, "")   # "q" already holds the question's text
+        if "stem" in secs:
+            out[-1]["stem"] = secs["stem"]
     if jobs:
         res = interp_batch([{"code": j[1]} for j in jobs])
         for (qid, prog, want), r in zip(jobs, res):
             if r["err"] or norm(r["out"]) != norm(want):
                 err("written %s: the interpreter gives %r %s, expected %r" % (qid, r["out"], r["err"], want))
     return out
+
+# Coursework Exam #2 (the outline the course gave): 4 short-answer questions, 40 marks, 90 minutes, with these marks per area
+CW2_AREAS = [("lsq", "Linked lists, stacks and queues", 9), ("trees", "Binary trees and BSTs", 11), ("heaps", "Heaps and priority queues", 10),
+             ("hashgraph", "Hashing and graphs", 7), ("perf", "Performance analysis", 3)]
+
+def load_cw2(lessons):
+    """Mock papers in the Coursework Exam #2 format. Each part is a written-answer block; parts with the same paper and q are one question."""
+    parts = parse_written(os.path.join(CONTENT, "cw2.md"), lessons, extra=("paper", "q", "part", "area"))
+    areas = dict((a[0], a) for a in CW2_AREAS)
+    papers = {}
+    for x in parts:
+        if not x["paper"] or not x["qn"].isdigit() or not re.match(r"^[a-e]$", x["part"]):
+            err("cw2 %s: needs paper, q (1 to 4) and part (a to e)" % x["id"])
+            continue
+        if x["area"] not in areas:
+            err("cw2 %s: unknown area %r" % (x["id"], x["area"]))
+        pp = papers.setdefault(x["paper"], {})
+        x["qn"] = int(x["qn"])
+        pp.setdefault(x["qn"], []).append(x)
+    out = []
+    for pid in sorted(papers):
+        qs = papers[pid]
+        if sorted(qs) != [1, 2, 3, 4]:
+            err("cw2 paper %s: needs questions 1 to 4, has %s" % (pid, sorted(qs)))
+        got = {}
+        questions = []
+        for qn in sorted(qs):
+            ps = sorted(qs[qn], key=lambda x: x["part"])
+            letters = [x["part"] for x in ps]
+            if letters != list("abcde"[:len(ps)]):
+                err("cw2 paper %s question %d: parts must be a, b, c... in order, has %s" % (pid, qn, letters))
+            if "stem" in ps[0] and any("stem" in x for x in ps[1:]):
+                err("cw2 paper %s question %d: only part a may have a --- stem" % (pid, qn))
+            for x in ps:
+                got[x["area"]] = got.get(x["area"], 0) + x["marks"]
+            questions.append({"q": qn, "stem": ps[0].get("stem", ""), "marks": sum(x["marks"] for x in ps), "parts": ps})
+        for a in CW2_AREAS:
+            if got.get(a[0], 0) != a[2]:
+                err("cw2 paper %s: %s has %d marks, the outline says %d" % (pid, a[1], got.get(a[0], 0), a[2]))
+        out.append({"id": pid, "questions": questions, "marks": sum(q["marks"] for q in questions), "minutes": 90})
+    return {"areas": [{"id": a[0], "title": a[1], "marks": a[2]} for a in CW2_AREAS], "papers": out}
 
 # ---- random test templates: $VALS(n,lo,hi) $KEYS(n,lo,hi) $SORTED(n,lo,hi) $INT(lo,hi) $N() $PICK(); n may be a range a-b.
 # The browser expands them with the same rules (app.js expandRandom); keep the two in step.
@@ -1016,6 +1064,7 @@ def main():
         "lectures": load_lectures(lessons), "glossary": load_glossary(lessons),
         "cppSupport": load_cpp_support(), "cppStats": {"programs": len(jobs), "gpp": not QUICK},
         "written": load_written(lessons),
+        "cw2": load_cw2(lessons),
         "quest": quest,
     }
     for e in data["exercises"]:
@@ -1025,13 +1074,13 @@ def main():
                 t.pop("stdin", None)
 
     # ---- bundle
-    css_files = ["style.css", "game.css", "ide.css", "quest.css", "home.css", "theme.css"]
+    css_files = ["style.css", "game.css", "ide.css", "quest.css", "home.css", "cw2.css", "theme.css"]
     css = "\n".join(open(os.path.join(SRC, f)).read() for f in css_files if os.path.exists(os.path.join(SRC, f)))
     # the interpreter has its own <script id="cpp-core">: the runner builds its Web Worker from that element's text
     core_files = ["cpp_lex.js", "cpp_parse.js", "cpp_check.js", "cpp_run.js"]
     core = "\n".join(open(os.path.join(SRC, f)).read() for f in core_files)
     js_files = ["editor.js", "editor_tools.js", "settings.js", "md.js", "tutor.js", "runner.js", "project.js", "terminal.js", "workspace.js", "ide.js", "memviz.js", "visualizer.js", "debugger.js",
-                "lab_core.js", "lab_tree.js", "lab_avl.js", "lab_heap.js", "lab_hash.js", "lab_graph.js", "lab_sort.js", "lab_extra.js", "lab_race.js", "lab_mem.js", "trainer.js", "trainer2.js", "progress.js", "fx.js", "game.js", "arcade.js", "arcade_games.js", "boss.js", "learn.js", "pages_learn.js", "pages_ref.js", "pages_exam.js"]
+                "lab_core.js", "lab_tree.js", "lab_avl.js", "lab_heap.js", "lab_hash.js", "lab_graph.js", "lab_sort.js", "lab_extra.js", "lab_race.js", "lab_mem.js", "trainer.js", "trainer2.js", "progress.js", "fx.js", "game.js", "arcade.js", "arcade_games.js", "boss.js", "learn.js", "pages_learn.js", "pages_ref.js", "pages_exam.js", "pages_cw2.js"]
     js_files += [f for f in QUEST_JS if os.path.exists(os.path.join(SRC, f))]
     js = "\n".join(open(os.path.join(SRC, f)).read() for f in js_files)
     for f in core_files + js_files:

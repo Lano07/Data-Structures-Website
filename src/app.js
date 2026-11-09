@@ -181,7 +181,7 @@
     else if (hash === "play") { r = "play"; pagePlay(); }
     else if (hash === "ref") { r = "ref"; pageRef(); }
     else if (CL.pages[hash]) { r = CL.pages[hash].nav; CL.pages[hash].draw(CL.ui); }
-    else if (/^[a-z]+-./.test(hash) && CL.pages[hash.split("-")[0] + "-"]) { var pg = CL.pages[hash.split("-")[0] + "-"]; r = pg.nav; if (pg.draw(CL.ui, hash.slice(hash.indexOf("-") + 1)) === false) { main.innerHTML = ""; pageHome(); r = "home"; } }
+    else if (/^[a-z0-9]+-./.test(hash) && CL.pages[hash.split("-")[0] + "-"]) { var pg = CL.pages[hash.split("-")[0] + "-"]; r = pg.nav; if (pg.draw(CL.ui, hash.slice(hash.indexOf("-") + 1)) === false) { main.innerHTML = ""; pageHome(); r = "home"; } }
     else pageHome();
     document.querySelectorAll(".nav a").forEach(function (a) { a.classList.toggle("on", a.getAttribute("data-r") === r); });
     bookmarkButton(hash);
@@ -299,6 +299,14 @@
           return '<a href="' + href + '">' + esc(t.t) + " <span>" + t.n + " Q" + "</span></a>";
         }).join("") + "</div>";
       main.appendChild(ex);
+    }
+    var C2 = CL.CW2;
+    if (C2 && daysTo(C2.when) >= 0 && now - C2.when <= C2.minutes * 60000) {
+      var c2 = h("section", "exam-card cw2-card"), areas = (D.cw2 && D.cw2.areas) || [];
+      c2.innerHTML = "<h2>" + esc(C2.name) + " " + esc(C2.daysText()) + '</h2><div class="when">' + esc(C2.when.toLocaleDateString([], { weekday: "long", day: "numeric", month: "long" })) + ", " + esc(C2.time) + ", " + esc(C2.where) + ". " + esc(C2.format) + ", 90 minutes, " + esc(C2.weight) + " of your grade. The marks for each area are beside its link.</div>" +
+        '<div class="exam-topics">' + areas.map(function (a) { var l = (C2.links[a.id] || [])[0]; return '<a href="' + (l ? "#l-" + l[1] : "#cw2") + '">' + esc(a.title) + " <span>" + a.marks + " marks</span></a>"; }).join("") + "</div>" +
+        '<div class="btns cw2-acts"><a class="btn primary" href="#cw2">Get ready: the Coursework Exam #2 page</a><a class="btn blue" href="#cw2-A">Sit mock paper A</a><a class="btn" href="#path-cw2">The eight-day plan</a></div>';
+      main.appendChild(c2);
     }
     var fx = LN.examDate(), fdays = daysTo(fx), goal = store.goal || {};
     if (fdays >= 0 && now - fx <= (goal.examMin || 120) * 60000) {
@@ -1611,6 +1619,15 @@
   }
   CL.questionText = questionText;
 
+  // while Coursework Exam #2 is coming up, a banner on the practice pages points to its page
+  function cw2Banner() {
+    var C2 = CL.CW2;
+    if (!C2 || Date.now() > C2.when.getTime() + C2.minutes * 60000) return null;
+    var a = h("a", "cw2-banner");
+    a.href = "#cw2";
+    a.innerHTML = "<b>Coursework Exam #2 " + esc(C2.daysText()) + "</b><span>" + esc(C2.format) + ", 90 minutes. Three mock papers in its format, with marking schemes, and an eight-day plan.</span><span class=\"btn primary small\">Get ready</span>";
+    return a;
+  }
   function pageTrain() {
     var p = page("train-page");
     var pref = store.trainPref;
@@ -1624,6 +1641,8 @@
     p.innerHTML = '<div class="eyebrow">Practice</div><h1 class="title">Trace Trainer</h1><p class="lede">Exam-style questions, made fresh every time from random values, so you never run out. Answer, check, then read the worked solution or watch the same values in a lab. Your results build up a picture of which topics need work.</p>' +
       '<a class="tr-exam" href="#exam"><b>Ready to test yourself?</b><span>Sit a timed mock exam: a new CW1-format paper every time, the four hand-written papers, or the second half of the course.</span><span class="go">Mock exams →</span></a>' +
       '<nav class="tr-more-links" aria-label="More practice"><a href="#written"><b>Written answers</b><span>Explain, trace and write code, marked against a scheme</span></a><a href="#cards"><b>Flashcards</b><span>Terms, costs and code, with spaced repetition</span></a><a href="#diag"><b>Diagnostic test</b><span>Find what to fix first</span></a><a href="#exam-review"><b>Exam review</b><span>Answer formats, handwritten C++, timing</span></a></nav>';
+    var cwb = cw2Banner();
+    if (cwb) p.insertBefore(cwb, p.querySelector(".lede").nextSibling);
     var bar = h("div", "tr-bar");
     p.appendChild(bar);
     var grid = h("div", "tr-grid");
@@ -1761,6 +1780,8 @@
   var PAPERS = [
     { id: "cw1", title: "Coursework Exam #1 format", sub: "A new paper every time", mix: { lists: 2, trees: 5, bst: 10, heaps: 7, bigo: 4 }, minutes: 50, ones: 14,
       desc: "28 multiple-choice questions, 42 marks, 50 minutes: 2 linked lists, 5 binary trees, 10 BSTs, 7 heaps and 4 performance, with 14 one-mark and 14 two-mark questions, like the real paper." },
+    { id: "cw2drill", title: "Coursework Exam #2 topics", sub: "A new paper every time", mix: { lists: 4, stacks: 3, trees: 4, bst: 4, heaps: 7, hashing: 2, graphs: 3, bigo: 3 }, minutes: 45,
+      desc: "30 quick multiple-choice questions on the Coursework Exam #2 topics, weighted like its marks: linked lists, stacks and queues (7), binary trees and BSTs (8), heaps (7), hashing and graphs (5) and performance (3). The real exam is short answer: sit the mock papers on the Coursework Exam #2 page for its format." },
     { id: "second", title: "Hashing, graphs and sorting", sub: "A new paper every time", mix: { hashing: 7, graphs: 9, sorting: 8 }, minutes: 45,
       desc: "24 questions on the second half of the course (Lectures 14–21): probing and chaining, BFS, DFS, Dijkstra, spanning trees, and every sort." },
     { id: "all", title: "The whole course", sub: "A new paper every time", mix: { cpp: 2, lists: 3, recursion: 2, stacks: 2, trees: 3, bst: 4, heaps: 4, hashing: 3, graphs: 3, sorting: 3, bigo: 1 }, minutes: 60,
@@ -1824,6 +1845,8 @@
       view = "setup"; stopTimer();
       var hist = store.exams;
       p.innerHTML = '<div class="eyebrow">Practice</div><h1 class="title">Mock exams</h1><p class="lede">Sit a full paper under exam conditions: a timer, no feedback until you submit, and questions you can flag and come back to. Then see your marks by topic, every worked solution, and what to practise next.</p>';
+      var cwb2 = cw2Banner();
+      if (cwb2) p.appendChild(cwb2);
       if (S && S.items) {
         var pp0 = paperById[S.paper];
         var res = h("div", "ex-resume", "<div><b>Paper in progress:</b> " + esc(pp0 ? pp0.title : "") + " · " + Object.keys(S.answers).length + " of " + S.items.length + " answered · " + fmtClock(S.minutes * 60000 - S.elapsed) + ' left</div><div class="btns"><button type="button" class="btn primary" data-a="resume">Resume</button><button type="button" class="btn ghost" data-a="drop">Abandon it</button></div>');

@@ -20,7 +20,7 @@ async def main():
             await pg.goto(URL + "#home"); await pg.wait_for_timeout(600)
             D = await pg.evaluate("({ lessons: Object.keys(CODELAB_DATA.lessons), labs: CODELAB_DATA.labs.map(l => l.id), ex: CODELAB_DATA.exercises.map(e => e.id), wr: (CODELAB_DATA.written || []).map(q => q.id), q: CL.Quest.worlds().flatMap(w => w.levels.map(l => l.id)) })")
             routes = ["home", "learn", "lectures", "glossary", "lab", "train", "exam", "gym", "play", "ref", "cpp", "prefs", "progress", "cards", "diag", "paths", "written", "exam-review", "quest", "journal",
-                      "path-final", "path-cw2", "path-beginner", "path-advanced"] + ["l-" + x for x in D["lessons"]] + ["lab-" + x for x in D["labs"]] + ["ex-" + x for x in D["ex"]] + ["written-" + x for x in D["wr"]] + ["quest-" + x for x in D["q"]]
+                      "path-final", "path-cw2", "path-beginner", "path-advanced", "cw2", "cw2-A", "cw2-B", "cw2-C"] + ["l-" + x for x in D["lessons"]] + ["lab-" + x for x in D["labs"]] + ["ex-" + x for x in D["ex"]] + ["written-" + x for x in D["wr"]] + ["quest-" + x for x in D["q"]]
             for r in routes:
                 errs.clear()
                 await pg.evaluate("location.hash = %s" % json.dumps("#" + r))
