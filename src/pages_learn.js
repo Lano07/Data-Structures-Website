@@ -278,6 +278,8 @@
     if (s.k === "gym") { var passed = D0.exercises.filter(function (e) { return e.topic === s.topic && st.ex[e.id] && st.ex[e.id].passed; }).length; return { text: "Pass " + (s.n || 1) + " Code Gym exercise" + ((s.n || 1) > 1 ? "s" : "") + " on " + (CL.ui.topicTitle[s.topic] || s.topic).toLowerCase(), href: "#gym", gym: s.topic, detail: passed + " passed so far" }; }
     if (s.k === "diag") return { text: "Take the diagnostic test", href: "#diag", detail: "" };
     if (s.k === "written") { var wd = Object.keys(st.wr || {}).filter(function (k) { return st.wr[k] && st.wr[k].done; }).length; return { text: "Write and mark " + (s.n || 1) + " exam-style written answers", href: "#written", detail: wd + " done so far" }; }
+    if (s.k === "wq") { var wq = (D0.written || []).filter(function (q) { return q.id === s.id; })[0], wr = (st.wr || {})[s.id]; return { text: "Write and mark: " + (wq ? String(wq.q).split("\n")[0].replace(/`/g, "").replace(/\*\*/g, "").slice(0, 110) : s.id), href: "#written-" + s.id, detail: wr && wr.done ? "Best: " + wr.best + "/" + (wq ? wq.marks : "") : wq ? wq.marks + " marks, about " + wq.minutes + " minutes" : "" }; }
+    if (s.k === "cw2") { var ca = ((st.cw2 || {}).att || {})[s.paper]; return { text: "Sit Coursework Exam #2 mock paper " + s.paper + " in 90 minutes, then mark it", href: "#cw2-" + s.paper, detail: ca ? "Best: " + ca.best + "/40" : "4 questions, 40 marks" }; }
     return { text: s.k, href: "#home" };
   }
   function stepLink(si) {
@@ -331,7 +333,7 @@
     pt.groups.forEach(function (g) {
       var sec = ui.h("section", "path-grp" + (g.from && now >= g.from && now < g.to ? " now" : ""));
       var done = g.steps.filter(LN.stepDone).length;
-      sec.innerHTML = "<h2>" + esc(g.title) + (g.from && now >= g.from && now < g.to ? ' <span class="mchip m2">this week</span>' : "") + ' <span class="small muted">' + done + "/" + g.steps.length + "</span></h2>" +
+      sec.innerHTML = "<h2>" + esc(g.title) + (g.from && now >= g.from && now < g.to ? ' <span class="mchip m2">' + esc(g.nowLabel || "this week") + "</span>" : "") + ' <span class="small muted">' + done + "/" + g.steps.length + "</span></h2>" + (g.note ? '<p class="path-note">' + esc(g.note) + "</p>" : "") +
         '<ol class="path-steps">' + g.steps.map(function (s) {
           var ok = LN.stepDone(s), si = stepInfo(s);
           if (!ok && !firstOpen) firstOpen = si;

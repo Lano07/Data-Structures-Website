@@ -1,0 +1,83 @@
+/* ======================================================================
+   COMP 2611 Code Lab — Coursework Exam #2: its page and the mock papers (writing, marking, the score by area).
+   ====================================================================== */
+.cw-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 4px 18px 16px; margin: 0 0 16px; }
+.cw-card h2 { font-family: var(--f-display); font-size: 1.25rem; margin: 14px 0 6px; }
+.cw-card > p { margin: 6px 0 10px; }
+.cw-list { margin: 6px 0 10px; padding-left: 20px; display: grid; gap: 6px; }
+.cw-nb { margin: 12px 0 0; padding: 10px 12px; border-left: 3px solid var(--y); background: var(--accent-soft); border-radius: 0 var(--r-s) var(--r-s) 0; font-size: .94rem; }
+
+/* the areas of the outline, with their marks (also the score by area) */
+.cw-areas { display: grid; gap: 12px; margin: 8px 0 4px; }
+.cw-area-h { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.cw-area-h b { font-family: var(--f-display); font-size: 1.05rem; }
+.cw-area-m { font-family: var(--f-code); font-size: .84rem; color: var(--muted); white-space: nowrap; }
+.cw-area-bar { height: 12px; border-radius: 4px; background: var(--sunk); border: 1px solid var(--line); margin: 6px 0 6px; overflow: hidden; }
+.cw-area-bar i { display: block; height: 100%; background: var(--y); }
+.cw-area-bar.ok i { background: var(--g); }
+.cw-area-bar.mid i { background: var(--y); }
+.cw-area-bar.low i { background: var(--bad); }
+.cw-area-l { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: .88rem; }
+.cw-lab { font-weight: 600; }
+
+/* the mock papers on the exam's page */
+.cw-papers { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-top: 8px; }
+.cw-paper { border: 1px solid var(--line); border-radius: var(--r); background: var(--surface-2); padding: 12px 14px; display: grid; gap: 8px; align-content: start; }
+.cw-paper-t { display: grid; gap: 2px; }
+.cw-paper-t b { font-family: var(--f-display); font-size: 1.15rem; }
+.cw-paper-s { font-size: .9rem; color: var(--ink-2); }
+
+/* sitting a paper */
+.cw-sit .wr-head { margin-bottom: 14px; }
+.cw-bar { position: sticky; top: 70px; z-index: 6; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 8px 12px; margin: 0 0 12px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); }
+.cw-bar .btn { margin-left: auto; }
+.cw-clock { font-family: var(--f-pixel); font-size: .95rem; color: var(--ink); }
+.cw-clock.low { color: var(--warn); }
+.cw-clock.over { color: var(--bad); }
+.cw-left { color: var(--muted); }
+.cw-total { font-family: var(--f-display); font-size: 1.1rem; }
+.cw-total b { font-size: 1.5rem; }
+.cw-jump { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 14px; }
+.cw-jump a { font-family: var(--f-display); font-size: .9rem; text-decoration: none; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--line); color: var(--ink-2); background: var(--surface); }
+.cw-jump a:hover { border-color: var(--line-hi); color: var(--ink); }
+.cw-q { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 6px 18px 16px; margin: 0 0 16px; scroll-margin-top: 130px; }
+.cw-qh { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 10px 0 6px; }
+.cw-qh h2 { font-family: var(--f-display); font-size: 1.35rem; margin: 0; }
+.cw-qa { font-size: .86rem; color: var(--eyebrow); font-weight: 600; }
+.cw-stem { margin: 4px 0 6px; }
+.cw-part { border-top: 1px dashed var(--line); padding-top: 10px; margin-top: 12px; }
+.cw-ph { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.cw-ph > b { font-family: var(--f-display); font-size: 1.1rem; }
+.cw-pq { margin: 4px 0 8px; }
+.cw-pq > :first-child { margin-top: 4px; }
+.cw-ans { margin-top: 6px; }
+.cw-ta { min-height: 150px; }
+.cw-end { margin: 6px 0 24px; }
+
+/* marking */
+.cw-mark { display: grid; gap: 10px; margin-top: 8px; }
+.cw-k { font-family: var(--f-pixel); font-size: .52rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 6px 0 6px; line-height: 1.8; }
+.cw-ans-ro { margin: 0; white-space: pre-wrap; font-family: var(--f-code); font-size: .86rem; line-height: 1.5; padding: 10px 12px; border-radius: var(--r-s); background: var(--code-bg); border: 1px solid var(--line); max-height: 360px; overflow: auto; }
+.cw-ans-ro.empty { color: var(--muted); font-style: italic; }
+.cw-rub { padding-top: 0; }
+.cw-ideal > summary { cursor: pointer; padding: 10px 0 4px; }
+.cw-score h2 b { font-size: 1.8rem; }
+.cw-result:empty { display: none; }
+
+/* printing the questions: only the paper, black on white */
+.cw-printable { display: none; }
+@media print {
+  body.cw-printing .top, body.cw-printing .page > :not(.cw-printable), body.cw-printing footer, body.cw-printing .fx-toasts, body.cw-printing .combo-pill { display: none !important; }
+  body.cw-printing .cw-printable { display: block; color: #000; }
+  body.cw-printing { background: #fff; }
+  body.cw-printing .cw-q { border: 0; padding: 0; margin: 0 0 18px; break-inside: avoid-page; background: #fff; }
+  body.cw-printing .cw-print-h { display: flex; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 14px; }
+  body.cw-printing .chip, body.cw-printing .cw-qa { color: #000; background: none; }
+}
+/* the study plan's day notes, and the banner that points to the exam's page */
+.path-note { margin: -2px 0 10px; font-size: .92rem; color: var(--ink-2); }
+.cw2-banner { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 12px 16px; margin: 0 0 16px; border: 1px solid var(--y-edge); border-left: 4px solid var(--y); border-radius: var(--r); background: var(--accent-soft); color: var(--ink); text-decoration: none; }
+.cw2-banner b { font-family: var(--f-display); font-size: 1.1rem; }
+.cw2-banner span { color: var(--ink-2); font-size: .92rem; flex: 1 1 260px; }
+.cw2-banner .btn { margin-left: auto; pointer-events: none; }
+.cw2-card .cw2-acts { margin-top: 12px; }
