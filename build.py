@@ -99,7 +99,7 @@ LABS = [
      "intro": "Compare how each algorithm moves the values. Merge sort shows its split-and-merge picture from the slides; quick sort shows partition's p, i, j and r."},
 ]
 
-QUEST_JS = []   # the quest engine and its widgets (added below when present)
+QUEST_JS = ["quest_art.js", "quest_widgets.js", "quest.js"]   # the Quest engine, its widgets and its pixel art
 
 # ---------------------------------------------------------------- helpers
 def sha(s):
@@ -644,6 +644,234 @@ def load_cpp_support():
     keep = ("id", "group", "title", "expect", "src", "out", "msg", "kind", "ok")
     return {"generated": j["generated"], "compiler": j["compiler"], "cases": [{k: c.get(k) for k in keep} for c in j["cases"]]}
 
+# ---------------------------------------------------------------- the Quest (content/quest/*.md)
+QUEST_WHO = {"you", "marco", "pip", "prof", "silas", "narrator"}
+QUEST_TASKS = {"quiz", "type", "predict", "order", "fill", "match", "tree", "graph", "array", "heap", "sort", "listsim", "code"}
+QUEST_KINDS = {"say", "scene", "learn", "relic", "journal", "boss", "lab", "memory"} | QUEST_TASKS
+BEAT_RE = re.compile(r"^@([a-z]+)\b[ \t]*(.*)$")
+
+def q_attrs(s):
+    attrs = {}
+    def take(m):
+        attrs[m.group(1)] = m.group(2) if m.group(2) is not None else m.group(3)
+        return ""
+    rest = re.sub(r"(\w+)=(?:\"([^\"]*)\"|'([^']*)')", take, s)
+    return attrs, rest.strip()
+
+def q_split_fence(body):
+    """-> (text lines outside fences, [code blocks])"""
+    out, codes, buf, inside = [], [], [], False
+    for l in body:
+        if re.match(r"^```", l):
+            if inside:
+                codes.append("\n".join(buf)); buf = []; inside = False
+            else:
+                inside = True
+            continue
+        (buf if inside else out).append(l)
+    if inside:
+        codes.append("\n".join(buf))
+    return out, codes
+
+def q_beat(kind, head, body, where):
+    attrs, rest = q_attrs(head)
+    b = {"t": kind}
+    b.update({k: v for k, v in attrs.items() if k not in ("t",)})
+    text, codes = q_split_fence(body)
+    expl = " ".join(l[2:].strip() for l in text if l.startswith(">>"))
+    plain = [l for l in text if not l.startswith(">>")]
+    if expl:
+        b["expl"] = expl
+    if kind == "say":
+        m = re.match(r"^(\w+):\s*(.*)$", rest)
+        if not m or m.group(1) not in QUEST_WHO:
+            err("%s: @say needs a speaker (%s), like  @say marco: Hello" % (where, ", ".join(sorted(QUEST_WHO))))
+            return None
+        b["who"] = m.group(1)
+        b["text"] = " ".join([m.group(2)] + [l.strip() for l in plain if l.strip()]).strip()
+    elif kind == "scene":
+        b["text"] = " ".join([rest] + [l.strip() for l in plain if l.strip()]).strip()
+    elif kind == "learn":
+        b["title"] = rest
+        b["md"] = "\n".join(body).strip()
+    elif kind == "quiz":
+        q, opts = [], []
+        for l in plain:
+            mo = re.match(r"^- \[( |x)\]\s+(.*)$", l)
+            if mo:
+                opts.append({"text": mo.group(2).strip(), "right": mo.group(1) == "x"})
+            elif re.match(r"^\s+\?\s", l) and opts:
+                opts[-1]["why"] = l.strip()[2:].strip()
+            elif l.strip() and not opts:
+                q.append(l.strip())
+        b["q"] = " ".join(([rest] if rest else []) + q)
+        b["opts"] = opts
+        if codes:
+            b["code"] = codes[0]
+        if sum(1 for o in opts if o["right"]) != 1 or len(opts) < 2:
+            err("%s: a quiz needs 2 or more options and exactly one [x]" % where)
+        if len(set(o["text"] for o in opts)) != len(opts):
+            err("%s: a quiz has two identical options" % where)
+    elif kind == "type":
+        q = [l.strip() for l in plain if l.strip() and not l.startswith("= ")]
+        ans = []
+        for l in plain:
+            if l.startswith("= "):
+                ans += [a.strip() for a in l[2:].split(" | ") if a.strip()]
+        b["q"] = " ".join(([rest] if rest else []) + q)
+        b["answers"] = ans
+        if codes:
+            b["code"] = codes[0]
+        if not ans:
+            err("%s: @type needs at least one  = answer  line" % where)
+    elif kind in ("predict", "memory"):
+        b["q"] = " ".join(([rest] if rest else []) + [l.strip() for l in plain if l.strip()])
+        if not codes:
+            err("%s: @%s needs a ```cpp program" % (where, kind))
+            return None
+        b["code"] = codes[0]
+    elif kind == "order":
+        b["q"] = rest
+        b["lines"] = [l.rstrip() for l in plain if l.strip() and not l.startswith("~")]
+        b["distract"] = [l[1:].strip() for l in plain if l.startswith("~")]
+        if len(b["lines"]) < 2:
+            err("%s: @order needs at least 2 lines" % where)
+    elif kind == "fill":
+        b["q"] = " ".join(([rest] if rest else []) + [l.strip() for l in plain if l.strip()])
+        if not codes or "[[" not in codes[0]:
+            err("%s: @fill needs a ```cpp block with [[answer]] blanks" % where)
+            return None
+        b["code"] = codes[0]
+    elif kind == "match":
+        b["q"] = rest
+        b["pairs"] = [[x.strip() for x in l.split(" = ", 1)] for l in plain if " = " in l]
+        if len(b["pairs"]) < 2:
+            err("%s: @match needs at least 2  term = meaning  lines" % where)
+    elif kind == "listsim":
+        b["q"] = " ".join(([rest] if rest else []) + [l.strip() for l in plain if l.strip() and not l.strip().endswith(";")])
+        good = [l.strip() for l in plain if l.strip().endswith(";") and not l.startswith("~")]
+        bad = [l[1:].strip() for l in plain if l.startswith("~") and l.strip().endswith(";")]
+        b["solution"] = good
+        b["palette"] = good + bad
+        for k in ("list", "goal"):
+            if k not in attrs:
+                err("%s: @listsim needs %s=\"...\"" % (where, k))
+    elif kind == "relic":
+        parts = [x.strip() for x in rest.split("|", 2)]
+        if len(parts) < 3:
+            err("%s: @relic needs  id | title | text" % where)
+            return None
+        b["id"], b["title"] = parts[0], parts[1]
+        b["text"] = " ".join([parts[2]] + [l.strip() for l in plain if l.strip()])
+    elif kind == "journal":
+        b["items"] = [l.strip()[2:].strip() for l in plain if l.strip().startswith("- ")]
+    elif kind == "boss":
+        b["text"] = " ".join(([rest] if rest else []) + [l.strip() for l in plain if l.strip()])
+    else:
+        b["q"] = " ".join(([rest] if rest else []) + [l.strip() for l in plain if l.strip()])
+        if codes:
+            b["code"] = codes[0]
+    return b
+
+def load_quest(lessons, ex_ids):
+    qdir = os.path.join(CONTENT, "quest")
+    worlds, jobs, relic_ids, level_ids = [], [], set(), set()
+    if not os.path.isdir(qdir):
+        return {"worlds": []}, jobs
+    lab_ids = {l["id"] for l in LABS}
+    for fn in sorted(f for f in os.listdir(qdir) if f.endswith(".md")):
+        text = open(os.path.join(qdir, fn)).read()
+        for wchunk in re.split(r"^# world:\s*", text, flags=re.M)[1:]:
+            wlines = wchunk.split("\n")
+            w = {"id": wlines[0].strip(), "levels": []}
+            i = 1
+            while i < len(wlines) and not wlines[i].startswith("## "):
+                m = re.match(r"^(\w+):\s*(.*)$", wlines[i])
+                if m:
+                    w[m.group(1)] = m.group(2).strip()
+                i += 1
+            for lchunk in re.split(r"^## ", "\n".join(wlines[i:]), flags=re.M)[1:]:
+                llines = lchunk.split("\n")
+                hm = re.match(r"^(\S+)\s*\|\s*(.+)$", llines[0].strip())
+                if not hm:
+                    err("quest %s: a level heading must be  ## id | Title  (got %r)" % (fn, llines[0]))
+                    continue
+                lv = {"id": hm.group(1), "title": hm.group(2).strip(), "beats": []}
+                if lv["id"] in level_ids:
+                    err("quest: duplicate level id " + lv["id"])
+                level_ids.add(lv["id"])
+                j = 1
+                while j < len(llines) and not BEAT_RE.match(llines[j]):
+                    m = re.match(r"^(\w+):\s*(.*)$", llines[j])
+                    if m:
+                        lv[m.group(1)] = m.group(2).strip()
+                    j += 1
+                lv["lessons"] = [x.strip() for x in lv.get("lessons", "").split(",") if x.strip()]
+                for lid in lv["lessons"]:
+                    if lid not in lessons:
+                        err("quest level %s: unknown lesson %s" % (lv["id"], lid))
+                cur, body, inside = None, [], False
+                def flush():
+                    if cur is None:
+                        return
+                    where = "quest level %s, @%s" % (lv["id"], cur[0])
+                    if cur[0] not in QUEST_KINDS:
+                        err("%s: unknown beat type" % where)
+                        return
+                    b = q_beat(cur[0], cur[1], body, where)
+                    if b is not None:
+                        lv["beats"].append(b)
+                for l in llines[j:]:
+                    if re.match(r"^```", l):
+                        inside = not inside
+                    m = None if inside else BEAT_RE.match(l)
+                    if m:
+                        flush()
+                        cur, body = (m.group(1), m.group(2)), []
+                    else:
+                        body.append(l)
+                flush()
+                # checks
+                for b in lv["beats"]:
+                    where = "quest level %s, @%s" % (lv["id"], b["t"])
+                    if b["t"] == "predict":
+                        jobs.append((where, b, b["code"]))
+                    if b["t"] == "fill" and re.search(r"\bint\s+main\s*\(", b["code"]):
+                        sol = re.sub(r"\[\[([^\]]+)\]\]", lambda m: m.group(1).split("|")[0].strip(), b["code"])
+                        jobs.append((where + " (solution)", None, sol))
+                    if b["t"] == "code" and b.get("ex") not in ex_ids:
+                        err("%s: unknown exercise %s" % (where, b.get("ex")))
+                    if b["t"] == "lab":
+                        if b.get("id") not in lab_ids:
+                            err("%s: unknown lab %s" % (where, b.get("id")))
+                        if b.get("preset"):
+                            try:
+                                json.loads(b["preset"])
+                            except Exception as e:
+                                err("%s: preset is not valid JSON (%s)" % (where, e))
+                    if b["t"] == "relic":
+                        if b["id"] in relic_ids:
+                            err("quest: duplicate relic id " + b["id"])
+                        relic_ids.add(b["id"])
+                    if b["t"] == "tree" and b.get("kind", "pre") not in ("pre", "in", "post", "level", "leaves", "internal", "onechild", "path", "insert", "succ", "pred"):
+                        err("%s: unknown tree kind %s" % (where, b.get("kind")))
+                    if b["t"] == "graph" and b.get("kind", "bfs") not in ("bfs", "dfs", "dijkstra", "prim", "kruskal"):
+                        err("%s: unknown graph kind %s" % (where, b.get("kind")))
+                    if b["t"] == "array" and b.get("kind", "hash") not in ("hash", "binsearch", "index"):
+                        err("%s: unknown array kind %s" % (where, b.get("kind")))
+                    if b["t"] == "heap" and b.get("kind", "heapify") not in ("heapify", "insert", "extract"):
+                        err("%s: unknown heap kind %s" % (where, b.get("kind")))
+                    if b["t"] == "sort" and b.get("alg", "bubble") not in ("bubble", "selection", "insertion", "partition", "merge"):
+                        err("%s: unknown sort %s" % (where, b.get("alg")))
+                lv["notes"] = [x for b in lv["beats"] if b["t"] == "journal" for x in b["items"]]
+                lv["relics"] = [{"id": b["id"], "title": b["title"], "text": b["text"]} for b in lv["beats"] if b["t"] == "relic"]
+                if not any(b["t"] in QUEST_TASKS for b in lv["beats"]):
+                    err("quest level %s has no challenge" % lv["id"])
+                w["levels"].append(lv)
+            worlds.append(w)
+    return {"worlds": worlds}, jobs
+
+
 def main():
     lessons, checks = load_lessons()
     exs = parse_exercises()
@@ -685,6 +913,10 @@ def main():
         for t in e["tests"]:
             jobs.append({"code": assemble(e, e["code"], t), "stdin": t.get("stdin", "")})
             meta.append(("exstart", e, t))
+    quest, qjobs = load_quest(lessons, ids)
+    for where, b, code in qjobs:
+        jobs.append({"code": code, "stdin": ""})
+        meta.append(("quest", where, b, code))
     if not QUICK:
         fr = subprocess.run(["node", "--stack-size=4000", os.path.join(ROOT, "tests", "features.js"), "--json", os.path.join(CONTENT, "cpp_support.json")], capture_output=True, text=True)
         print("C++ feature matrix: " + (fr.stdout.strip().split("\n")[-1] if fr.stdout.strip() else "no output"))
@@ -710,6 +942,18 @@ def main():
                     err("%s: g++ and interpreter differ\n  g++: %r %s\n  int: %r\n%s" % (where, gout[:300], gerr[:300], r["out"][:300], code[:300]))
                 if expected is not None and norm(gout).replace("\n", " ").strip() != norm(expected).replace("\n", " ").strip():
                     err("%s: quiz answer %r but the program prints %r" % (where, expected, gout))
+        elif m[0] == "quest":
+            _, where, b, code = m
+            if r["err"] or not r.get("compiled", True):
+                err("%s: the program fails in the interpreter: %s" % (where, r["err"]))
+                continue
+            g = gpp_run(code)
+            if g is not None:
+                ok, gout, gerr = g
+                if not ok or norm(gout) != norm(r["out"]):
+                    err("%s: g++ and the interpreter differ (%s)\n  g++: %r\n  int: %r" % (where, gerr[:300], gout[:200], r["out"][:200]))
+            if b is not None:
+                b["expect"] = norm(r["out"])
         elif m[0] == "exrand":
             _, e, rt, body = m
             if r["err"] or not r.get("compiled", True):
@@ -769,6 +1013,7 @@ def main():
         "lectures": load_lectures(lessons), "glossary": load_glossary(lessons),
         "cppSupport": load_cpp_support(), "cppStats": {"programs": len(jobs), "gpp": not QUICK},
         "written": load_written(lessons),
+        "quest": quest,
     }
     for e in data["exercises"]:
         for t in e["tests"]:
@@ -777,7 +1022,7 @@ def main():
                 t.pop("stdin", None)
 
     # ---- bundle
-    css_files = ["style.css", "neon.css", "ide.css"]
+    css_files = ["style.css", "neon.css", "ide.css", "quest.css", "pixel.css"]
     css = "\n".join(open(os.path.join(SRC, f)).read() for f in css_files if os.path.exists(os.path.join(SRC, f)))
     # the interpreter has its own <script id="cpp-core">: the runner builds its Web Worker from that element's text
     core_files = ["cpp_lex.js", "cpp_parse.js", "cpp_check.js", "cpp_run.js"]
@@ -794,7 +1039,7 @@ def main():
     head = ('<title>COMP 2611 Code Lab</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n'
             '<meta name="description" content="Learn COMP 2611 data structures in C++: lessons, a memory visualizer, algorithm labs, an arcade of exam-skill games, XP and achievements, and auto-tested coding exercises.">\n'
             '<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
-            '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600;700&family=Martian+Mono:wght@500;600&family=Space+Grotesk:wght@500;600;700&display=swap">\n')
+            '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600;700&family=Martian+Mono:wght@500;600&family=Pixelify+Sans:wght@400;500;600;700&family=Press+Start+2P&family=Space+Grotesk:wght@500;600;700&display=swap">\n')
     body = ("<style>\n" + css + "\n</style>\n"
             '<div id="app"></div>\n'
             '<script id="cpp-core">\n' + core + "\n</script>\n"
@@ -809,7 +1054,7 @@ def main():
     # the same standalone page in docs/, so GitHub Pages can serve the site straight from the repository
     os.makedirs(os.path.join(ROOT, "docs"), exist_ok=True)
     open(os.path.join(ROOT, "docs", "index.html"), "w").write(standalone)
-    print("lessons: %d, exercises: %d (%d tests), examples: %d, size: %.0f KB" % (len(lessons), len(exs), sum(len(e["tests"]) for e in exs), len(examples), len(page) / 1024))
+    print("lessons: %d, exercises: %d (%d tests), examples: %d, quest: %d chapters, %d levels, size: %.0f KB" % (len(lessons), len(exs), sum(len(e["tests"]) for e in exs), len(examples), len(quest["worlds"]), sum(len(w["levels"]) for w in quest["worlds"]), len(page) / 1024))
     if ERRORS:
         print("\n%d PROBLEMS" % len(ERRORS))
         sys.exit(1)

@@ -77,6 +77,12 @@
     ["lv20", "🏅", "Elite", "Reach level 20.", 0, function (S) { return S.level >= 20; }],
     ["lv30", "🔱", "Mythic", "Reach level 30.", 0, function (S) { return S.level >= 30; }],
     ["theorist", "🧠", "Theorist", "Complete 3 deep-dive theory lessons.", 120, function (S) { return S.deep >= 3; }],
+    ["q1", "🗺️", "Into the Unknown", "Finish your first Quest level.", 40, function (S) { return S.questLv >= 1; }],
+    ["q10", "🧭", "Seasoned Explorer", "Finish 10 Quest levels.", 120, function (S) { return S.questLv >= 10; }],
+    ["qw1", "🗝️", "Key Fragment", "Finish every level of a Quest chapter.", 150, function (S) { return S.questWorlds >= 1; }],
+    ["q3s", "⭐", "Flawless Explorer", "Finish 10 Quest levels with 3 stars.", 200, function (S) { return S.quest3 >= 10; }],
+    ["qrel", "🏺", "Relic Hunter", "Find 10 relics in the Quest.", 150, function (S) { return S.relics >= 10; }],
+    ["qall", "🏆", "The Lost Index", "Finish every chapter of the Quest.", 1000, function (S) { return S.questWorldTotal > 0 && S.questWorlds >= S.questWorldTotal; }],
     ["professor", "🎓", "Professor", "Complete every deep-dive theory lesson.", 600, function (S) { return S.deepTotal > 0 && S.deep >= S.deepTotal; }],
     ["boss1", "⚔️", "Boss Slayer", "Defeat your first boss.", 100, function (S) { return S.bosses >= 1; }],
     ["boss5", "🛡️", "Raid Leader", "Defeat 5 different topic bosses.", 250, function (S) { return S.topicBosses >= 5; }],
@@ -137,6 +143,7 @@
 
   function stats() {
     var done = store.done || {}, lessons = 0, partsDone = 0, outlineDone = 0, lessonTotal = 0;
+    var QS = CL.Quest ? CL.Quest.stats() : { levels: 0, worlds: 0, worldTotal: 0, three: 0, relics: 0 };
     D.parts.forEach(function (p) {
       var ids = p.lessons.filter(function (id) { return D.lessons[id]; }), n = ids.filter(function (id) { return done[id]; }).length;
       lessons += n;
@@ -159,7 +166,8 @@
       bestCombo: g.best.combo || 0, lessons: lessons, lessonTotal: lessonTotal, partsDone: partsDone, outlineDone: outlineDone,
       ex: ex, exTotal: D.exercises.length, streak: CL.Progress.streak(), labs: Object.keys(g.labs || {}).length, labTotal: D.labs.length,
       exams: (store.exams || []).length, bestExam: bestExam, arcPlays: arcPlays, arcBest: arcBest, arcGames: arcGames, arcTotal: (CL.Arcade && CL.Arcade.count) || 0,
-      owl: !!g.best.owl, bird: !!g.best.bird, level: L, sets: g.sets || 0, xp: g.xp
+      owl: !!g.best.owl, bird: !!g.best.bird, level: L, sets: g.sets || 0, xp: g.xp,
+      questLv: QS.levels, questWorlds: QS.worlds, questWorldTotal: QS.worldTotal, quest3: QS.three, relics: QS.relics
     };
   }
   G.stats = function () { return stats(); };

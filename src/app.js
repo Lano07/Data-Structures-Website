@@ -152,7 +152,7 @@
 
   // ---------------------------------------------------------------- shell
   app.innerHTML = '<header class="top"><div class="top-in"><a class="brand" href="#home"><b>COMP 2611 <i>Code Lab</i></b><span>C++ data structures</span></a>' +
-    '<nav class="nav" aria-label="Main"><a href="#learn" data-r="learn">Learn</a><a href="#lab" data-r="lab">Labs</a><a href="#train" data-r="train">Practice</a><a href="#arcade" data-r="arcade" class="nav-arcade">Arcade</a><a href="#gym" data-r="gym">Code Gym</a><a href="#play" data-r="play">Playground</a><a href="#ref" data-r="ref">Reference</a><a href="#progress" data-r="progress">Progress</a></nav><button type="button" class="srch-btn" aria-label="Search the site (press /)" title="Search (/)"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>' +
+    '<nav class="nav" aria-label="Main"><a href="#quest" data-r="quest" class="nav-quest">⚔ Quest</a><a href="#learn" data-r="learn">Learn</a><a href="#lab" data-r="lab">Labs</a><a href="#train" data-r="train">Practice</a><a href="#arcade" data-r="arcade" class="nav-arcade">Arcade</a><a href="#gym" data-r="gym">Code Gym</a><a href="#play" data-r="play">Playground</a><a href="#ref" data-r="ref">Reference</a><a href="#progress" data-r="progress">Progress</a></nav><button type="button" class="srch-btn" aria-label="Search the site (press /)" title="Search (/)"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>' +
     '<a class="srch-btn set-btn" href="#prefs" aria-label="Settings and your data" title="Settings and your data"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M10.3 3h3.4l.5 2.4c.6.2 1.2.5 1.7.9l2.3-.8 1.7 2.9-1.8 1.6c.1.6.1 1.4 0 2l1.8 1.6-1.7 2.9-2.3-.8c-.5.4-1.1.7-1.7.9l-.5 2.4h-3.4l-.5-2.4c-.6-.2-1.2-.5-1.7-.9l-2.3.8-1.7-2.9 1.8-1.6c-.1-.6-.1-1.4 0-2L3.4 8.4l1.7-2.9 2.3.8c.5-.4 1.1-.7 1.7-.9z"/><circle cx="12" cy="12" r="2.8" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><i class="sync-dot" aria-hidden="true"></i></a></div></header>' +
     '<main id="main"></main><footer class="foot">Built for COMP 2611 at UWI. Your progress is saved in this browser, and on your account when sync is on (<a href="#prefs">settings and backups</a>). The C++ runner works in the page, so programs never leave your device.</footer>';
   var main = document.getElementById("main");
@@ -270,6 +270,14 @@
       '<div class="nx-stats">' + [[lessonList.length, "lessons"], [D.labs.length, "visual labs"], [nGames, "arcade games"], [D.exercises.length, "coding exercises"]].map(function (x) { return "<div><b>" + x[0] + "</b><span>" + x[1] + "</span></div>"; }).join("") + "</div></div>" +
       '<div class="nx-morph" role="img" aria-label="Animation: fifteen values turning into a linked list, a binary search tree, a max-heap array, a graph, a hash table and a sorted array"></div></section>';
     var morph = CL.HeroMorph ? CL.HeroMorph(p.querySelector(".nx-morph")) : null;
+    // the story campaign
+    if (CL.Quest && CL.QArt && CL.Quest.worlds().length) {
+      var qs = CL.Quest.stats(), qn = CL.Quest.nextLevel(), qc = h("section", "home-quest px-panel");
+      qc.innerHTML = '<img class="hq-scene" src="' + CL.QArt.scene("harbor") + '" alt="" aria-hidden="true"><div class="hq-in"><div class="hq-cast">' + ["you", "marco", "pip", "prof"].map(function (w) { return CL.QArt.img(w, { scale: 3, pal: w === "you" ? CL.QArt.youPal((store.quest || {}).look) : null }); }).join("") + "</div>" +
+        '<div class="hq-t"><span class="px-kicker">New · Quest mode</span><h2 class="px-h">The Lost Index</h2><p>A 16-bit adventure through the whole course: ' + CL.Quest.worlds().length + " chapters in real places in history, " + qs.total + " levels where you learn by doing: click the traversal, rewire the pointers, sift the heap, write the code.</p></div>" +
+        '<div class="hq-acts"><a class="px-btn primary big" href="' + (qn && qs.levels ? "#quest-" + qn.id : "#quest") + '">' + (qs.levels ? "Continue the quest ▶" : "Start the adventure ▶") + '</a><span class="small">' + qs.levels + " / " + qs.total + " levels · " + qs.relics + " relics</span></div></div>";
+      p.appendChild(qc);
+    }
     if (CL.Game) p.appendChild(CL.Game.homeCard("#l-" + nl.id, started ? "Continue: " + D.lessons[nl.id].title : "Start lesson A1"));
     var demo = null;
     current = { destroy: function () { if (demo) demo.destroy(); if (morph) morph.destroy(); } };
@@ -981,7 +989,8 @@
     function seg(name, opts, cur) { return '<div class="seg" role="group" aria-label="' + esc(name) + '">' + opts.map(function (o) { return '<button type="button" data-pref="' + name + '" data-v="' + o[0] + '"' + (String(cur) === String(o[0]) ? ' class="on" aria-pressed="true"' : ' aria-pressed="false"') + ">" + esc(o[1]) + "</button>"; }).join("") + "</div>"; }
     var look = h("section", "pf-sec");
     look.innerHTML = "<h2>Appearance</h2>" +
-      '<div class="pf-row"><div><b>Theme</b><div class="small muted">System follows your device.</div></div>' + seg("theme", [["system", "System"], ["light", "Light"], ["dark", "Dark"]], P.theme) + "</div>" +
+      '<div class="pf-row"><div><b>Style</b><div class="small muted">16-bit pixel art, or the glowing neon look.</div></div>' + seg("skin", [["pixel", "16-bit"], ["neon", "Neon"]], P.skin || "pixel") + "</div>" +
+      '<div class="pf-row"><div><b>Theme</b><div class="small muted">System follows your device. In 16-bit style, light is parchment.</div></div>' + seg("theme", [["system", "System"], ["light", "Light"], ["dark", "Dark"]], P.theme) + "</div>" +
       '<div class="pf-row"><div><b>Text size</b><div class="small muted">Code, lessons and labs all scale together.</div></div>' + seg("size", CL.TEXT_SIZES.map(function (v, i) { return [v, ["Small", "Normal", "Large", "Larger", "Largest"][i]]; }), P.size) + "</div>" +
       '<div class="pf-row"><div><b>Motion</b><div class="small muted">Reduce turns off animations and smooth scrolling.</div></div>' + seg("motion", [["system", "System"], ["reduce", "Reduce"]], P.motion) + "</div>";
     p.appendChild(look);
