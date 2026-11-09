@@ -93,3 +93,6 @@ html.skin-pixel .term { border-color: var(--px-edge) !important; }
 html.skin-pixel .term-bar { font-family: var(--f-display); }
 html.skin-pixel .ide-tab.on { box-shadow: inset 0 3px 0 var(--accent); }
 html.skin-pixel .fx-ic { font-family: "Press Start 2P", var(--f-code); font-size: .42rem; padding: 4px 3px; }
+html.skin-pixel .arc-card, html.skin-pixel .boss-banner, html.skin-pixel .arc-feat { border: 3px solid var(--px-edge) !important; box-shadow: var(--shadow) !important; }
+html.skin-pixel .arc-card:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--px-edge) !important; }
+html.skin-pixel .learn-alt { display: flex; flex-wrap: wrap; gap: 10px; }

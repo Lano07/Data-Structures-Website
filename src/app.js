@@ -163,6 +163,8 @@
     var hash = (location.hash || "#home").slice(1);
     if (current && current.destroy) { try { current.destroy(); } catch (e) { /* ignore */ } }
     current = null;
+    (CL.liveTerminals || []).forEach(function (t) { try { t.destroy(); } catch (e) { /* ignore */ } });
+    CL.liveTerminals = [];
     main.innerHTML = "";
     var r = "home";
     if (hash === "learn") { r = "learn"; pageLearn(); }
@@ -359,7 +361,7 @@
     var p = page();
     setTutor("home", "All lessons", progressText);
     p.innerHTML = '<div class="eyebrow">Learn</div><h1 class="title">All lessons</h1><p class="lede">Work through the parts in order, or jump to what your next test covers. Every lesson has code you can run and step through.</p>' +
-      '<div class="learn-alt"><a class="btn" href="#lectures">Follow the lectures instead: Lecture 1 to 21, mapped to the lessons</a><a class="btn ghost" href="#glossary">Glossary of terms</a></div>' +
+      '<div class="learn-alt"><a class="btn primary" href="#quest">⚔ Learn it as a story: The Lost Index (Quest)</a><a class="btn" href="#lectures">Follow the lectures instead: Lecture 1 to 21, mapped to the lessons</a><a class="btn ghost" href="#glossary">Glossary of terms</a></div>' +
       (bookmarks().length ? '<div class="learn-bm"><b>Your bookmarks</b>' + bookmarkList(8) + "</div>" : "");
     var list = h("div", "parts");
     D.parts.forEach(function (pt) {

@@ -1067,8 +1067,9 @@
       var tb = Q(".ide-term .term-body");
       if (e.key === "ArrowUp" || e.key === "ArrowDown") { e.preventDefault(); tb.style.height = Math.max(120, tb.offsetHeight + (e.key === "ArrowUp" ? 30 : -30)) + "px"; }
     });
-    window.addEventListener("beforeunload", function () { if (dirty) saveNow(); });
-    ui.setCurrent({ destroy: function () { document.removeEventListener("keydown", onKey); closeMenu(); if (dirty) saveNow(); term.destroy(); IDE.applyPending = null; } });
+    function onUnload() { if (dirty) saveNow(); }
+    window.addEventListener("beforeunload", onUnload);
+    ui.setCurrent({ destroy: function () { document.removeEventListener("keydown", onKey); window.removeEventListener("beforeunload", onUnload); closeMenu(); if (dirty) saveNow(); term.destroy(); IDE.applyPending = null; } });
     boot();
   };
 })(CL);

@@ -10,6 +10,8 @@
     var self = this;
     this.opts = opts = opts || {};
     this.runner = CL.Runner.create();
+    // every terminal belongs to the page that made it: leaving the page ends its program and frees its worker
+    (CL.liveTerminals = CL.liveTerminals || []).push(this);
     var el = this.el = document.createElement("div");
     el.className = "term" + (opts.cls ? " " + opts.cls : "");
     el.innerHTML = '<div class="term-bar"><span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="term-title">' + esc(opts.title || "Terminal") + '</span>' +
