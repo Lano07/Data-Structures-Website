@@ -145,10 +145,10 @@ dfTraverse (u):
 ```
 
 The lecture's depthFirstTraversal calls dfTraverse on every vertex that is still WHITE, so vertices the start cannot reach are visited too. Both searches take **O(V + E)** with adjacency lists.
-@graph spec="A: D F G; B: A; C: B E; D: B E; E: B; F: E G; G: C" kind="bfs" start="A"
+@graph spec="A: D F G; B: A; C: B E; D: B E; E: B; F: E G; G: C" pos="A:0,0 D:1,0 B:2,0 F:0,1 E:1,1 C:2,1 G:1,2" kind="bfs" start="A"
 The Lecture 16 cave map (directed). Click the chambers in **BFS** order from A.
 >> A, then its neighbours D F G, then the chambers they discover: B E (from D), C (from G).
-@graph spec="A: D F G; B: A; C: B E; D: B E; E: B; F: E G; G: C" kind="dfs" start="A"
+@graph spec="A: D F G; B: A; C: B E; D: B E; E: B; F: E G; G: C" pos="A:0,0 D:1,0 B:2,0 F:0,1 E:1,1 C:2,1 G:1,2" kind="dfs" start="A"
 The same map. Now click the chambers in **DFS** order from A: always go deeper first.
 >> A → D → B (B's only neighbour, A, is GREY) → back to D → E → back to A → F → G → C.
 @quiz Which data structure does BFS use to decide what to visit next?
@@ -182,7 +182,7 @@ lessons: j4-dijkstra
 Why is a finished cost final? Every other unfinished vertex costs at least as much, and with no negative edges, going through it can only add more. That is exactly why **negative weights break Dijkstra**.
 
 Cost: O(V²) with a simple array; O((V + E) log V) with a heap.
-@graph spec="T G 9; T B 14; G V 6; G B 12; V B 7; V L 4; B L 8; L M 3; B M 11" kind="dijkstra" start="T"
+@graph spec="T G 9; T B 14; G V 6; G B 12; V B 7; V L 4; B L 8; L M 3; B M 11" pos="M:1.2,0 L:1.3,1 V:0.9,2 B:3,1.7 G:0.7,3 T:1.4,4.1" kind="dijkstra" start="T"
 Sail from Trinidad (T). Click the islands in the order Dijkstra **finalises** them (lowest cost first). G Grenada, V St Vincent, B Barbados, L St Lucia, M Martinique.
 >> T 0, G 9, B 14, V 15, L 19, M 22. B is reached at 14 directly, cheaper than 9 + 12 through G.
 @quiz Why must every edge weight be 0 or more for Dijkstra's algorithm?
@@ -215,10 +215,10 @@ A **spanning tree** of a connected, undirected graph uses **V − 1** edges to c
 **Prim's algorithm**: grow one tree from a start vertex. Keep a **used** set; repeatedly add the **cheapest edge from a used vertex to an unused one**, and move that vertex to used.
 
 Both give a minimum spanning tree (the same total cost; the edges can differ when weights tie). Kruskal thinks about edges, Prim about vertices.
-@graph spec="T G 9; T B 14; G V 6; G B 12; V B 7; V L 4; B L 8; L M 3; B M 11" kind="kruskal"
+@graph spec="T G 9; T B 14; G V 6; G B 12; V B 7; V L 4; B L 8; L M 3; B M 11" pos="M:1.2,0 L:1.3,1 V:0.9,2 B:3,1.7 G:0.7,3 T:1.4,4.1" kind="kruskal"
 **Kruskal**: click the cables in the order Kruskal adds them. Skip any cable that would close a loop.
 >> L–M 3, V–L 4, G–V 6, V–B 7, then B–L 8 is skipped (B and L are already joined), then T–G 9. Total 29.
-@graph spec="T G 9; T B 14; G V 6; G B 12; V B 7; V L 4; B L 8; L M 3; B M 11" kind="prim" start="T"
+@graph spec="T G 9; T B 14; G V 6; G B 12; V B 7; V L 4; B L 8; L M 3; B M 11" pos="M:1.2,0 L:1.3,1 V:0.9,2 B:3,1.7 G:0.7,3 T:1.4,4.1" kind="prim" start="T"
 **Prim** from T: click the islands in the order they join the tree.
 >> T, then G (9), V (6), L (4), B (7), M (3): the same total, 29.
 @quiz A connected graph has 12 vertices. How many edges does any spanning tree of it have?

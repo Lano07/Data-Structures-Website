@@ -383,7 +383,12 @@
   };
 
   // ---------------------------------------------------------------- graphs you click
-  function graphOf(b) { return CL.parseGraphSpec(String(b.spec || "").replace(/;\s*/g, "\n"), { directed: b.directed === "1" || b.directed === "true" || b.directed === true, weighted: b.weighted ? b.weighted !== "0" : undefined }); }
+  // pos="A:0,0 B:1,0.5": where to draw each vertex (drawGraph grid units), like a map; otherwise an automatic layout
+  function graphOf(b) {
+    var pos = null;
+    if (b.pos) { pos = {}; String(b.pos).split(/\s+/).forEach(function (t) { var m = /^(\w+):(-?[\d.]+),(-?[\d.]+)$/.exec(t); if (m) pos[m[1]] = [+m[2], +m[3]]; }); }
+    return CL.parseGraphSpec(String(b.spec || "").replace(/;\s*/g, "\n"), { directed: b.directed === "1" || b.directed === "true" || b.directed === true, weighted: b.weighted ? b.weighted !== "0" : undefined, pos: pos });
+  }
   function bfsOrder(g, s) { var seen = {}, out = [], Q = [s]; seen[s] = 1; while (Q.length) { var u = Q.shift(); out.push(u); g.adj[u].forEach(function (v) { if (!seen[v]) { seen[v] = 1; Q.push(v); } }); } return out; }
   function dfsOrder(g, s, all) { var seen = {}, out = []; function vis(u) { seen[u] = 1; out.push(u); g.adj[u].forEach(function (v) { if (!seen[v]) vis(v); }); } vis(s); if (all) g.V.forEach(function (v) { if (!seen[v]) vis(v); }); return out; }
   function wt(g, u, v) { for (var i = 0; i < g.E.length; i++) { var e = g.E[i]; if ((e[0] === u && e[1] === v) || (!g.directed && e[0] === v && e[1] === u)) return e[2]; } return Infinity; }

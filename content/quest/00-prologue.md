@@ -409,7 +409,76 @@ int main() {
 - Arrays are passed by address: a function can change the caller's array
 - `string`: `length()`, `s[i]`, `+`, `==`; C-strings end with `'\0'`
 
-## p-6 | The field kit
+## p-6 | Splitting the toolkit
+goal: Split a program into a header, a source file and main, and tell compile errors from link errors.
+lessons: a11-organizing
+
+@scene The TOOLKIT drive · three files instead of one
+@say marco: Her toolkit isn't one big file. There's `List.h`, `List.cpp` and `main.cpp`. Why make it complicated?
+@say you: Because big programs need to be organised. Each file has one job, and the header tells everyone what exists.
+@learn Headers, source files and include guards
+As a program grows, the lectures split it into files:
+
+- **List.h** (the header): the struct definitions and the function **prototypes**. It says *what* exists.
+- **List.cpp**: the function **bodies**. It says *how* they work. It includes its own header.
+- **main.cpp**: the program that uses them (often a test program). It includes the header too.
+
+```cpp
+// List.h
+#ifndef LIST_H          // include guard: only read this file once
+#define LIST_H
+
+struct Node {
+	int data;
+	Node * next;
+};
+
+Node * createNode (int n);
+void printList (Node * top);
+
+#endif
+```
+
+- `#include "List.h"` (quotes) means a file of **your project**; `#include <iostream>` (angle brackets) means a **standard library** header.
+- The **include guard** (`#ifndef / #define / #endif`) stops the struct from being defined twice when two files include the same header.
+- They are compiled together: `g++ main.cpp List.cpp -o main`.
+
+**Compile error or link error?** A **compile** error is found inside one file: a missing semicolon, an unknown name, a wrong type. A **link** error happens after every file compiled: a function was declared (prototype) but its body is nowhere ("undefined reference to `printList`"), or main is missing, or something is defined twice.
+
+Try it: the [Playground](#play) has a **Linked list project** template (＋ New › New project…) with exactly these three files, and its terminal runs `g++ main.cpp LinkedList.cpp`.
+@order Put List.h in order.
+#ifndef LIST_H
+#define LIST_H
+struct Node {
+	int data;
+	Node * next;
+};
+Node * createNode (int n);
+#endif
+~ int main() {
+>> The guard opens first, then the struct and the prototypes, and #endif closes it. main belongs in main.cpp, never in a header.
+@quiz main.cpp calls `printList`, its prototype is in List.h, but nobody wrote its body anywhere. What error do you get?
+- [ ] A compile error in main.cpp
+- [x] A link error: undefined reference to printList
+- [ ] A runtime error when printList is called
+- [ ] No error: it prints nothing
+>> Each file compiles fine, because the prototype promises printList exists. The linker then looks for the body, cannot find it, and fails.
+@quiz What do `#ifndef LIST_H`, `#define LIST_H` and `#endif` do?
+- [ ] They make the header run faster
+- [x] They make sure the header's contents are only included once, even if several files include it
+- [ ] They define a constant called LIST_H for main to use
+- [ ] They are comments
+>> The first time, LIST_H is not defined, so the contents are read and LIST_H gets defined. Any later include skips straight to #endif.
+@type Which kind of brackets do you use to include your own header file List.h? Type the include line.
+= #include "List.h" | #include"List.h"
+>> Quotes for your own files, angle brackets for the standard library.
+@journal
+- Header (.h): structs and prototypes; source (.cpp): bodies; main.cpp uses them
+- Include guards (#ifndef / #define / #endif) stop a header being read twice
+- `#include "mine.h"` for your files, `#include <iostream>` for the library
+- Compile errors are inside one file; link errors are missing or duplicate bodies across files
+
+## p-7 | The field kit
 goal: Group data with structs and read and write files.
 lessons: a9-structs, a10-files
 

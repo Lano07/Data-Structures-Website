@@ -92,13 +92,35 @@
     return g;
   };
   function natural(a, b) { return a.length - b.length || (a < b ? -1 : a > b ? 1 : 0); }
-  // vertices on a circle (in drawGraph's grid units), in name order
+  // a layout for a typed graph: start on a circle (in name order), then let springs pull neighbours together and push
+  // everything else apart (Fruchterman-Reingold), so edges cross less. Deterministic: the same graph, the same picture.
   CL.graphLayout = function (g) {
-    var n = g.V.length, pos = {}, R = Math.max(120, Math.min(260, 40 * n));
-    g.V.forEach(function (v, i) {
-      var t = -Math.PI / 2 + 2 * Math.PI * i / Math.max(1, n);
-      pos[v] = [(R + R * Math.cos(t)) / 112, (R + R * Math.sin(t)) / 88 * 0.86];
-    });
+    var n = g.V.length, P = {}, R = Math.max(120, Math.min(260, 40 * n));
+    g.V.forEach(function (v, i) { var t = -Math.PI / 2 + 2 * Math.PI * i / Math.max(1, n); P[v] = { x: R * Math.cos(t), y: R * Math.sin(t) }; });
+    if (n > 2) {
+      var k = Math.sqrt((2 * R) * (2 * R) / n) * 0.9, temp = R / 4, iters = 160;
+      for (var it = 0; it < iters; it++) {
+        var D = {};
+        g.V.forEach(function (v) { D[v] = { x: 0, y: 0 }; });
+        for (var a = 0; a < n; a++) for (var b = a + 1; b < n; b++) {
+          var u = g.V[a], w = g.V[b], dx = P[u].x - P[w].x, dy = P[u].y - P[w].y, d = Math.sqrt(dx * dx + dy * dy) || 0.01, f = k * k / d;
+          D[u].x += dx / d * f; D[u].y += dy / d * f; D[w].x -= dx / d * f; D[w].y -= dy / d * f;
+        }
+        g.E.forEach(function (e) {
+          if (e[0] === e[1]) return;
+          var dx = P[e[0]].x - P[e[1]].x, dy = P[e[0]].y - P[e[1]].y, d = Math.sqrt(dx * dx + dy * dy) || 0.01, f = d * d / k;
+          D[e[0]].x -= dx / d * f; D[e[0]].y -= dy / d * f; D[e[1]].x += dx / d * f; D[e[1]].y += dy / d * f;
+        });
+        g.V.forEach(function (v) {
+          var dl = Math.sqrt(D[v].x * D[v].x + D[v].y * D[v].y) || 1, m = Math.min(dl, temp);
+          P[v].x += D[v].x / dl * m; P[v].y += D[v].y / dl * m;
+        });
+        temp = Math.max(1, temp * 0.97);
+      }
+    }
+    var minX = Infinity, minY = Infinity, pos = {};
+    g.V.forEach(function (v) { minX = Math.min(minX, P[v].x); minY = Math.min(minY, P[v].y); });
+    g.V.forEach(function (v) { pos[v] = [(P[v].x - minX) / 112, (P[v].y - minY) / 88 * 0.9]; });
     return pos;
   };
   CL.graphToSpec = function (g) {

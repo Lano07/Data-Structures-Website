@@ -231,6 +231,17 @@ Node * insertSortedRec (Node * top, int n) {
 }
 ```
 
+**Two lists at once.** isEqual, recursively: two empty lists are equal; if only one is empty, or the first values differ, they are not; otherwise compare the rests:
+
+```cpp
+bool isEqualRec (Node * a, Node * b) {
+	if (a == NULL && b == NULL) return true;
+	if (a == NULL || b == NULL) return false;
+	if (a->data != b->data) return false;
+	return isEqualRec (a->next, b->next);
+}
+```
+
 Moving the print in printListRec to **after** the recursive call prints the list **backwards**.
 @fill Finish sizeRec.
 ```cpp
