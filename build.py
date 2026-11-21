@@ -608,17 +608,30 @@ def parse_written(path, lessons, extra=()):
 CW2_AREAS = [("lsq", "Linked lists, stacks and queues", 9), ("trees", "Binary trees and BSTs", 11), ("heaps", "Heaps and priority queues", 10),
              ("hashgraph", "Hashing and graphs", 7), ("perf", "Performance analysis", 3)]
 
+# whole-course revision papers for the final: the short-answer style of the coursework exams (the final's own format may differ)
+FINAL_AREAS = [("core", "Pointers, recursion and linked lists", 10), ("trees", "Trees, BSTs and heaps", 10),
+               ("hashgraph", "Hashing and graphs", 10), ("sortperf", "Sorting, searching and performance", 10)]
+
 def load_cw2(lessons):
-    """Mock papers in the Coursework Exam #2 format. Each part is a written-answer block; parts with the same paper and q are one question."""
-    parts = parse_written(os.path.join(CONTENT, "cw2.md"), lessons, extra=("paper", "q", "part", "area"))
-    areas = dict((a[0], a) for a in CW2_AREAS)
+    """Mock papers in the Coursework Exam #2 format."""
+    return load_papers("cw2.md", CW2_AREAS, lessons)
+
+def load_final(lessons):
+    """Whole-course revision papers for the final exam."""
+    return load_papers("final.md", FINAL_AREAS, lessons)
+
+def load_papers(name, area_list, lessons):
+    """Written mock papers: each part is a written-answer block; parts with the same paper and q are one question. Every paper
+    must have questions 1 to 4 and exactly the marks per area that area_list gives."""
+    parts = parse_written(os.path.join(CONTENT, name), lessons, extra=("paper", "q", "part", "area"))
+    areas = dict((a[0], a) for a in area_list)
     papers = {}
     for x in parts:
         if not x["paper"] or not x["qn"].isdigit() or not re.match(r"^[a-e]$", x["part"]):
-            err("cw2 %s: needs paper, q (1 to 4) and part (a to e)" % x["id"])
+            err("%s %s: needs paper, q (1 to 4) and part (a to e)" % (name, x["id"]))
             continue
         if x["area"] not in areas:
-            err("cw2 %s: unknown area %r" % (x["id"], x["area"]))
+            err("%s %s: unknown area %r" % (name, x["id"], x["area"]))
         pp = papers.setdefault(x["paper"], {})
         x["qn"] = int(x["qn"])
         pp.setdefault(x["qn"], []).append(x)
@@ -626,24 +639,24 @@ def load_cw2(lessons):
     for pid in sorted(papers):
         qs = papers[pid]
         if sorted(qs) != [1, 2, 3, 4]:
-            err("cw2 paper %s: needs questions 1 to 4, has %s" % (pid, sorted(qs)))
+            err("%s paper %s: needs questions 1 to 4, has %s" % (name, pid, sorted(qs)))
         got = {}
         questions = []
         for qn in sorted(qs):
             ps = sorted(qs[qn], key=lambda x: x["part"])
             letters = [x["part"] for x in ps]
             if letters != list("abcde"[:len(ps)]):
-                err("cw2 paper %s question %d: parts must be a, b, c... in order, has %s" % (pid, qn, letters))
+                err("%s paper %s question %d: parts must be a, b, c... in order, has %s" % (name, pid, qn, letters))
             if "stem" in ps[0] and any("stem" in x for x in ps[1:]):
-                err("cw2 paper %s question %d: only part a may have a --- stem" % (pid, qn))
+                err("%s paper %s question %d: only part a may have a --- stem" % (name, pid, qn))
             for x in ps:
                 got[x["area"]] = got.get(x["area"], 0) + x["marks"]
             questions.append({"q": qn, "stem": ps[0].get("stem", ""), "marks": sum(x["marks"] for x in ps), "parts": ps})
-        for a in CW2_AREAS:
+        for a in area_list:
             if got.get(a[0], 0) != a[2]:
-                err("cw2 paper %s: %s has %d marks, the outline says %d" % (pid, a[1], got.get(a[0], 0), a[2]))
+                err("%s paper %s: %s has %d marks, it should have %d" % (name, pid, a[1], got.get(a[0], 0), a[2]))
         out.append({"id": pid, "questions": questions, "marks": sum(q["marks"] for q in questions), "minutes": 90})
-    return {"areas": [{"id": a[0], "title": a[1], "marks": a[2]} for a in CW2_AREAS], "papers": out}
+    return {"areas": [{"id": a[0], "title": a[1], "marks": a[2]} for a in area_list], "papers": out}
 
 # ---- random test templates: $VALS(n,lo,hi) $KEYS(n,lo,hi) $SORTED(n,lo,hi) $INT(lo,hi) $N() $PICK(); n may be a range a-b.
 # The browser expands them with the same rules (app.js expandRandom); keep the two in step.
@@ -1065,6 +1078,7 @@ def main():
         "cppSupport": load_cpp_support(), "cppStats": {"programs": len(jobs), "gpp": not QUICK},
         "written": load_written(lessons),
         "cw2": load_cw2(lessons),
+        "final": load_final(lessons),
         "quest": quest,
     }
     for e in data["exercises"]:

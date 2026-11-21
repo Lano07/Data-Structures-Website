@@ -277,6 +277,7 @@
     if (s.k === "lab") { var lb = CL.ui.labById[s.id], x = (st.lab || {})[s.id] || { n: 0 }; return { text: "Answer " + (s.n || 5) + " Your turn predictions in the " + (lb ? lb.title : s.id), href: "#lab-" + s.id, detail: x.n + " answered so far" }; }
     if (s.k === "gym") { var passed = D0.exercises.filter(function (e) { return e.topic === s.topic && st.ex[e.id] && st.ex[e.id].passed; }).length; return { text: "Pass " + (s.n || 1) + " Code Gym exercise" + ((s.n || 1) > 1 ? "s" : "") + " on " + (CL.ui.topicTitle[s.topic] || s.topic).toLowerCase(), href: "#gym", gym: s.topic, detail: passed + " passed so far" }; }
     if (s.k === "diag") return { text: "Take the diagnostic test", href: "#diag", detail: "" };
+    if (s.k === "link") return { text: s.text, href: s.href, detail: "" };
     if (s.k === "written") { var wd = Object.keys(st.wr || {}).filter(function (k) { return st.wr[k] && st.wr[k].done; }).length; return { text: "Write and mark " + (s.n || 1) + " exam-style written answers", href: "#written", detail: wd + " done so far" }; }
     if (s.k === "wq") { var wq = (D0.written || []).filter(function (q) { return q.id === s.id; })[0], wr = (st.wr || {})[s.id]; return { text: "Write and mark: " + (wq ? String(wq.q).split("\n")[0].replace(/`/g, "").replace(/\*\*/g, "").slice(0, 110) : s.id), href: "#written-" + s.id, detail: wr && wr.done ? "Best: " + wr.best + "/" + (wq ? wq.marks : "") : wq ? wq.marks + " marks, about " + wq.minutes + " minutes" : "" }; }
     if (s.k === "cw2") { var ca = ((st.cw2 || {}).att || {})[s.paper]; return { text: "Sit Coursework Exam #2 mock paper " + s.paper + " in 90 minutes, then mark it", href: "#cw2-" + s.paper, detail: ca ? "Best: " + ca.best + "/40" : "4 questions, 40 marks" }; }
@@ -301,6 +302,9 @@
   CL.pathNext = function () {
     var st = S();
     if (!st.path) return null;
+    // the Coursework Exam #2 plan ends with the exam: after it, point to the final exam plan
+    if (st.path === "cw2" && CL.CW2 && Date.now() > CL.CW2.when.getTime() + CL.CW2.minutes * 60000)
+      return { text: "Coursework Exam #2 is over: switch to the final exam plan", href: "#path-final", plan: "Coursework Exam #2", step: { k: "link", text: "Coursework Exam #2 is over: switch to the final exam plan", href: "#path-final" } };
     var p = pathById(st.path);
     if (!p) return null;
     var s = pathSteps(p).filter(function (x) { return !LN.stepDone(x); })[0];

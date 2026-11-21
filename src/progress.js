@@ -78,9 +78,27 @@
     if (L.examLast || R.examLast) M.examLast = ((R.examLast && R.examLast.date) || 0) > ((L.examLast && L.examLast.date) || 0) ? clone(R.examLast) : clone(L.examLast);
     if (L.g || R.g) M.g = mergeGame(L.g, R.g);
     if (L.quest || R.quest) M.quest = mergeQuest(L.quest, R.quest);
+    if (L.cw2 || R.cw2) M.cw2 = mergePapers(L.cw2, R.cw2);
     ["play", "examNow", "trainPref", "goal", "path"].forEach(function (k) { M[k] = L[k] !== undefined && L[k] !== null ? clone(L[k]) : clone(R[k]); });
     return M;
   };
+  // the written mock papers: each paper keeps the best result from either device (its attempt count is the larger
+  // one, never the sum) and the newer attempt's details; a paper in progress keeps the newer run; answers being
+  // written and the last marks come from this device unless it has none
+  function mergePapers(a, b) {
+    a = a || {}; b = b || {};
+    return {
+      att: byKey(a.att, b.att, function (x, y) {
+        var r = clone(((y && y.t) || 0) > ((x && x.t) || 0) ? y : x);
+        r.best = Math.max((x && x.best) || 0, (y && y.best) || 0);
+        r.n = Math.max((x && x.n) || 0, (y && y.n) || 0);
+        return r;
+      }),
+      run: byKey(a.run, b.run, function (x, y) { return ((y && y.t0) || 0) > ((x && x.t0) || 0) ? y : x; }),
+      drafts: byKey(a.drafts, b.drafts, function (x, y) { return x || y; }),
+      marks: byKey(a.marks, b.marks, function (x, y) { return x || y; })
+    };
+  }
   // the Quest: a level is finished if it was finished on either device, with the better stars; relics and key fragments
   // are kept from both; the explorer's name and look come from this device unless it has none yet
   function mergeQuest(a, b) {

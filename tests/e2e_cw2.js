@@ -1,5 +1,6 @@
-// Coursework Exam #2: its page, a mock paper sat, typed, marked and saved, the marking schemes, printing, the plan and
-// the home card. Run after `python3 build.py`:  node tests/e2e_cw2.js
+// Written mock papers: Coursework Exam #2's page, a mock paper sat, typed, marked and saved, the marking schemes,
+// printing, the plan; the final exam revision page and a whole-course paper; merging backups keeps every paper's best
+// result. Run after `python3 build.py`:  node tests/e2e_cw2.js
 const path = require("path");
 const { chromium } = require("playwright");
 const REPO = path.dirname(__dirname);
@@ -55,9 +56,37 @@ const wait = (pg, ms) => pg.waitForTimeout(ms);
   await pg.goto(URL + "#path-cw2"); await wait(pg, 700);
   check((await pg.locator(".path-grp").count()) === 8 && (await pg.locator('.path-grp a[href="#cw2-A"]').count()) === 1, "the eight-day plan links to the mock papers");
   check((await pg.locator('.path-grp a[href^="#written-"]').count()) >= 10, "the plan's written-answer steps link to their questions");
+  // merging a backup keeps each paper's best result from either device
+  const mg = await pg.evaluate(() => {
+    const here = { cw2: { att: { A: { best: 20, last: 20, n: 1, t: 100 } }, drafts: { "cw2-a1a": "mine" }, run: {}, marks: {} } };
+    const backup = { cw2: { att: { A: { best: 30, last: 18, n: 3, t: 200 }, F1: { best: 25, last: 25, n: 1, t: 300 } }, drafts: { "cw2-a1a": "theirs", "fin-1-1a": "theirs" }, run: {}, marks: {} } };
+    const M = CL.Progress.merge(here, backup).cw2;
+    return [M.att.A.best, M.att.A.n, M.att.A.last, M.att.F1.best, M.drafts["cw2-a1a"], M.drafts["fin-1-1a"]].join(",");
+  });
+  check(mg === "30,3,18,25,mine,theirs", "merging a backup keeps the best result of every paper (" + mg + ")");
+  // the final exam revision page and a whole-course paper
+  const F = await pg.evaluate(() => CODELAB_DATA.final.papers.map((p) => { const by = {}; p.questions.forEach((q) => q.parts.forEach((x) => { by[x.area] = (by[x.area] || 0) + x.marks; })); return p.marks === 40 && p.questions.length === 4 && by.core === 10 && by.trees === 10 && by.hashgraph === 10 && by.sortperf === 10; }));
+  check(F.length >= 2 && F.every(Boolean), "every whole-course paper has 4 questions of 10 marks, one per area");
+  await pg.goto(URL + "#final"); await wait(pg, 800);
+  check((await pg.locator('.cw-paper a.btn.primary[href^="#final-"]').count()) === F.length && (await pg.locator('.cw-paper a.btn.primary[href^="#cw2-"]').count()) >= 3, "the final revision page lists the whole-course papers and the Coursework Exam #2 papers");
+  await pg.goto(URL + "#final-F1"); await wait(pg, 600);
+  await pg.click("[data-start]"); await wait(pg, 600);
+  await pg.locator('.cw-part[data-id="fin-1-1a"] textarea').click(); await pg.keyboard.type("30 8 30 30");
+  await wait(pg, 800);
+  await pg.click(".cw-bar [data-finish]"); await wait(pg, 200); await pg.click(".cw-bar [data-finish]"); await wait(pg, 700);
+  const rowsF = pg.locator('.cw-part[data-id="fin-1-1a"] .wr-sp');
+  for (let i = 0; i < await rowsF.count(); i++) { const btns = rowsF.nth(i).locator("button"); await btns.nth((await btns.count()) - 1).click(); }
+  await pg.locator(".cw-totalbar [data-save]").click(); await wait(pg, 700);
+  const resF = await pg.locator(".cw-score").innerText();
+  check(/Your mark: 3\s*\/ 40/.test(resF) && /Pointers, recursion and linked lists\s*3 \/ 10/.test(resF), "a whole-course paper is sat, marked and scored by area");
+  check(/Back to Final exam revision/.test(resF), "its results lead back to the final revision page");
+  await pg.goto(URL + "#home"); await wait(pg, 900);
+  check((await pg.locator('.exam-card a[href="#final"]').count()) >= 1, "the home page's final exam card links to the whole-course papers");
   const ph = await b.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
-  await ph.goto(URL + "#cw2-A"); await wait(ph, 700);
-  check(await ph.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), "no sideways scrolling on a phone");
+  for (const r of ["#cw2-A", "#final", "#final-F2"]) {
+    await ph.goto(URL + r); await wait(ph, 700);
+    check(await ph.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), "no sideways scrolling on a phone: " + r);
+  }
   for (const e of errs) console.log("  error:", e);
   check(!errs.length, "no page errors");
   await b.close();

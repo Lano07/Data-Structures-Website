@@ -1,7 +1,8 @@
-/* COMP 2611 Code Lab — Coursework Exam #2: its page (what the course says to expect, the topics and their marks, the
-   mock papers, the plan) and the mock papers themselves, sat like the real one: 4 short-answer questions, 40 marks,
-   90 minutes. You write every part, then mark it against its marking scheme (yourself, or the tutor), and see your
-   score for each area of the outline. The questions are original, written for this site; none is from a past paper. */
+/* COMP 2611 Code Lab — written mock papers: Coursework Exam #2's page (what the course said to expect, the topics and
+   their marks, its mock papers, its plan), the final exam revision page (whole-course papers, the plan, more practice),
+   and the papers themselves, sat like the real thing: 4 short-answer questions, 40 marks, 90 minutes. You write every
+   part, then mark it against its marking scheme (yourself, or the tutor), and see your score for each area. The
+   questions are original, written for this site; none is from a past paper. */
 (function (CL) {
   "use strict";
   var esc = CL.esc, LN = CL.Learn;
@@ -53,6 +54,12 @@
     p.innerHTML = '<div class="eyebrow">Coursework Exam #2 · ' + CW2.weight + " of your grade</div>" +
       '<h1 class="title">Coursework Exam #2 ' + esc(CW2.daysText()) + "</h1>" +
       '<p class="lede"><b>' + esc(CW2.when.toLocaleDateString([], { weekday: "long", day: "numeric", month: "long" })) + ", " + esc(CW2.time) + "</b> (90 minutes), <b>" + esc(CW2.where) + "</b>. " + esc(CW2.format) + ". This page has everything for it: what is on it, three mock papers in its format, and a day-by-day plan.</p>";
+    if (Date.now() > CW2.when.getTime() + CW2.minutes * 60000) {
+      var over = h("a", "cw2-banner");
+      over.href = "#final";
+      over.innerHTML = "<b>Coursework Exam #2 is over</b><span>Its mock papers are still good practice for the final: they cover lists, trees, heaps, hashing and graphs. The final exam revision page has whole-course papers too.</span><span class=\"btn primary small\">Final exam revision</span>";
+      p.appendChild(over);
+    }
     // what is on it
     var on = h("section", "cw-card");
     on.innerHTML = '<h2>What is on it</h2><p class="small muted">From the course\'s "what to expect" sheet. The marks are approximate.</p>' +
@@ -66,12 +73,7 @@
     // the mock papers
     var mp = h("section", "cw-card");
     mp.innerHTML = '<h2>Mock papers in the same format</h2><p class="small muted">Each paper has 4 questions and 40 marks, split like the real exam: Q1 linked lists, stacks and queues (9), Q2 binary trees and BSTs (11), Q3 heaps and priority queues (10), Q4 hashing and graphs (7) plus performance analysis (3). Sit one in 90 minutes, then mark it against its marking scheme. Original questions written for this site, checked by compiling every code answer.</p>' +
-      '<div class="cw-papers">' + D.papers.map(function (pp) {
-        var a = st.att[pp.id], run = st.run[pp.id];
-        return '<div class="cw-paper"><div class="cw-paper-t"><b>Mock paper ' + esc(pp.id) + '</b><span class="small muted">' + pp.questions.length + " questions · " + pp.marks + " marks · " + pp.minutes + " minutes</span></div>" +
-          '<div class="cw-paper-s">' + (a ? "Best: <b>" + a.best + "/" + pp.marks + "</b>" + (a.n > 1 ? " · sat " + a.n + " times" : "") : run && run.t0 ? "In progress" : "Not sat yet") + "</div>" +
-          '<div class="btns"><a class="btn primary" href="#cw2-' + pp.id + '">' + (run && run.t0 && !run.done ? "Carry on" : a ? "Sit it again" : "Sit it") + '</a><a class="btn ghost small" href="#cw2-' + pp.id + '" data-print="' + pp.id + '">Print it</a></div></div>';
-      }).join("") + "</div>";
+      paperCards(EXAMS.cw2);
     p.appendChild(mp);
     mp.addEventListener("click", function (e) { var b = e.target.closest("[data-print]"); if (b) { st.printNext = b.getAttribute("data-print"); CL.save(true); } });
     // the plan and quick practice
@@ -94,9 +96,86 @@
     p.appendChild(adv);
   } };
 
+  // ---------------------------------------------------------------- the sets of written papers
+  // Coursework Exam #2's mock papers, and the whole-course papers for the final. They share one store (paper and part
+  // ids are unique across the sets), so progress, backups and merging treat them alike.
+  function setOf(key) { return (window.CODELAB_DATA && window.CODELAB_DATA[key]) || { areas: [], papers: [] }; }
+  var FINAL_LINKS = {
+    core: [["l", "b1-addresses"], ["l", "b4-pitfalls"], ["l", "d1-how-recursion-works"], ["l", "d2-recursion-lists"], ["l", "c5-more-ops"]],
+    trees: [["l", "f1-terminology"], ["l", "f3-tree-code"], ["l", "f4-level-order-types"], ["l", "g4-deletion"], ["l", "h2-heapify-build"], ["l", "h4-insert-priority"]],
+    hashgraph: [["l", "i2-probing"], ["l", "i3-chaining-strings"], ["l", "j1-graph-basics"], ["l", "j3-bfs-dfs"], ["l", "j5-mst"]],
+    sortperf: [["l", "k1-simple-sorts"], ["l", "k2-merge-sort"], ["l", "k3-quick-sort"], ["l", "m3-binary-search"], ["l", "k4-sorting-performance"]]
+  };
+  function exam(key, o) {
+    o.key = key;
+    o.data = function () { return setOf(key); };
+    o.paper = function (id) { return o.data().papers.filter(function (x) { return x.id === id; })[0] || null; };
+    o.area = function (id) { return o.data().areas.filter(function (a) { return a.id === id; })[0] || { id: id, title: id, marks: 0 }; };
+    return o;
+  }
+  var EXAMS = CL.Papers = {
+    cw2: exam("cw2", { hub: "#cw2", hubName: "Coursework Exam #2", route: "cw2-", plan: "#path-cw2", links: CW2.links, origin: "Original questions in the format of the course's outline",
+      paperName: function (pp) { return "Mock paper " + pp.id; } }),
+    final: exam("final", { hub: "#final", hubName: "Final exam revision", route: "final-", plan: "#path-final", links: FINAL_LINKS, origin: "Original questions in the short-answer style of the coursework exams",
+      paperName: function (pp) { return "Whole-course paper " + pp.id.replace(/^F/, ""); } })
+  };
+  // the cards for a set's papers, with each one's best score; "Print it" opens the paper and prints its questions
+  function paperCards(ex) {
+    var st = store();
+    return '<div class="cw-papers">' + ex.data().papers.map(function (pp) {
+      var a = st.att[pp.id], run = st.run[pp.id];
+      return '<div class="cw-paper"><div class="cw-paper-t"><b>' + esc(ex.paperName(pp)) + '</b><span class="small muted">' + pp.questions.length + " questions · " + pp.marks + " marks · " + pp.minutes + " minutes</span></div>" +
+        '<div class="cw-paper-s">' + (a ? "Best: <b>" + a.best + "/" + pp.marks + "</b>" + (a.n > 1 ? " · sat " + a.n + " times" : "") : run && run.t0 && !run.done ? "In progress" : "Not sat yet") + "</div>" +
+        '<div class="btns"><a class="btn primary" href="#' + ex.route + pp.id + '">' + (run && run.t0 && !run.done ? "Carry on" : a ? "Sit it again" : "Sit it") + '</a><a class="btn ghost small" href="#' + ex.route + pp.id + '" data-print="' + pp.id + '">Print it</a></div></div>';
+    }).join("") + "</div>";
+  }
+  function wirePrint(el) { el.addEventListener("click", function (e) { var b = e.target.closest("[data-print]"); if (b) { store().printNext = b.getAttribute("data-print"); CL.save(true); } }); }
+
+  // ---------------------------------------------------------------- the final exam revision page
+  CL.pages.final = { nav: "train", draw: function (ui) {
+    var p = ui.page("cw-page"), h = ui.h, ex = EXAMS.final, F = ex.data(), when = LN.examDate(), d = daysTo(when);
+    ui.setTutor("home", "Final exam revision", function () {
+      return ui.progressText() + "\n\nThe student is on the final exam revision page. Their final exam date (set on the Progress page): " + when.toString().slice(0, 21) +
+        ". It offers whole-course practice papers in the short-answer style of the coursework exams (the official format of the final may differ), the week-by-week plan, and more practice.";
+    });
+    p.innerHTML = '<div class="eyebrow">Final exam revision</div><h1 class="title">' + (d < 0 ? "Your final exam has passed" : d === 0 ? "Your final exam is today" : d === 1 ? "Your final exam is tomorrow" : "Your final exam is in " + d + " days") + "</h1>" +
+      '<p class="lede"><b>' + esc(when.toLocaleDateString([], { weekday: "long", day: "numeric", month: "long" })) + ", " + esc(when.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })) + "</b>. The final covers the whole course. Everything for it is here: whole-course papers, the week-by-week plan, and more practice. <a href=\"#progress\">Change the date</a> if yours is different.</p>";
+    var mp = h("section", "cw-card");
+    mp.innerHTML = "<h2>Whole-course papers</h2>" +
+      '<p class="small muted">4 questions, 40 marks, 90 minutes, in the short-answer style of the coursework exams: Q1 pointers, recursion and linked lists, Q2 trees, BSTs and heaps, Q3 hashing and graphs (with spanning trees), Q4 sorting, searching and performance. The real final may be laid out differently, but its topics are the whole course. Original questions; every code answer is compiled with g++.</p>' +
+      paperCards(ex) +
+      "<h3>Also good practice</h3><p class=\"small\">The <a href=\"#cw2\">Coursework Exam #2 mock papers</a> cover linked lists, stacks and queues, trees, heaps, hashing and graphs in the same format.</p>" + paperCards(EXAMS.cw2);
+    wirePrint(mp);
+    p.appendChild(mp);
+    var on = h("section", "cw-card");
+    on.innerHTML = "<h2>The four areas of these papers</h2><p class=\"small muted\">Where each area is taught. <a href=\"#learn\">All lessons</a></p>" +
+      '<div class="cw-areas">' + F.areas.map(function (a) {
+        return '<div class="cw-area"><div class="cw-area-h"><b>' + esc(a.title) + '</b><span class="cw-area-m">' + a.marks + " marks a paper</span></div>" +
+          '<div class="cw-area-l">' + (FINAL_LINKS[a.id] || []).map(function (x) { return '<a href="#l-' + x[1] + '">' + esc(lessonTitle(x[1])) + "</a>"; }).join("") + "</div></div>";
+      }).join("") + "</div>";
+    p.appendChild(on);
+    var path = LN.paths().filter(function (x) { return x.id === "final"; })[0], pd = 0, pt = 0;
+    if (path) path.groups.forEach(function (g) { pt += g.steps.length; pd += g.steps.filter(LN.stepDone).length; });
+    var pl = h("section", "cw-card");
+    pl.innerHTML = "<h2>The week-by-week plan</h2><p>Five weeks ending on your exam date: find your weak spots, revise each topic until it is Good, then sit full papers under time. Every step ticks itself off as you work.</p>" +
+      (path ? '<div class="pg-planbar"><div class="bar"><i style="width:' + (pt ? Math.round(100 * pd / pt) : 0) + '%"></i></div><span>' + pd + " of " + pt + " steps done</span></div>" : "") +
+      '<div class="btns"><a class="btn blue" href="#path-final">Open the plan</a>' + (CL.store.path === "final" ? "" : '<button type="button" class="btn" data-pick>Make it my plan</button>') + "</div>";
+    pl.addEventListener("click", function (e) { if (e.target.closest("[data-pick]")) { CL.store.path = "final"; CL.save(); ui.toast("Plan chosen. Its next step shows on the home page."); ui.route(); } });
+    p.appendChild(pl);
+    var more = h("section", "cw-card");
+    more.innerHTML = '<h2>More practice</h2><ul class="cw-list">' +
+      '<li><a href="#diag">The diagnostic test</a>: find the topics to fix first.</li>' +
+      '<li><a href="#exam">Mock exams</a>: the whole course as timed multiple choice, with marks by topic.</li>' +
+      '<li><a href="#written">Written answers</a>: single exam-style questions, marked against a scheme.</li>' +
+      '<li><a href="#cards">Flashcards</a>: terms, costs and code, with spaced repetition.</li>' +
+      '<li><a href="#boss">Boss Battles</a>: one boss per topic, then the Final Exam boss.</li>' +
+      '<li><a href="#exam-review">Exam technique</a>: answer formats, handwritten C++ and timing.</li></ul>';
+    p.appendChild(more);
+  } };
+
   // ---------------------------------------------------------------- a mock paper
-  CL.pages["cw2-"] = { nav: "train", draw: function (ui, id) {
-    var pp = paper(id);
+  function paperPage(ex) { return { nav: "train", draw: function (ui, id) {
+    var pp = ex.paper(id);
     if (!pp) return false;
     var p = ui.page("cw-page cw-sit"), h = ui.h, st = store(), parts = allParts(pp);
     var run = st.run[pp.id] = st.run[pp.id] || {};
@@ -104,15 +183,15 @@
     var editors = {}, timer = null, draftT = null, marking = null;
     var printNow = st.printNext === pp.id;
     if (printNow) delete st.printNext;
-    ui.setTutor("home", "Coursework Exam #2 mock paper " + pp.id, function () {
-      var s = ui.progressText() + "\n\nThe student is on Coursework Exam #2 mock paper " + pp.id + " (4 short-answer questions, 40 marks, 90 minutes). ";
+    ui.setTutor("home", ex.hubName + ": " + ex.paperName(pp), function () {
+      var s = ui.progressText() + "\n\nThe student is on " + ex.hubName + ", " + ex.paperName(pp) + " (4 short-answer questions, 40 marks, 90 minutes). ";
       if (mode !== "marking") return s + "They have NOT finished it: do not give answers, model answers or marking schemes; if asked, give hints about method only.";
       return s + "They have finished and are marking it against these schemes:\n" + parts.map(function (x) { return "Q" + x.qn + "(" + x.part + "), " + x.marks + " marks: " + x.q.slice(0, 300) + "\nScheme: " + x.rubric.map(function (r) { return r.pts + ": " + r.text; }).join(" | "); }).join("\n\n");
     });
     function head() {
-      return '<div class="eyebrow"><a href="#cw2">Coursework Exam #2</a> · Mock paper ' + esc(pp.id) + "</div>" +
-        '<h1 class="title">Mock paper ' + esc(pp.id) + "</h1>" +
-        '<div class="wr-head"><span class="chip">4 questions</span><span class="chip">' + pp.marks + ' marks</span><span class="chip">90 minutes</span><span class="wr-orig small muted">Original questions in the format of the course\'s outline</span></div>';
+      return '<div class="eyebrow"><a href="' + ex.hub + '">' + esc(ex.hubName) + "</a> · " + esc(ex.paperName(pp)) + "</div>" +
+        '<h1 class="title">' + esc(ex.paperName(pp)) + "</h1>" +
+        '<div class="wr-head"><span class="chip">4 questions</span><span class="chip">' + pp.marks + ' marks</span><span class="chip">90 minutes</span><span class="wr-orig small muted">' + esc(ex.origin) + "</span></div>";
     }
     function draw() {
       if (timer) { clearInterval(timer); timer = null; }
@@ -145,7 +224,7 @@
       var ab = t.closest("[data-abandon]");
       if (ab) {
         if (!ab.classList.contains("confirm")) { ab.classList.add("confirm"); ab.textContent = "This clears your answers. Sure?"; return; }
-        clearAnswers(); delete st.run[pp.id]; CL.save(); location.hash = "#cw2";
+        clearAnswers(); delete st.run[pp.id]; CL.save(); location.hash = ex.hub;
         return;
       }
       if (t.closest("[data-again]")) { clearAnswers(); run = st.run[pp.id] = {}; CL.save(); review = false; mode = "ready"; draw(); window.scrollTo(0, 0); return; }
@@ -169,7 +248,7 @@
     function printQuestions() {
       var box = p.querySelector(".cw-printable") || p.appendChild(h("div", "cw-printable"));
       box.innerHTML = "";
-      box.appendChild(h("div", "cw-print-h", "<b>COMP 2611 · Coursework Exam #2 · Mock paper " + esc(pp.id) + "</b><span>4 questions · 40 marks · 90 minutes · answer every question</span>"));
+      box.appendChild(h("div", "cw-print-h", "<b>COMP 2611 · " + esc(ex.hubName) + " · " + esc(ex.paperName(pp)) + "</b><span>4 questions · 40 marks · 90 minutes · answer every question</span>"));
       pp.questions.forEach(function (q) { box.appendChild(questionBlock(q, false)); });
       document.body.classList.add("cw-printing");
       setTimeout(function () { try { window.print(); } catch (er) { /* printing is not available here */ } document.body.classList.remove("cw-printing"); }, 80);
@@ -179,7 +258,7 @@
       sec.id = "cw-q" + q.q;
       var areas = [];
       q.parts.forEach(function (x) { if (areas.indexOf(x.area) < 0) areas.push(x.area); });
-      sec.appendChild(h("div", "cw-qh", "<h2>Question " + q.q + '</h2><span class="chip">' + q.marks + ' marks</span><span class="cw-qa">' + areas.map(function (a) { return esc(areaOf(a).title); }).join(" · ") + "</span>"));
+      sec.appendChild(h("div", "cw-qh", "<h2>Question " + q.q + '</h2><span class="chip">' + q.marks + ' marks</span><span class="cw-qa">' + areas.map(function (a) { return esc(ex.area(a).title); }).join(" · ") + "</span>"));
       if (q.stem) { var stem = CL.renderMd(q.stem, ui.mdHooks({ noRun: true })); stem.classList.add("cw-stem", "md"); sec.appendChild(stem); }
       q.parts.forEach(function (x) {
         var part = h("div", "cw-part");
@@ -225,7 +304,7 @@
       p.appendChild(bar);
       var nav = h("nav", "cw-jump");
       nav.setAttribute("aria-label", "Questions");
-      nav.innerHTML = pp.questions.map(function (q) { return '<a href="#cw2-' + pp.id + '" data-q="' + q.q + '">Q' + q.q + " · " + q.marks + " marks</a>"; }).join("");
+      nav.innerHTML = pp.questions.map(function (q) { return '<a href="#' + ex.route + pp.id + '" data-q="' + q.q + '">Q' + q.q + " · " + q.marks + " marks</a>"; }).join("");
       p.appendChild(nav);
       pp.questions.forEach(function (q) { p.appendChild(questionBlock(q, true)); });
       p.appendChild(h("div", "btns cw-end", '<button type="button" class="btn primary" data-finish>Finish and mark</button><button type="button" class="btn ghost" data-abandon>Stop, and clear my answers</button>'));
@@ -267,7 +346,7 @@
         });
         p.appendChild(sec);
       });
-      p.appendChild(h("div", "btns cw-end", (review ? '<button type="button" class="btn primary" data-start>▶ Start the 90 minutes</button>' : '<button type="button" class="btn primary" data-save>Save my marks</button>') + '<a class="btn" href="#cw2">Back to Coursework Exam #2</a>' + (review ? "" : '<button type="button" class="btn ghost" data-again>Sit this paper again</button>')));
+      p.appendChild(h("div", "btns cw-end", (review ? '<button type="button" class="btn primary" data-start>▶ Start the 90 minutes</button>' : '<button type="button" class="btn primary" data-save>Save my marks</button>') + '<a class="btn" href="' + ex.hub + '">Back to ' + esc(ex.hubName) + "</a>" + (review ? "" : '<button type="button" class="btn ghost" data-again>Sit this paper again</button>')));
       function total() { return parts.reduce(function (t, x) { return t + got[x.id].reduce(function (a, v) { return a + v; }, 0); }, 0); }
       function refresh() { var b = totalBar.querySelector(".cw-total b"); if (b) b.textContent = total(); }
       refresh();
@@ -334,14 +413,14 @@
         showResult(t, areas);
       }
       function showResult(t, areas) {
-        var weak = data().areas.map(function (ar) { return { a: ar, pct: (areas[ar.id] || 0) / ar.marks }; }).sort(function (x, y) { return x.pct - y.pct; })[0];
+        var weak = ex.data().areas.map(function (ar) { return { a: ar, pct: (areas[ar.id] || 0) / ar.marks }; }).sort(function (x, y) { return x.pct - y.pct; })[0];
         result.innerHTML = '<section class="cw-card cw-score"><h2>Your mark: <b>' + t + "</b> / " + pp.marks + ' <span class="muted">(' + Math.round(100 * t / pp.marks) + "%)</span></h2>" +
-          '<div class="cw-areas">' + data().areas.map(function (ar) {
+          '<div class="cw-areas">' + ex.data().areas.map(function (ar) {
             var g = areas[ar.id] || 0, pc = Math.round(100 * g / ar.marks);
             return '<div class="cw-area"><div class="cw-area-h"><b>' + esc(ar.title) + '</b><span class="cw-area-m">' + g + " / " + ar.marks + "</span></div>" + '<div class="cw-area-bar ' + (pc >= 70 ? "ok" : pc >= 40 ? "mid" : "low") + '"><i style="width:' + pc + '%"></i></div></div>';
           }).join("") + "</div>" +
-          (weak && weak.pct < 0.7 ? "<p>Revise first: <b>" + esc(weak.a.title) + "</b>: " + (CW2.links[weak.a.id] || []).slice(0, 4).map(function (x) { return '<a href="#l-' + x[1] + '">' + esc(lessonTitle(x[1])) + "</a>"; }).join(" · ") + "</p>" : "<p>Every area is at 70% or more. Sit another paper to make sure it holds.</p>") +
-          '<div class="btns"><a class="btn primary" href="#cw2">Back to Coursework Exam #2</a><a class="btn" href="#path-cw2">Your plan</a></div></section>';
+          (weak && weak.pct < 0.7 ? "<p>Revise first: <b>" + esc(weak.a.title) + "</b>: " + (ex.links[weak.a.id] || []).slice(0, 4).map(function (x) { return '<a href="#l-' + x[1] + '">' + esc(lessonTitle(x[1])) + "</a>"; }).join(" · ") + "</p>" : "<p>Every area is at 70% or more. Sit another paper to make sure it holds.</p>") +
+          '<div class="btns"><a class="btn primary" href="' + ex.hub + '">Back to ' + esc(ex.hubName) + '</a><a class="btn" href="' + ex.plan + '">Your plan</a></div></section>';
         result.scrollIntoView({ behavior: "smooth", block: "start" });
       }
       marking = function (e) {
@@ -396,5 +475,7 @@
       }
     }
     draw();
-  } };
+  } }; }
+  CL.pages["cw2-"] = paperPage(EXAMS.cw2);
+  CL.pages["final-"] = paperPage(EXAMS.final);
 })(CL);
