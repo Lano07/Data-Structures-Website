@@ -1,6 +1,6 @@
 // Written mock papers: Coursework Exam #2's page, a mock paper sat, typed, marked and saved, the marking schemes,
-// printing, the plan; the final exam revision page and a whole-course paper; merging backups keeps every paper's best
-// result. Run after `python3 build.py`:  node tests/e2e_cw2.js
+// printing, the plan; the final exam revision page, a whole-course paper, every paper's schemes and diagrams, and the final
+// plan's paper steps; merging backups keeps every paper's best result. Run after `python3 build.py`:  node tests/e2e_cw2.js
 const path = require("path");
 const { chromium } = require("playwright");
 const REPO = path.dirname(__dirname);
@@ -66,7 +66,7 @@ const wait = (pg, ms) => pg.waitForTimeout(ms);
   check(mg === "30,3,18,25,mine,theirs", "merging a backup keeps the best result of every paper (" + mg + ")");
   // the final exam revision page and a whole-course paper
   const F = await pg.evaluate(() => CODELAB_DATA.final.papers.map((p) => { const by = {}; p.questions.forEach((q) => q.parts.forEach((x) => { by[x.area] = (by[x.area] || 0) + x.marks; })); return p.marks === 40 && p.questions.length === 4 && by.core === 10 && by.trees === 10 && by.hashgraph === 10 && by.sortperf === 10; }));
-  check(F.length >= 2 && F.every(Boolean), "every whole-course paper has 4 questions of 10 marks, one per area");
+  check(F.length >= 4 && F.every(Boolean), "every whole-course paper (" + F.length + ") has 4 questions of 10 marks, one per area");
   await pg.goto(URL + "#final"); await wait(pg, 800);
   check((await pg.locator('.cw-paper a.btn.primary[href^="#final-"]').count()) === F.length && (await pg.locator('.cw-paper a.btn.primary[href^="#cw2-"]').count()) >= 3, "the final revision page lists the whole-course papers and the Coursework Exam #2 papers");
   await pg.goto(URL + "#final-F1"); await wait(pg, 600);
@@ -80,10 +80,22 @@ const wait = (pg, ms) => pg.waitForTimeout(ms);
   const resF = await pg.locator(".cw-score").innerText();
   check(/Your mark: 3\s*\/ 40/.test(resF) && /Pointers, recursion and linked lists\s*3 \/ 10/.test(resF), "a whole-course paper is sat, marked and scored by area");
   check(/Back to Final exam revision/.test(resF), "its results lead back to the final revision page");
+  // the final plan's last two weeks send the student to the whole-course papers, and sitting one ticks its step off
+  await pg.goto(URL + "#path-final"); await wait(pg, 700);
+  check((await pg.locator('.path-steps a[href^="#final-F"]').count()) === F.length, "the final plan links to every whole-course paper");
+  check((await pg.locator('.path-steps li.ok a[href="#final-F1"]').count()) === 1 && (await pg.locator('.path-steps li.ok a[href="#final-F2"]').count()) === 0, "sitting a whole-course paper ticks off its step in the plan");
+  // the newer papers: every marking scheme and diagram can be read without sitting them
+  for (const id of ["F3", "F4"]) {
+    await pg.goto(URL + "#final-" + id); await wait(pg, 500); await pg.click("[data-review]"); await wait(pg, 700);
+    const nParts = await pg.locator(".cw-part").count();
+    check(nParts === 12 && (await pg.locator(".cw-ideal").count()) === nParts, "Whole-course paper " + id.slice(1) + ": all 12 parts show their marking schemes");
+    const dg = await pg.evaluate(() => { const ds = [...document.querySelectorAll(".diagram")]; return { n: ds.filter((d) => d.querySelector("svg")).length, bad: ds.some((d) => /could not be drawn/.test(d.textContent)) }; });
+    check(dg.n >= 1 && !dg.bad, "Whole-course paper " + id.slice(1) + ": every diagram is drawn (" + dg.n + ")");
+  }
   await pg.goto(URL + "#home"); await wait(pg, 900);
   check((await pg.locator('.exam-card a[href="#final"]').count()) >= 1, "the home page's final exam card links to the whole-course papers");
   const ph = await b.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
-  for (const r of ["#cw2-A", "#final", "#final-F2"]) {
+  for (const r of ["#cw2-A", "#final", "#final-F2", "#final-F4", "#path-final"]) {
     await ph.goto(URL + r); await wait(ph, 700);
     check(await ph.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), "no sideways scrolling on a phone: " + r);
   }

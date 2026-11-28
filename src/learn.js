@@ -291,7 +291,8 @@
     if (st.k === "diag") return (s.diag || []).length > 0;
     if (st.k === "written") return Object.keys(s.wr || {}).filter(function (k) { return s.wr[k] && s.wr[k].done; }).length >= (st.n || 1);
     if (st.k === "wq") { var w = (s.wr || {})[st.id]; return !!(w && w.done); }
-    if (st.k === "cw2") { var a = ((s.cw2 || {}).att || {})[st.paper]; return !!a && (!st.min || a.best / 40 >= st.min); }
+    // both sets of written papers (Coursework Exam #2's and the whole-course ones) keep their results in the same store
+    if (st.k === "cw2" || st.k === "fin") { var a = ((s.cw2 || {}).att || {})[st.paper]; return !!a && (!st.min || a.best / 40 >= st.min); }
     return false;
   };
   var PART_TOPIC = { b: "cpp", c: "lists", d: "recursion", e: "stacks", f: "trees", g: "bst", h: "heaps", i: "hashing", j: "graphs", k: "sorting", l: "bigo" };
@@ -333,8 +334,9 @@
       ["Diagnose, then fix the foundations", [{ k: "diag" }, { k: "practice", c: "cpp.ptr" }, { k: "practice", c: "list.trav" }, { k: "practice", c: "list.insert" }, { k: "practice", c: "rec.basics" }, { k: "practice", c: "sq.stack" }, { k: "cards", deck: "cpp", n: 10 }, { k: "cards", deck: "lists", n: 8 }]],
       ["Trees and binary search trees", [{ k: "practice", c: "tree.terms" }, { k: "practice", c: "tree.trav" }, { k: "practice", c: "tree.code" }, { k: "practice", c: "tree.shape" }, { k: "practice", c: "bst.prop" }, { k: "practice", c: "bst.insert" }, { k: "practice", c: "bst.succ" }, { k: "practice", c: "bst.delete" }, { k: "exam", paper: "cw1" }]],
       ["Heaps and hashing", [{ k: "practice", c: "heap.array" }, { k: "practice", c: "heap.build" }, { k: "practice", c: "heap.extract" }, { k: "practice", c: "heap.insert" }, { k: "practice", c: "hash.basic" }, { k: "practice", c: "hash.probe" }, { k: "practice", c: "hash.chain" }, { k: "cards", deck: "heaps", n: 8 }]],
-      ["Graphs, sorting and big-O", [{ k: "practice", c: "graph.basics" }, { k: "practice", c: "graph.trav" }, { k: "practice", c: "graph.dijkstra" }, { k: "practice", c: "graph.mst" }, { k: "practice", c: "sort.simple" }, { k: "practice", c: "sort.merge" }, { k: "practice", c: "sort.quick" }, { k: "practice", c: "bigo.code" }, { k: "practice", c: "bigo.ops" }, { k: "exam", paper: "second" }]],
-      ["Exam conditions", [{ k: "exam", paper: "all" }, { k: "exam", paper: "all", min: 0.7 }, { k: "written", n: 3 }, { k: "exam", paper: "paperC" }, { k: "exam", paper: "paperD" }, { k: "cards", n: 60 }]]
+      ["Graphs, sorting and big-O", [{ k: "practice", c: "graph.basics" }, { k: "practice", c: "graph.trav" }, { k: "practice", c: "graph.dijkstra" }, { k: "practice", c: "graph.mst" }, { k: "practice", c: "sort.simple" }, { k: "practice", c: "sort.merge" }, { k: "practice", c: "sort.quick" }, { k: "practice", c: "bigo.code" }, { k: "practice", c: "bigo.ops" }, { k: "exam", paper: "second" }, { k: "fin", paper: "F1" }]],
+      // the last week: the written whole-course papers (CODELAB_DATA.final) under time, between the quicker multiple-choice mocks
+      ["Exam conditions", [{ k: "fin", paper: "F2" }, { k: "exam", paper: "all" }, { k: "fin", paper: "F3" }, { k: "written", n: 3 }, { k: "fin", paper: "F4" }, { k: "exam", paper: "all", min: 0.7 }, { k: "cards", n: 60 }]]
     ];
     plan.forEach(function (w, i) {
       var start = new Date(ex.getTime() - (plan.length - i) * 7 * DAY), end = new Date(ex.getTime() - (plan.length - i - 1) * 7 * DAY - DAY);
@@ -347,9 +349,13 @@
         { title: "Hard practice", steps: [{ k: "gym", topic: "bst", n: 4 }, { k: "gym", topic: "heaps", n: 3 }, { k: "gym", topic: "graphs", n: 3 }, { k: "gym", topic: "sorting", n: 3 }, { k: "written", n: 5 }, { k: "exam", paper: "paperD", min: 0.8 }] }
       ].filter(function (g) { return g.steps.length; }) };
     // steps that need a page this build does not have are left out rather than shown as impossible
-    var wids = {};
+    var wids = {}, fids = {};
     (D.written || []).forEach(function (q) { wids[q.id] = 1; });
-    [fin, cw2, beginner, adv].forEach(function (p) { p.groups.forEach(function (g) { g.steps = g.steps.filter(function (s) { return (s.k !== "written" && s.k !== "wq") || (CL.pages && CL.pages.written && (s.k !== "wq" || wids[s.id])); }); }); });
+    ((D.final || {}).papers || []).forEach(function (pp) { fids[pp.id] = 1; });
+    [fin, cw2, beginner, adv].forEach(function (p) { p.groups.forEach(function (g) { g.steps = g.steps.filter(function (s) {
+      if (s.k === "fin") return !!(fids[s.paper] && CL.pages && CL.pages["final-"]);
+      return (s.k !== "written" && s.k !== "wq") || (CL.pages && CL.pages.written && (s.k !== "wq" || wids[s.id]));
+    }); }); });
     return [fin, cw2, beginner, adv];
   };
 
