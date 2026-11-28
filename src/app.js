@@ -313,7 +313,7 @@
       var fc = h("section", "exam-card final");
       fc.innerHTML = "<h2>Your final exam " + (fdays === 0 ? "is today" : fdays === 1 ? "is tomorrow" : "is in " + fdays + " days") + '</h2><div class="when">' + esc(fx.toLocaleDateString([], { weekday: "long", day: "numeric", month: "long" })) + " at " + esc(fx.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })) + ", " + Math.round((goal.examMin || 120) / 60 * 10) / 10 + " hours. It covers the whole course. " +
         '<a href="#progress">Change the date</a> if it moves.</div>' +
-        '<div class="exam-topics"><a href="#path-final">Week-by-week revision plan</a><a href="#diag">Find your weak spots (diagnostic)</a><a href="#exam">Whole-course mock exam</a><a href="#written">Written answers</a><a href="#exam-review">Exam technique</a></div>';
+        '<div class="exam-topics"><a href="#final">Whole-course papers (90 minutes)</a><a href="#path-final">Week-by-week revision plan</a><a href="#diag">Find your weak spots (diagnostic)</a><a href="#exam">Whole-course mock exam</a><a href="#written">Written answers</a><a href="#exam-review">Exam technique</a></div>';
       main.appendChild(fc);
     }
 
@@ -1622,10 +1622,19 @@
   // while Coursework Exam #2 is coming up, a banner on the practice pages points to its page
   function cw2Banner() {
     var C2 = CL.CW2;
-    if (!C2 || Date.now() > C2.when.getTime() + C2.minutes * 60000) return null;
+    if (!C2 || Date.now() > C2.when.getTime() + C2.minutes * 60000) return finalBanner();
     var a = h("a", "cw2-banner");
     a.href = "#cw2";
     a.innerHTML = "<b>Coursework Exam #2 " + esc(C2.daysText()) + "</b><span>" + esc(C2.format) + ", 90 minutes. Three mock papers in its format, with marking schemes, and an eight-day plan.</span><span class=\"btn primary small\">Get ready</span>";
+    return a;
+  }
+  // after Coursework Exam #2, the same place points to the final exam revision page
+  function finalBanner() {
+    var fx = LN.examDate(), days = Math.ceil((fx - Date.now()) / 86400000);
+    if (days < 0 || !CL.Papers) return null;
+    var a = h("a", "cw2-banner");
+    a.href = "#final";
+    a.innerHTML = "<b>Your final exam is in " + days + " day" + (days === 1 ? "" : "s") + "</b><span>Whole-course papers in the short-answer style of the coursework exams, marked against schemes, and the week-by-week plan.</span><span class=\"btn primary small\">Revise</span>";
     return a;
   }
   function pageTrain() {
